@@ -63,13 +63,7 @@ Reach me at: https://www.linkedin.com/in/princy-chauhan/
 
 ### Shipped apps
 
-- [ ] At least one app of mine is live in the App Store or Play Store today
-- [ ] It has real users and reviews, and I have answered some
-- [ ] I shipped an update that fixed a crash or a review complaint
-- [ ] I handled store review, signing and release myself
-- [ ] I can say what I would do differently next time
-
-Store links:
+No app currently live in the App Store or Play Store.
 
 ### Building with AI
 
