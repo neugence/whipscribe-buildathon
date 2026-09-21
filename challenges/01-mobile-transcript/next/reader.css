@@ -2,6 +2,7 @@
    screenshots so the brand stays the same; everything else is mobile first. */
 :root {
   --ink: #0f172a;
+  --muted-strong: #556174; /* 5.7:1 on the grey field and the lime tint */
   --text: #1e293b;
   --muted: #64748b;
   --faint: #94a3b8;
@@ -87,9 +88,9 @@ button { cursor: pointer; }
 .has-dock .content { padding-bottom: calc(150px + var(--safe-b)); }
 .search-field {
   display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; margin: 12px 0 6px; padding: 0 12px;
-  border: 0; border-radius: 11px; background: var(--field); color: var(--muted); font-size: 16px; text-align: left;
+  border: 0; border-radius: 11px; background: var(--field); color: var(--muted-strong); font-size: 16px; text-align: left;
 }
-.search-field .i { color: var(--muted); }
+.search-field .i { color: var(--muted-strong); }
 .notice { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 2px; font-size: 13px; line-height: 18px; color: var(--muted); }
 .notice .i { margin-top: -1px; }
 .transcript { padding-top: 14px; }
@@ -126,7 +127,7 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
 .paywall { margin: 6px 0 20px; padding: 20px 18px 16px; border-radius: 18px; background: var(--tint); border: 1px solid var(--tint-line); }
 .paywall h2 { margin: 0 0 6px; font-size: 19px; line-height: 1.25; color: var(--ink); letter-spacing: -.01em; }
 .paywall p { margin: 0 0 16px; font-size: 15px; line-height: 1.5; color: var(--text); }
-.paywall .small { margin: 12px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+.paywall .small { margin: 12px 0 0; font-size: 13px; color: var(--muted-strong); text-align: center; }
 .ghost { position: relative; margin-top: 8px; -webkit-mask-image: linear-gradient(#000 10%, transparent 92%); mask-image: linear-gradient(#000 10%, transparent 92%); }
 .ghost .gp { margin: 0 0 22px; }
 .ghost .gh { width: 44px; height: 10px; border-radius: 5px; background: var(--line-soft); margin: 4px 0 10px; }
@@ -151,16 +152,16 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
 /* ---------- player dock (only when there is audio) ---------- */
 .dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; max-width: 720px; margin: 0 auto;
-  background: rgba(255, 255, 255, .97); border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, .98); box-shadow: 0 -1px 0 var(--line-soft), 0 -8px 24px rgba(15, 23, 42, .06);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   padding: 0 8px calc(6px + var(--safe-b));
 }
-.scrub { display: block; width: 100%; height: 22px; margin: -11px 0 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; --p: 0%; }
+.scrub { display: block; width: 100%; height: 20px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; --p: 0%; }
 .scrub::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--accent) var(--p), var(--line) var(--p)); }
 .scrub::-moz-range-track { height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--accent) var(--p), var(--line) var(--p)); }
 .scrub::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5.5px; border-radius: 50%; background: var(--green); border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
 .scrub::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--green); border: 2px solid #fff; }
-.dock-row { display: flex; align-items: center; gap: 2px; height: 52px; }
+.dock-row { display: flex; align-items: center; gap: 2px; height: 50px; }
 .play { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--green); color: #fff; display: grid; place-items: center; flex: none; margin: 0 4px; }
 .play:active { background: var(--green-press); }
 .clock { font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; flex: 1; min-width: 0; padding-left: 4px; white-space: nowrap; }
@@ -169,7 +170,7 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
 .speed:active { background: var(--field); }
 .follow[aria-pressed="true"] { color: var(--green); background: #eef7e2; }
 .return-pill {
-  position: fixed; left: 50%; bottom: calc(76px + var(--safe-b)); transform: translateX(-50%); z-index: 26;
+  position: fixed; left: 50%; bottom: calc(86px + var(--safe-b)); transform: translateX(-50%); z-index: 26;
   display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px 0 12px; border: 0; border-radius: 999px;
   background: var(--ink); color: #fff; font-size: 14px; font-weight: 600; box-shadow: 0 6px 20px rgba(15, 23, 42, .2);
 }
@@ -260,6 +261,7 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
 .search-box .i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .search-box input { width: 100%; height: 40px; border: 0; border-radius: 11px; background: var(--field); padding: 0 36px 0 38px; font-size: 16px; color: var(--ink); }
 .search-box input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.search-box input::placeholder, .composer input::placeholder, .field input::placeholder { color: var(--muted-strong); opacity: 1; }
 .search-box input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .search-box .clear { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; }
 .cancel { border: 0; background: none; color: var(--green); font-size: 16px; font-weight: 600; min-height: 44px; padding: 0 8px; }
@@ -292,7 +294,7 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1
 .state h2 { margin: 0 0 8px; font-size: 21px; line-height: 1.25; color: var(--ink); letter-spacing: -.01em; }
 .state p { margin: 0 0 22px; font-size: 16px; line-height: 1.5; color: var(--muted); }
 .state .fine { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
-.state .ref { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; color: var(--faint); border: 0; background: none; padding: 6px; }
+.state .ref { display: inline-flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 12.5px; color: var(--muted); border: 0; background: none; padding: 6px; }
 .progress-card { margin: 20px 0 8px; padding: 18px; border-radius: 18px; border: 1px solid var(--line); background: #fff; }
 .progress-card h2 { margin: 0 0 2px; font-size: 18px; color: var(--ink); }
 .progress-card .sub { margin: 0 0 14px; font-size: 14px; color: var(--muted); }
