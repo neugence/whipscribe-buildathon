@@ -28,13 +28,13 @@ I’m Princy Chauhan, a full-stack developer focused on building practical web a
 
 ## Track record
 
-* **LinkedIn:** https://www.linkedin.com/in/princy-chauhan/
-* **Shipped apps:** No App Store or Play Store apps yet
-* **Hackathon participation:** Participated in hackathons as part of my learning and development experience; no hackathon wins yet
-* **Team lead:** No formal team-lead experience yet
-* **Team projects:** Worked as part of development teams in my professional experience, collaborating with other developers on shared projects and contributing to features, bug fixes, and code integration
-* **Proudest work:** https://social-app-eight-swart.vercel.app/
-* **Contributions elsewhere:** Contributed code to shared team repositories and integrated my changes into existing branches and codebases as part of professional development work
+- LinkedIn: https://www.linkedin.com/in/princy-chauhan/
+- Shipped apps: none yet
+- Hackathon wins: none yet
+- Team lead: none yet
+- Team projects: Worked as part of development teams, collaborating on shared projects, contributing features, bug fixes, and code integration
+- Proudest work: https://social-app-eight-swart.vercel.app/
+- Contributions elsewhere: Contributed to shared team repositories; integrated changes into existing branches as part of professional development work
 
 ### Selected repositories
 
