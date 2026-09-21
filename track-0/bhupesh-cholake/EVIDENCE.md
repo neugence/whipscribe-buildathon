@@ -100,8 +100,8 @@ The following public links were present in repository metadata/READMEs or suppli
 
 ## Scope of exclusions
 
-- No guessed LinkedIn URL. The GitHub social-accounts API returned no social accounts at audit time, and no personal LinkedIn was found in the examined profile/portfolio material.
-- No App Store/Play Store release, revenue, download, customer-count, hackathon-win or leadership claim without verifiable evidence.
+- LinkedIn: the user supplied https://www.linkedin.com/in/thebhupesh/ and it is included in the introduction. The GitHub social-accounts API returned no social accounts at audit time, so profile matching is not claimed.
+- No App Store/Play Store release, revenue, download, customer-count or hackathon-win claim without verifiable evidence. The user's SIH team-lead statement is included in the record, without claiming a win or result.
 - No client source, credentials, private repository names, private upstream names or customer records included. Private inventory rows are opaque by design.
 - No claim that a Vercel config proves deployment, a README's “production-ready” phrase proves readiness, an agent commit proves personal implementation, or a fork's history is mine.
 - No WhipScribe API behavior asserted; this Track 0 PR has no integration code.

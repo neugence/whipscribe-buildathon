@@ -4,7 +4,7 @@ I have an engineering background in Artificial Intelligence & Data Science and b
 
 **Start here:** [Spa for Cars](https://spaforcars.ca), my proudest project; [STOCKEX](https://github.com/RealBhupesh/stokex-research-harness-for-your-agents), for evidence and validation; and [Grafana Faro #2257](https://github.com/grafana/faro-web-sdk/pull/2257), for how I handle a correctness bug and maintainer feedback.
 
-GitHub/contact: [RealBhupesh](https://github.com/RealBhupesh). A matching LinkedIn could not be verified from my GitHub profile, so I am not supplying a guessed URL.
+GitHub: [RealBhupesh](https://github.com/RealBhupesh) · LinkedIn: [thebhupesh](https://www.linkedin.com/in/thebhupesh/)
 
 [Complete GitHub project inventory](PROJECT_INVENTORY.md) · [Evidence, history and verification](EVIDENCE.md) · [Honest checklist](CHECKLIST.md)
 
@@ -81,7 +81,7 @@ In [Faro's review](https://github.com/grafana/faro-web-sdk/pull/2257#discussion_
 
 ## What I am not claiming
 
-No verified App Store/Play Store release, user count, revenue, hackathon win, leadership role or independent user-testing result is included. Passing unit tests is not proof that a deployed product works end to end. HTTP 200 only establishes a reachable page. Imported histories, agent-authored commits and inaccessible private work are not inflated into sole authorship.
+No verified App Store/Play Store release, user count, revenue, hackathon win or independent user-testing result is included. I led my team for the Smart India Hackathon (SIH) twice; I am not claiming a win or result, and this PR does not include enough detail about decisions and delegation to check the leadership box. Passing unit tests is not proof that a deployed product works end to end. HTTP 200 only establishes a reachable page. Imported histories, agent-authored commits and inaccessible private work are not inflated into sole authorship.
 
 AeroAssist, HospitalIQ and CareerAI were inspected rather than omitted: AeroAssist's configured AI provider remains a mock and its linked site returned HTTP 500; HospitalIQ has a single bulk commit and is not presented as clinically validated; CareerAI has agent-authored work and an HTTP-200 landing page, but no verified complete live flow. Their code and limitations belong in the [inventory](PROJECT_INVENTORY.md), not in unsupported production claims.
 
