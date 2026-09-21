@@ -62,7 +62,7 @@
   // ---------- which state to open in ----------
   const PRESETS = {
     reader: {},
-    scrolled: { scroll: 'para:3' },
+    scrolled: { scroll: 'para:1' },
     boundary: { scroll: 'paywall' },
     search: { search: 'onboarding' },
     'search-jump': { search: 'onboarding', jump: 0 },
@@ -103,6 +103,7 @@
   const FX = window.WS_FIXTURES;
   const qs = new URLSearchParams(location.search);
   const SHOT = qs.has('shot');
+  const EMBED = window.self !== window.top; // inside the review page: never grab focus
   if (SHOT) document.documentElement.classList.add('shot');
   const P = PRESETS[qs.get('state')] || PRESETS.reader;
   const F = FX[qs.get('file') || P.file || 'long'];
@@ -416,7 +417,7 @@
     layers.append(layer);
     lockScroll(true);
     update();
-    input.focus();
+    if (!EMBED) input.focus();
   }
 
   function resultsList(q, hits) {
@@ -497,7 +498,7 @@
     // first control only for keyboard users, and to the sheet itself for touch.
     const input = (opts.focusEmail && $('#email', sheet)) || $('[autofocus]', sheet);
     const first = $('.row, .btn, .seg button, input', sheet);
-    if (SHOT) sheet.focus({ preventScroll: true });
+    if (SHOT || EMBED) { /* leave focus alone */ }
     else if (input) input.focus({ preventScroll: true });
     else if (keyboardMode && first) first.focus({ preventScroll: true });
     else sheet.focus({ preventScroll: true });

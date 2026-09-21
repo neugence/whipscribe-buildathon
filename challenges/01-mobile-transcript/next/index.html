@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transcript reader on a phone: the next pass</title>
+<style>
+  :root { --ink: #0f172a; --text: #1e293b; --muted: #64748b; --line: #e4e8dd; --field: #f2f4ef; --green: #496c23; --accent: #568122; --lime: #ade829; --tint: #f4fbee; --tint-line: #d9efc4; --s: .72; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f6f7f4; color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: var(--green); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+  .intro { background: #fff; border-bottom: 1px solid var(--line); padding: 40px 0 32px; }
+  .eyebrow { margin: 0 0 8px; font-size: 13px; font-weight: 650; letter-spacing: .02em; color: var(--muted); }
+  h1 { margin: 0 0 12px; font-size: clamp(26px, 4vw, 38px); line-height: 1.15; color: var(--ink); letter-spacing: -.02em; }
+  .lede { max-width: 760px; margin: 0 0 18px; font-size: 18px; }
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 22px 0; padding: 0; list-style: none; }
+  .rules li { padding: 14px 16px; border-radius: 14px; background: var(--tint); border: 1px solid var(--tint-line); font-size: 15px; }
+  .rules b { display: block; color: var(--ink); margin-bottom: 2px; }
+  .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 20px; }
+  .btn { display: inline-flex; align-items: center; min-height: 46px; padding: 0 20px; border-radius: 12px; background: var(--green); color: #fff; font-weight: 650; text-decoration: none; }
+  .cta span { color: var(--muted); font-size: 15px; }
+  table.numbers { width: 100%; max-width: 760px; border-collapse: collapse; margin: 26px 0 0; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .numbers th, .numbers td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  .numbers th { font-size: 13px; color: var(--muted); font-weight: 650; }
+  .numbers td:nth-child(n+2) { white-space: nowrap; }
+  .numbers td:last-child { color: var(--green); font-weight: 700; }
+  nav.toc { position: sticky; top: 0; z-index: 5; background: rgba(246, 247, 244, .94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  nav.toc .wrap { display: flex; gap: 6px; overflow-x: auto; padding-top: 10px; padding-bottom: 10px; scrollbar-width: none; }
+  nav.toc a { flex: none; padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--text); font-size: 14px; text-decoration: none; white-space: nowrap; }
+  nav.toc a:hover { border-color: var(--accent); }
+  section.screen { padding: 44px 0 8px; border-bottom: 1px solid var(--line); scroll-margin-top: 56px; }
+  .screen-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .num { font-size: 14px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  h2 { margin: 0; font-size: 24px; line-height: 1.2; color: var(--ink); letter-spacing: -.01em; }
+  .tag-new { font-size: 12px; font-weight: 700; color: #365314; background: #e6f6cf; border-radius: 999px; padding: 2px 8px; }
+  .row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { display: flex; gap: 8px; align-items: baseline; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  figcaption a { text-transform: none; letter-spacing: 0; font-weight: 600; }
+  figcaption small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .phone { position: relative; overflow: hidden; border-radius: 22px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 12px 32px rgba(15,23,42,.10); }
+  .phone img { display: block; width: 100%; height: auto; }
+  .phone iframe { border: 0; transform-origin: 0 0; display: block; background: #fff; }
+  .divider { width: 1px; align-self: stretch; background: var(--line); }
+  .notes { display: grid; grid-template-columns: 2fr 1fr; gap: 28px; margin: 22px 0 28px; }
+  .notes h3 { margin: 0 0 8px; font-size: 14px; color: var(--ink); text-transform: uppercase; letter-spacing: .05em; }
+  .notes ul { margin: 0; padding-left: 18px; }
+  .notes li { margin: 0 0 8px; }
+  .notes code { font-size: 13px; background: var(--field); padding: 1px 5px; border-radius: 5px; }
+  .answers { padding: 44px 0; }
+  .answers dt { font-weight: 700; color: var(--ink); margin-top: 18px; }
+  .answers dd { margin: 4px 0 0; max-width: 820px; }
+  footer { padding: 28px 0 60px; color: var(--muted); font-size: 14px; }
+  @media (max-width: 760px) {
+    .notes { grid-template-columns: 1fr; gap: 12px; }
+    .divider { display: none; }
+    .row { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+<header class="intro">
+  <div class="wrap">
+    <p class="eyebrow">WhipScribe Buildathon · UI challenge 01 · Nevil Sonani</p>
+    <h1>The transcript reader on a phone, the next pass</h1>
+    <p class="lede">A phone reader is for reading. This pass gives the words the screen, asks for the sign-up when there is a reason to, and stops showing controls that cannot work. It removes more than it adds.</p>
+    <ul class="rules">
+      <li><b>The words get the screen.</b> Nothing is pinned while you read a preview. The header comes back when you scroll up.</li>
+      <li><b>Ask at the moment of intent.</b> Where the preview ends, when you pick a download, when you search past the preview. Not on every screen.</li>
+      <li><b>Only what can work.</b> No play button without audio, no rename on someone else's file, no tabs on an error.</li>
+      <li><b>Say it in words.</b> "1 min 5 s left", not "48%". "A problem on our side", not "HTTP 503".</li>
+    </ul>
+    <div class="cta">
+      <a class="btn" href="reader.html">Open the prototype</a>
+      <span>On a phone, open that link and tap around. Every state below is also reachable from inside it.</span>
+    </div>
+    <table class="numbers">
+      <thead><tr><th>Measured in the browser</th><th>Now</th><th>Next</th></tr></thead>
+      <tbody>
+        <tr><td>Share of a 390 × 844 screen showing the transcript, first view</td><td>67%</td><td>88%</td></tr>
+        <tr><td>… once you start scrolling</td><td>81%</td><td>100%</td></tr>
+        <tr><td>Same at 320 × 550, first view → scrolling</td><td>51% → 72%</td><td>82% → 100%</td></tr>
+        <tr><td>Transcript words readable on the first screen, 390 × 844</td><td>98</td><td>124</td></tr>
+        <tr><td>Items in the More menu</td><td>9</td><td>4 (2 for a guest)</td></tr>
+        <tr><td>Taps from the end of the preview to the whole transcript</td><td>3</td><td>2</td></tr>
+      </tbody>
+    </table>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Screens"><div class="wrap" id="toc"></div></nav>
+<main class="wrap" id="screens"></main>
+
+<section class="wrap answers" id="answers">
+  <h2>The questions in the brief</h2>
+  <dl>
+    <dt>What did a person on a phone come here to do, and how many taps away is it?</dt>
+    <dd>Read what was said, or find one thing that was said. Reading is zero taps and now gets the whole screen. Finding is one tap: the search field sits at the top of the transcript, where phones put it, instead of behind an icon.</dd>
+    <dt>The keep-reading bar and the player take the bottom. Right trade? And with the keyboard up?</dt>
+    <dd>No. A permanent bar is ignored after a few seconds and costs 157 px on every screen. The ask now appears where people decide: at the end of the preview, when they pick a download, and when search runs out of preview. The player only appears when there is audio. With the keyboard up, search is its own layer and nothing else is pinned to the bottom.</dd>
+    <dt>The More menu has nine items. Which belong?</dt>
+    <dd>Four for the owner (text size and display, rename, file details, move to trash) and two for a guest. Home duplicated the back arrow. Timestamps duplicated reading settings. Sign in belongs to the preview asks. Copy went to Download. Quiz went to AI Chat.</dd>
+    <dt>Search, download, settings: three ways to open a panel. Should they feel like one?</dt>
+    <dd>Download, More, text size, sign-up, rename and details are now one sheet component: same handle, title, close button and row style. Search stays different on purpose. It needs the keyboard and the full screen, so it is a mode rather than a panel.</dd>
+    <dt>What does the reader look like while the transcript is processing?</dt>
+    <dd>Designed from the two states the API reports (queued, processing with a progress value), plus the outcomes it documents: done, failed (no minutes used) and no speech found (<code>speech_detected: false</code>, not charged). See screens 13 and 14.</dd>
+    <dt>Four speakers at 320 px?</dt>
+    <dd>Each turn starts with a coloured initial and the speaker's name, and consecutive lines from one person merge into a paragraph. Tapping the name renames that speaker everywhere, with the first thing they said as a reminder. See screen 15.</dd>
+    <dt>After you select a line on a phone, what should happen?</dt>
+    <dd>Tap a line and its actions appear at the bottom, in thumb reach: play from there (only with audio), copy with the time and file name, share, ask AI about it. Long-press still gives the phone's own text selection. The prototype no longer draws a second menu over it.</dd>
+    <dt>The desktop page is unchanged. Should it be?</dt>
+    <dd>Mostly yes, since the layout works on a wide screen. But the shared pieces should carry over: paragraphs instead of one row per segment, the preview ask at the end rather than above the first line, and the copy. Screen 18 lists what I would change.</dd>
+  </dl>
+</section>
+
+<footer class="wrap">
+  Built as a static prototype: HTML, CSS and one script, no build step, made-up recordings in the shapes the API documents. Notes, method and what is not done: <a href="README.md">README.md</a>.
+</footer>
+
+<script>
+  // Each screen: the current screenshot(s) next to the prototype in the same state.
+  const SCREENS = [
+    { id: 'reader', title: 'The reader', now: [['03-reader-390.png', 390, 844]], next: [['reader', 390, 844]],
+      changed: [
+        'One bar on top: back, name, download, more. Search moved into the page as a field, where phones put it.',
+        'Left-aligned text with no hyphens. Justified text at this width stretched <i>Revenue came in 11% above forecast</i> across the whole line.',
+        'Lines are re-cut into sentences and grouped into paragraphs, each with one time. The API splits on pauses, so <i>…a hard / stop at the top of the hour</i> used to be two rows with two times.',
+        'Times sit above each paragraph instead of in a 60 px gutter, so the text gets the full width.',
+        'No player when there is no audio. The biggest thing on screen was a play button that could not play. <i>No audio</i> is in the line under the name, and File details says why.',
+        'The keep-reading bar is gone from the bottom. The preview is named once at the top, with the product’s lime button, and asked for properly where it ends.',
+      ],
+      kept: ['The three tabs and their order.', 'The green and the lime, sampled from the screenshots.', 'The header scrolling away, which was right.'] },
+    { id: 'reader-320', title: 'The reader at 320 px', now: [['01-reader-320.png', 320, 550]], next: [['reader', 320, 550]],
+      changed: [
+        '82% of the screen shows the transcript, up from 51%. Once you scroll, all of it does.',
+        'The line under the name never truncates. It drops the language to <i>EN</i>, then drops it entirely, before it would cut anything.',
+        'The preview line wraps instead of ending in <i>(first 48%)....</i>',
+      ],
+      kept: ['17 px text. It is the right size for reading on a phone.'] },
+    { id: 'scrolled', title: 'Scrolled', now: [['04-scrolled.png', 390, 844]], next: [['scrolled', 390, 844]],
+      changed: ['With no audio, nothing is pinned: the whole screen is text. Scroll up a little and the header is back.', 'With audio, one 58 px player row stays (screen 16), about a third of the old stack.'],
+      kept: ['Hiding the header on the way down.'] },
+    { id: 'boundary', title: 'Where the preview ends', now: [['05-preview-boundary.png', 390, 844]], next: [['boundary', 390, 844]],
+      changed: [
+        'It says what is left in time: <i>the next 1 min 5 s, from 0:39 to 1:44</i>. <i>48% read</i> reads like a score, and people do not think in percent of a file.',
+        'Continue with Google is right on the page: two taps to the whole transcript instead of three, and no modal.',
+        'Faded lines show there is more without leaking any of it.',
+        'One message instead of two. The old truncated bar repeated the end note underneath it.',
+      ],
+      kept: ['<i>Your first transcript is free</i>. It is the strongest line on the page.'] },
+    { id: 'search', title: 'Search', now: [['06-search.png', 390, 844]], next: [['search', 390, 844], ['search-jump', 390, 844]],
+      changed: [
+        'Search is a mode: the field takes the top, the keyboard comes up, and results are the lines that match, with their times.',
+        'Tapping a result goes to that line in the transcript, marked, with a bar to step through matches. Before, the match showed twice: pinned in a card, and still down at 0:26 in a transcript that stayed at 0:00.',
+        'A guest is told they are searching the preview only, and how to search all of it.',
+        'The previous and next buttons are 44 px, up from about 24.',
+      ],
+      kept: ['The count and the yellow highlight.'] },
+    { id: 'download', title: 'Download', now: [['07-export-sheet.png', 390, 844]], next: [['download', 390, 844], ['download-owner', 390, 844]],
+      changed: [
+        'Formats are named for what people do with them: <i>Word document: opens in Word, Pages or Google Docs</i>, <i>Subtitles: for video editors and YouTube</i>. The extension is still on the right.',
+        'Grouped by job. Copy all text moved in from the More menu, since copying is another way of taking the text away.',
+        'Summary downloads moved to the Summary tab. The download button gives you what you are looking at.',
+        'A guest can open this and pick a format. Then comes the sign-up, and the download starts once they are in (the left frame; tap a format).',
+      ],
+      kept: ['Translated subtitles and Save to Drive.', 'The timestamps option, now a switch with its reason next to it.'] },
+    { id: 'more', title: 'The More menu', now: [['08-more-menu.png', 390, 844]], next: [['more', 390, 844], ['more-guest', 390, 844]],
+      changed: [
+        'Nine items become four for the owner and two for a guest.',
+        'Gone: Home (the back arrow), <i>Timestamps: shown</i> (a copy of reading settings), Sign in (the preview asks for it), Copy (now in Download), Quiz (now a suggestion in AI Chat, where questions get asked).',
+        'Delete becomes Move to trash with Undo instead of a scary confirm. The API already keeps a trash: <code>GET /v1/jobs/trash</code>, <code>POST /v1/jobs/{id}/restore</code>.',
+        'Rename and trash only appear on your own file.',
+      ],
+      kept: ['A bottom sheet, which is the right pattern on a phone.'] },
+    { id: 'display', title: 'Reading settings', now: [['09-reading-settings.png', 390, 844]], next: [['display', 390, 844]],
+      changed: [
+        'Text size is four buttons you can see, not a dropdown, and the text behind the sheet changes as you tap. The backdrop is lighter so you can see it.',
+        'Speaker names only shows when there is more than one speaker. Follow the audio only shows when there is audio.',
+        'Settings are remembered on the device.',
+      ],
+      kept: ['<i>Only changes how it looks here</i>. Good copy, lightly trimmed.'] },
+    { id: 'line', title: 'Selecting a line', now: [['10-text-selection.png', 390, 844]], next: [['line', 390, 844], ['line-audio', 390, 844]],
+      changed: [
+        'Tap a line and its actions sit at the bottom, in thumb reach, instead of a dark bubble covering the next line.',
+        'Long-press still gives the phone’s own selection. The prototype does not draw a menu on top of it.',
+        'Copy includes the time and the file: <i>“First, the numbers.” (long.m4a, 0:09)</i>.',
+        'Play only shows when there is audio. Share and Ask AI are new.',
+      ],
+      kept: ['Copy and Play from here as the first two actions.'] },
+    { id: 'signup', title: 'Keep reading → sign up', now: [['11-keep-reading-signup.png', 390, 844]], next: [['signup', 390, 844], ['signup-code', 390, 844]],
+      changed: [
+        'A bottom sheet in the product’s green, not a centred purple modal. The field is near the top, so the keyboard does not cover it.',
+        'The title says what you are about to get: <i>Keep reading long.m4a</i>.',
+        'No password and no Sign in / Sign up tabs. Google, or a 6-digit code by email, works whether you have an account or not. The code field uses <code>autocomplete="one-time-code"</code>, so phones offer the code.',
+        'After sign-in you land on the same line and the rest fades in.',
+      ],
+      kept: ['Google first.', '<i>Your first transcript is free. No card.</i>'] },
+    { id: 'error', title: 'Load failure', now: [['12-load-failure.png', 390, 844]], next: [['error', 390, 844], ['offline', 390, 844]],
+      changed: [
+        'Says what happened in words, and that the recording is safe. <i>HTTP 503</i> becomes a small error reference with a copy button, for support.',
+        'Tries again by itself with a countdown, and still has the button.',
+        'No tabs, search or download while there is nothing to act on.',
+        'Offline gets its own message and loads when the connection returns.',
+      ],
+      kept: ['Try again as the one clear action.'] },
+    { id: 'not-yours', title: 'Not on this account', now: [['13-not-on-this-account.png', 390, 844]], next: [['not-yours', 390, 844], ['signed-out', 390, 844]],
+      changed: [
+        'The title no longer says <i>Loading…</i> for ever.',
+        'Two problems, two screens. Signed in: it is not in your account, here is who you are signed in as, switch account. Signed out: sign in to open it.',
+        'It does not claim whose account the file is on. The API answers 404 for “not yours” on purpose, so the page cannot know, and should not guess.',
+        'The unstyled blue link becomes real buttons.',
+      ],
+      kept: [] },
+    { id: 'processing', title: 'While it transcribes', isNew: true, now: [], next: [['processing', 390, 844], ['queued', 390, 844]],
+      changed: [
+        'Built from the two states the API reports: <code>queued</code>, then <code>processing</code> with a <code>progress</code> value. The estimate comes from the docs’ “about two minutes for an hour”.',
+        'It says you can leave. A guest can ask for an email when it is ready.',
+        'Skeleton lines hold the place of the transcript, so the page does not jump when it arrives.',
+      ],
+      kept: [] },
+    { id: 'outcomes', title: 'When there is nothing to read', isNew: true, now: [], next: [['no-speech', 390, 844], ['failed', 390, 844]],
+      changed: [
+        'No speech found (<code>speech_detected: false</code>) and a failed job both say you were not charged, which the docs promise.',
+        'No speech shows the speech ratio the API returns, so the person can see why.',
+      ],
+      kept: [] },
+    { id: 'speakers', title: 'Four speakers at 320 px', isNew: true, now: [], next: [['speakers', 320, 550], ['rename-speaker', 390, 844]],
+      changed: [
+        'Each turn starts with a coloured initial and the name. The number or letter is always there, so colour is never the only signal.',
+        'Consecutive lines from one person become one paragraph. A short interjection like <i>Do we know why?</i> keeps its own turn.',
+        'Tap a name to rename that speaker everywhere, with the first thing they said as a reminder of who it was.',
+      ],
+      kept: [] },
+    { id: 'audio', title: 'With audio', isNew: true, now: [], next: [['audio', 390, 844], ['follow-off', 390, 844]],
+      changed: [
+        'One slim player row: back 5 s, play, time, speed, follow. The progress line is also the scrubber.',
+        'The line being played is shaded and the page follows it. Scroll away and it stops following and offers <i>Back to 0:22</i>. The desktop’s unlabelled ↑ • ↓ does this job without words.',
+      ],
+      kept: ['Speed and back-5-seconds.'] },
+    { id: 'tabs', title: 'Summary and AI Chat', isNew: true, now: [], next: [['summary-guest', 390, 844], ['chat', 390, 844]],
+      changed: [
+        'Only the entry points: I did not redesign these tabs.',
+        'For a guest the summary asks for the account, because the API answers 402 on <code>/insights</code> while a transcript is locked.',
+        'Quiz me lives here now, next to the other questions, and answers link to the second they came from.',
+      ],
+      kept: [] },
+    { id: 'desktop', title: 'Desktop', now: [['14-desktop-1280.png', 1280, 900]], next: [['reader', 1280, 800]],
+      changed: [
+        'Same code. On a wide screen it becomes a centred column and nothing breaks.',
+        'What I would carry to the real desktop page: the preview ask at the end of the preview instead of above the first line (it pushes the transcript about 400 px down today), paragraphs instead of one row per segment, and the copy.',
+        'Bugs I saw in the desktop screenshot: the sidebar says QUEUED for a transcript that is open and done, the same file is listed twice, and the floating ↑ • ↓ has no label.',
+      ],
+      kept: ['The sidebar, reader and player layout. It suits a wide screen.'] },
+  ];
+
+  const scaleFor = (w) => (w > 800 ? 0.44 : parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--s')));
+  function frame(kind, src, w, h, fit) {
+    const s = Math.min(scaleFor(w), fit / w);
+    const box = document.createElement('div');
+    box.className = 'phone';
+    box.style.width = Math.round(w * s) + 'px';
+    box.style.height = Math.round(h * s) + 'px';
+    if (kind === 'img') {
+      const img = document.createElement('img');
+      img.src = '../after/' + src; img.alt = 'Current design: ' + src.replace(/^\d+-|\.png$/g, '').replace(/-/g, ' ');
+      img.loading = 'lazy'; img.style.height = '100%'; img.style.objectFit = 'cover'; img.style.objectPosition = 'top';
+      box.append(img);
+    } else {
+      const f = document.createElement('iframe');
+      f.src = `reader.html?state=${src}`; f.width = w; f.height = h; f.loading = 'lazy';
+      f.title = `Next: ${src.replace(/-/g, ' ')}`;
+      f.style.transform = `scale(${s})`;
+      box.append(f);
+    }
+    return box;
+  }
+  function render() {
+    const fit = Math.min(window.innerWidth - 40, 1180);
+    const main = document.getElementById('screens');
+    const toc = document.getElementById('toc');
+    main.replaceChildren(); toc.replaceChildren();
+    SCREENS.forEach((sc, i) => {
+      const n = String(i + 1).padStart(2, '0');
+      const a = document.createElement('a'); a.href = '#' + sc.id; a.textContent = `${n} ${sc.title}`; toc.append(a);
+      const sec = document.createElement('section'); sec.className = 'screen'; sec.id = sc.id;
+      sec.innerHTML = `<div class="screen-head"><span class="num">${n}</span><h2>${sc.title}</h2>${sc.isNew ? '<span class="tag-new">New</span>' : ''}</div>`;
+      const row = document.createElement('div'); row.className = 'row';
+      sc.now.forEach(([src, w, h]) => {
+        const fig = document.createElement('figure');
+        fig.innerHTML = '<figcaption>Now</figcaption>';
+        fig.append(frame('img', src, w, h, fit)); row.append(fig);
+      });
+      if (sc.now.length) { const d = document.createElement('div'); d.className = 'divider'; row.append(d); }
+      sc.next.forEach(([state, w, h]) => {
+        const fig = document.createElement('figure');
+        fig.innerHTML = `<figcaption>Next <small>${state.replace(/-/g, ' ')}</small> <a href="reader.html?state=${state}" target="_blank" rel="noopener">open</a></figcaption>`;
+        fig.append(frame('iframe', state, w, h, fit)); row.append(fig);
+      });
+      const notes = document.createElement('div'); notes.className = 'notes';
+      notes.innerHTML = `<div><h3>What changed, and why</h3><ul>${sc.changed.map((c) => `<li>${c}</li>`).join('')}</ul></div>` +
+        (sc.kept.length ? `<div><h3>Kept</h3><ul>${sc.kept.map((c) => `<li>${c}</li>`).join('')}</ul></div>` : '<div></div>');
+      sec.append(row, notes);
+      main.append(sec);
+    });
+  }
+  render();
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 200); });
+</script>
+</body>
+</html>
