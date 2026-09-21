@@ -327,6 +327,12 @@ The shared pieces should carry over; the list is above.
   locked preview as its own slice. The segment breaks of `long.m4a` are copied
   from the current screenshots, including the mid-sentence ones, so the
   before and after show the same content.
+- Checked against a real response. I sent a 53-second two-voice recording I
+  made to `POST /v1/transcribe`. The result came back with `"words": null` and
+  `"speaker": null` on every segment, although the docs say both default to
+  on. So the reader does not depend on them: without word times it spreads a
+  segment's words across its span to re-cut sentences, and without speakers it
+  shows no names. I asked about the mismatch in a Question issue.
 - Accessibility: 44 px targets, tabs that work with arrow keys, dialogs that
   handle focus and close on Escape, labels on every icon button, reduced motion
   respected. Body text is `#1e293b` on white (14.6:1), secondary text

@@ -143,7 +143,7 @@
     const sentences = [];
     let cur = null;
     for (const seg of res.segments) {
-      for (const w of seg.words) {
+      for (const w of seg.words && seg.words.length ? seg.words : spreadWords(seg)) {
         if (!cur || cur.speaker !== seg.speaker) {
           if (cur) sentences.push(cur);
           cur = { speaker: seg.speaker, start: w.start, end: w.end, words: [] };
@@ -170,6 +170,21 @@
     const speakerIds = [...new Set(F.result.segments.map((s) => s.speaker))];
     const pv = F.preview.segments;
     model = { sentences, paras, previewEnd: Math.round(pv[pv.length - 1].end), multi: speakerIds.length > 1, speakerIds };
+  }
+  // A real API response for my own test recording came back with
+  // "words": null and "speaker": null on every segment. Without word times,
+  // spread a segment's words across its span by length, so sentences can
+  // still be re-cut; without speakers, no names are shown.
+  function spreadWords(seg) {
+    const toks = seg.text.split(/\s+/).filter(Boolean);
+    const total = toks.reduce((n, t) => n + t.length + 1, 0) || 1;
+    let t = seg.start;
+    return toks.map((tok) => {
+      const d = ((seg.end - seg.start) * (tok.length + 1)) / total;
+      const w = { start: t, end: t + d, text: tok };
+      t += d;
+      return w;
+    });
   }
   const SPEAKER_COLORS = ['#2f6fdf', '#c2410c', '#7c3aed', '#0f766e', '#be185d', '#4d7c0f'];
   function speaker(id) {
