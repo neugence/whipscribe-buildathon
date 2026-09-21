@@ -1,0 +1,10 @@
+# secrets and local state never go in the repo
+.env
+.env.*
+!.env.example
+data/
+# build output and dependencies
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
