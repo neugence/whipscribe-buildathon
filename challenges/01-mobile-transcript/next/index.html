@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhipScribe — Challenge 01 Next Pass · Princy Chauhan</title>
+  <style>
+    /* ─── Reset & tokens ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:         #0f0f0f;
+      --surface:    #1a1a1a;
+      --surface2:   #242424;
+      --border:     #2e2e2e;
+      --text:       #f0f0f0;
+      --text2:      #9a9a9a;
+      --text3:      #555;
+      --accent:     #22c55e;
+      --accent-dim: rgba(34,197,94,.15);
+      --accent-bg:  #052e16;
+      --danger:     #ef4444;
+      --radius:     12px;
+      --radius-sm:  8px;
+      --player-h:   72px;
+      --banner-h:   40px;
+    }
+    html, body {
+      background: #0a0a0a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Page layout ─────────────────────────────────────────── */
+    .page-header {
+      text-align: center;
+      padding: 40px 24px 8px;
+    }
+    .page-header h1 { font-size: 20px; font-weight: 700; color: var(--text); }
+    .page-header p  { font-size: 13px; color: var(--text2); margin-top: 6px; }
+
+    .section {
+      padding: 40px 24px 0;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-label span {
+      color: var(--accent);
+    }
+
+    /* ─── Before / after row ──────────────────────────────────── */
+    .ba-row {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+      align-items: flex-start;
+    }
+    .ba-col { display: flex; flex-direction: column; align-items: center; }
+    .ba-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    .ba-tag.before { background: #2a1515; color: #f87171; }
+    .ba-tag.after  { background: var(--accent-bg); color: var(--accent); }
+    .ba-note {
+      max-width: 340px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      border-left: 2px solid var(--border);
+    }
+    .ba-note.change { border-left-color: var(--accent); }
+    .ba-arrow {
+      font-size: 28px;
+      color: var(--text3);
+      align-self: center;
+      padding: 0 4px;
+    }
+
+    /* ─── Phone frame ─────────────────────────────────────────── */
+    .phone {
+      width: 375px;
+      height: 780px;
+      background: var(--bg);
+      border-radius: 36px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid #2a2a2a;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.7);
+      flex-shrink: 0;
+    }
+    .phone.w320 { width: 320px; }
+    .phone.before-phone { border-color: #3a2020; }
+    .phone.after-phone  { border-color: #1a3a1a; }
+
+    /* ─── Status bar ──────────────────────────────────────────── */
+    .sb {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 20px 6px;
+      font-size: 12px; font-weight: 600; color: var(--text);
+      flex-shrink: 0;
+    }
+    .sb-time { font-size: 14px; font-weight: 700; }
+    .sb-icons { display: flex; gap: 5px; align-items: center; font-size: 11px; }
+
+    /* ─── Header ──────────────────────────────────────────────── */
+    .hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 12px 8px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 6px;
+    }
+    .hdr-back {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--surface2); border: none;
+      color: var(--text); font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .hdr-title {
+      flex: 1; text-align: center;
+      font-size: 14px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hdr-title.sm { font-size: 12px; color: var(--text2); }
+    .hdr-acts { display: flex; gap: 3px; flex-shrink: 0; }
+    .ibtn {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--surface2); border: none;
+      color: var(--text); font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .ibtn:active { background: var(--border); }
+    .ibtn.active-icon { background: var(--accent-bg); color: var(--accent); }
+    .ibtn.dim { opacity: .3; pointer-events: none; }
+
+    /* ─── BEFORE: double header row ──────────────────────────── */
+    .before-hdr-row1 {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 14px 4px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .before-hdr-row2 {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 14px 6px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      font-size: 13px; color: var(--text2);
+    }
+
+    /* ─── Tabs ────────────────────────────────────────────────── */
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .tab {
+      flex: 1; padding: 9px 4px;
+      font-size: 12px; font-weight: 500; color: var(--text2);
+      text-align: center; cursor: pointer;
+      border: none; background: none;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab.dim { opacity: .4; }
+
+    /* ─── Content scroll ──────────────────────────────────────── */
+    .content {
+      flex: 1; overflow-y: auto; padding: 14px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .content::-webkit-scrollbar { display: none; }
+
+    /* ─── Transcript lines ────────────────────────────────────── */
+    .spk-block { margin-bottom: 18px; }
+    .spk-name {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text2); margin-bottom: 4px;
+    }
+    .spk-name.s1 { color: #60a5fa; }
+    .spk-name.s2 { color: #f472b6; }
+    .spk-name.s3 { color: #a78bfa; }
+    .spk-name.s4 { color: #34d399; }
+    .tline {
+      display: flex; gap: 8px; margin-bottom: 8px;
+      cursor: pointer; border-radius: 6px;
+      padding: 2px 0;
+    }
+    .tline:active { background: var(--surface2); }
+    .tline.playing { }
+    .ts {
+      font-size: 10px; color: var(--text3);
+      min-width: 32px; padding-top: 3px;
+      font-variant-numeric: tabular-nums; flex-shrink: 0;
+    }
+    .tline.playing .ts { color: var(--accent); }
+    .ttext {
+      font-size: 14px; line-height: 1.6; color: var(--text); flex: 1;
+      text-align: left; /* FIX: was justify */
+    }
+    .tline.playing .ttext { color: var(--accent); }
+
+    /* ─── BEFORE: justified text ──────────────────────────────── */
+    .ttext-before {
+      font-size: 14px; line-height: 1.6; color: var(--text); flex: 1;
+      text-align: justify;
+    }
+
+    /* ─── Search highlight ────────────────────────────────────── */
+    .hl { background: rgba(34,197,94,.3); border-radius: 3px; padding: 0 2px; }
+    .hl-current { background: rgba(34,197,94,.55); border-radius: 3px; padding: 0 2px; outline: 1px solid var(--accent); }
+
+    /* ─── Preview banner — slim (after) ──────────────────────── */
+    .preview-banner {
+      background: var(--accent-bg);
+      border-top: 1px solid rgba(34,197,94,.2);
+      padding: 0 14px; height: var(--banner-h);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .preview-banner span { font-size: 11px; color: var(--accent); font-weight: 500; }
+    .preview-banner a {
+      font-size: 11px; color: var(--accent); font-weight: 700;
+      text-decoration: none; background: var(--accent-dim);
+      padding: 3px 10px; border-radius: 20px;
+    }
+
+    /* ─── BEFORE: tall keep-reading bar ──────────────────────── */
+    .before-keepreading {
+      background: #052e16;
+      border-top: 1px solid rgba(34,197,94,.3);
+      padding: 10px 14px;
+      flex-shrink: 0;
+    }
+    .before-keepreading .kr-text {
+      font-size: 12px; color: var(--accent); font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .before-keepreading .kr-btn {
+      width: 100%; background: var(--accent); color: #000;
+      font-size: 13px; font-weight: 700;
+      padding: 9px; border-radius: 8px; border: none; cursor: pointer;
+    }
+
+    /* ─── Player ──────────────────────────────────────────────── */
+    .player {
+      height: var(--player-h);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      justify-content: center; padding: 0 14px;
+      flex-shrink: 0; gap: 5px;
+    }
+    .player.dim { opacity: .35; pointer-events: none; }
+    .p-track { display: flex; align-items: center; gap: 7px; }
+    .p-time {
+      font-size: 10px; color: var(--text3);
+      font-variant-numeric: tabular-nums; min-width: 32px;
+    }
+    .p-time.r { text-align: right; }
+    .pbar {
+      flex: 1; height: 3px; background: var(--border);
+      border-radius: 2px; position: relative; cursor: pointer;
+    }
+    .pfill { height: 100%; background: var(--accent); border-radius: 2px; }
+    .pthumb {
+      position: absolute; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 11px; height: 11px;
+      background: #fff; border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,.4);
+    }
+    .p-ctrls {
+      display: flex; align-items: center;
+      justify-content: center; gap: 18px;
+    }
+    .cbtn {
+      background: none; border: none; color: var(--text2);
+      font-size: 17px; cursor: pointer;
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cbtn.play {
+      width: 38px; height: 38px;
+      background: var(--accent); border-radius: 50%;
+      color: #000; font-size: 14px;
+    }
+    .cspeed {
+      font-size: 10px; font-weight: 700; color: var(--text2);
+      background: none; border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 5px; cursor: pointer;
+    }
+
+    /* ─── Bottom sheet (unified style for all 3 panels) ──────── */
+    .overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.55);
+      display: flex; flex-direction: column;
+      justify-content: flex-end; z-index: 10;
+    }
+    .sheet {
+      background: var(--surface);
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 0 0 28px;
+      max-height: 88%; overflow-y: auto;
+    }
+    .sheet::-webkit-scrollbar { display: none; }
+    .s-handle {
+      width: 34px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 10px auto 14px;
+    }
+    .s-title {
+      font-size: 12px; font-weight: 700; color: var(--text2);
+      text-transform: uppercase; letter-spacing: .07em;
+      padding: 0 16px 10px;
+    }
+    .s-group { border-top: 1px solid var(--border); padding: 6px 0; }
+    .s-glabel {
+      font-size: 10px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .07em;
+      padding: 4px 16px 5px;
+    }
+    .s-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 16px; cursor: pointer;
+      font-size: 14px; color: var(--text);
+    }
+    .s-row:active { background: var(--surface2); }
+    .s-row.danger { color: var(--danger); }
+    .s-icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+    .s-body { flex: 1; }
+    .s-desc { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    .s-badge {
+      font-size: 10px; background: var(--surface2); color: var(--text2);
+      padding: 2px 7px; border-radius: 20px;
+    }
+
+    /* ─── Format chips ────────────────────────────────────────── */
+    .chips { display: flex; gap: 7px; padding: 4px 16px 10px; flex-wrap: wrap; }
+    .chip {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border); cursor: pointer;
+    }
+    .chip.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+
+    /* ─── Toggles ─────────────────────────────────────────────── */
+    .tog-row {
+      display: flex; align-items: center;
+      justify-content: space-between; padding: 10px 16px;
+    }
+    .tog-lbl { font-size: 13px; color: var(--text); }
+    .tog-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    .tog {
+      width: 42px; height: 24px; background: var(--accent);
+      border-radius: 12px; position: relative; flex-shrink: 0;
+    }
+    .tog::after {
+      content: ''; position: absolute;
+      width: 18px; height: 18px; background: #fff;
+      border-radius: 50%; top: 3px; right: 3px;
+    }
+    .tog.off { background: var(--border); }
+    .tog.off::after { right: auto; left: 3px; }
+    .s-cta { padding: 10px 16px 0; }
+
+    /* ─── Search bar ──────────────────────────────────────────── */
+    .search-bar {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 12px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .s-input {
+      flex: 1; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); font-size: 13px; padding: 7px 10px; outline: none;
+    }
+    .s-input::placeholder { color: var(--text3); }
+    .s-count { font-size: 11px; color: var(--text2); white-space: nowrap; }
+    .s-nav { display: flex; gap: 2px; }
+    .s-nav button {
+      background: none; border: none; color: var(--text2);
+      font-size: 14px; cursor: pointer; padding: 3px 5px;
+    }
+    .s-close {
+      background: none; border: none; color: var(--text2);
+      font-size: 13px; cursor: pointer; padding: 3px 6px;
+    }
+
+    /* ─── Settings ────────────────────────────────────────────── */
+    .set-section { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .set-label {
+      font-size: 10px; font-weight: 700; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .07em; padding: 4px 16px 7px;
+    }
+    .sz-row { display: flex; gap: 7px; padding: 0 16px 10px; }
+    .sz-btn {
+      flex: 1; padding: 9px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); cursor: pointer; text-align: center;
+    }
+    .sz-btn.on { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+
+    /* ─── Preview boundary inline ─────────────────────────────── */
+    .preview-boundary {
+      text-align: center; padding: 18px 14px;
+      border-top: 1px solid var(--border); margin-top: 6px;
+    }
+    .preview-boundary p {
+      font-size: 12px; color: var(--text2); margin-bottom: 12px; line-height: 1.5;
+    }
+    .btn-primary {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      background: var(--accent); color: #000;
+      font-size: 13px; font-weight: 700;
+      padding: 11px 20px; border-radius: var(--radius);
+      border: none; cursor: pointer; width: 100%;
+    }
+    .btn-sec {
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; color: var(--text2);
+      font-size: 12px; padding: 9px;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      cursor: pointer; width: 100%; margin-top: 7px;
+    }
+
+    /* ─── Skeleton ────────────────────────────────────────────── */
+    @keyframes shimmer {
+      0%,100% { opacity:.35; } 50% { opacity:.7; }
+    }
+    .skel { background: var(--surface2); border-radius: 4px; animation: shimmer 1.4s ease-in-out infinite; }
+    .sk-line { height: 13px; margin-bottom: 9px; }
+    .sk-s { width: 38%; } .sk-m { width: 68%; }
+    .sk-l { width: 90%; } .sk-f { width: 100%; }
+
+    .proc-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 11px 13px;
+      margin-bottom: 18px; display: flex; align-items: flex-start; gap: 11px;
+    }
+    .proc-icon { font-size: 18px; margin-top: 1px; }
+    .proc-body { flex: 1; }
+    .proc-title { font-size: 12px; font-weight: 600; color: var(--text); }
+    .proc-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .proc-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 7px; overflow: hidden; }
+    @keyframes ppulse { 0%,100% { width:30%; } 50% { width:55%; } }
+    .proc-fill { height:100%; background: var(--accent); border-radius: 2px; animation: ppulse 2s ease-in-out infinite; }
+
+    /* ─── Error state ─────────────────────────────────────────── */
+    .err-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 40px 20px; text-align: center; flex: 1;
+    }
+    .err-icon { font-size: 36px; margin-bottom: 14px; }
+    .err-title { font-size: 16px; font-weight: 700; margin-bottom: 7px; }
+    .err-sub { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+    .err-acts { display: flex; flex-direction: column; gap: 7px; width: 100%; }
+
+    /* ─── Text selection bubble ───────────────────────────────── */
+    .sel-bubble {
+      position: absolute;
+      bottom: calc(var(--player-h) + var(--banner-h) + 8px);
+      left: 50%; transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 4px;
+      display: flex; gap: 2px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      z-index: 5; white-space: nowrap;
+    }
+    .sel-btn {
+      background: none; border: none; color: var(--text);
+      font-size: 12px; font-weight: 500; padding: 6px 10px;
+      border-radius: var(--radius-sm); cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .sel-btn:active { background: var(--surface2); }
+    .sel-btn .si { font-size: 14px; }
+    .sel-divider { width: 1px; background: var(--border); margin: 4px 0; }
+    .sel-line { background: rgba(59,130,246,.25); border-radius: 3px; }
+
+    /* ─── Not-on-this-account ─────────────────────────────────── */
+    .not-yours {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 40px 20px; text-align: center; flex: 1;
+    }
+    .ny-icon { font-size: 36px; margin-bottom: 14px; }
+    .ny-title { font-size: 15px; font-weight: 700; margin-bottom: 7px; }
+    .ny-sub { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+    .ny-email {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 14px;
+      font-size: 13px; color: var(--text2);
+      width: 100%; text-align: left; margin-bottom: 14px;
+    }
+    .ny-email strong { color: var(--text); display: block; font-size: 14px; }
+
+    /* ─── Footer spacer ───────────────────────────────────────── */
+    .page-footer { height: 60px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Challenge 01 — Next pass</h1>
+  <p>Transcript reader on a phone · Princy Chauhan · Current vs. proposed, side by side</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION A — Default reader + bottom area
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">A · Default reader — <span>bottom of screen (biggest change)</span></div>
+
+  <div class="ba-row">
+
+    <!-- BEFORE -->
+    <div class="ba-col">
+      <span class="ba-tag before">Before</span>
+      <div class="phone before-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <!-- double header row -->
+        <div class="before-hdr-row1">
+          <button class="hdr-back">←</button>
+          <span style="font-size:14px;font-weight:600;">Product kickoff — Jun 2025</span>
+          <div style="display:flex;gap:3px;">
+            <button class="ibtn">🔍</button>
+            <button class="ibtn">⬇</button>
+          </div>
+        </div>
+        <div class="before-hdr-row2">
+          <span>Transcript</span><span>Summary</span><span>Chat</span><span>···</span>
+        </div>
+        <div class="content">
+          <div class="spk-block">
+            <div class="spk-name s1">Sarah · 0:00</div>
+            <div class="tline playing"><span class="ts">0:04</span><span class="ttext-before">Alright, let's get started. We've got a lot to cover today with the Q3 roadmap and upcoming release.</span></div>
+            <div class="tline"><span class="ts">0:18</span><span class="ttext-before">First item is the onboarding redesign. James, do you want to take that one?</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s2">James · 0:31</div>
+            <div class="tline"><span class="ts">0:31</span><span class="ttext-before">Sure. So the current onboarding flow drops about 60% of users at the account step.</span></div>
+          </div>
+        </div>
+        <!-- tall keep-reading bar -->
+        <div class="before-keepreading">
+          <div class="kr-text">🔒 Keep reading — sign up free</div>
+          <button class="kr-btn">Create free account →</button>
+        </div>
+        <!-- player -->
+        <div class="player">
+          <div class="p-track">
+            <span class="p-time">1:52</span>
+            <div class="pbar"><div class="pfill" style="width:28%"></div><div class="pthumb" style="left:28%"></div></div>
+            <span class="p-time r">6:34</span>
+          </div>
+          <div class="p-ctrls">
+            <button class="cbtn">⟨⟨15</button>
+            <button class="cbtn play">▶</button>
+            <button class="cbtn">15⟩⟩</button>
+            <button class="cspeed">1×</button>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note">Tall green bar + full-width button takes ~72 px permanently. Text is justify-aligned — gaps at 375 px narrow line widths.</div>
+    </div>
+
+    <div class="ba-arrow">→</div>
+
+    <!-- AFTER -->
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr">
+          <button class="hdr-back">←</button>
+          <span class="hdr-title">Product kickoff — Jun 2025</span>
+          <div class="hdr-acts">
+            <button class="ibtn">🔍</button>
+            <button class="ibtn">⬇</button>
+            <button class="ibtn">···</button>
+          </div>
+        </div>
+        <div class="tabs">
+          <button class="tab on">Transcript</button>
+          <button class="tab">Summary</button>
+          <button class="tab">Chat</button>
+        </div>
+        <div class="content">
+          <div class="spk-block">
+            <div class="spk-name s1">Sarah · 0:00</div>
+            <div class="tline playing"><span class="ts">0:04</span><span class="ttext">Alright, let's get started. We've got a lot to cover today with the Q3 roadmap and upcoming release.</span></div>
+            <div class="tline"><span class="ts">0:18</span><span class="ttext">First item is the onboarding redesign. James, do you want to take that one?</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s2">James · 0:31</div>
+            <div class="tline"><span class="ts">0:31</span><span class="ttext">Sure. So the current onboarding flow drops about 60% of users at the account step.</span></div>
+            <div class="tline"><span class="ts">0:48</span><span class="ttext">The proposal is to move billing details out of the signup path entirely.</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s3">Priya · 1:02</div>
+            <div class="tline"><span class="ts">1:02</span><span class="ttext">That makes sense. The friction at step 3 is killing us. I'd also add social login.</span></div>
+          </div>
+        </div>
+        <!-- slim 40px banner -->
+        <div class="preview-banner">
+          <span>Free preview · 48% read</span>
+          <a href="#">Sign up free →</a>
+        </div>
+        <div class="player">
+          <div class="p-track">
+            <span class="p-time">1:52</span>
+            <div class="pbar"><div class="pfill" style="width:28%"></div><div class="pthumb" style="left:28%"></div></div>
+            <span class="p-time r">6:34</span>
+          </div>
+          <div class="p-ctrls">
+            <button class="cbtn">⟨⟨15</button>
+            <button class="cbtn play">▶</button>
+            <button class="cbtn">15⟩⟩</button>
+            <button class="cspeed">1×</button>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note change">40 px slim banner replaces 72 px bar. Tabs move into header row — one header row instead of two. Text is left-aligned.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION B — More menu
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">B · More menu — <span>9 flat items → 4 grouped items</span></div>
+  <div class="ba-row">
+
+    <!-- BEFORE -->
+    <div class="ba-col">
+      <span class="ba-tag before">Before</span>
+      <div class="phone before-phone" style="position:relative;">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn">🔍</button><button class="ibtn">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="content" style="opacity:.3;pointer-events:none;"><div class="tline"><span class="ts">0:04</span><span class="ttext">Alright, let's get started…</span></div></div>
+        <div class="preview-banner"><span>Free preview</span><a>Sign up →</a></div>
+        <div class="player dim"><div class="p-track"><span class="p-time">1:52</span><div class="pbar"><div class="pfill" style="width:28%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button></div></div>
+        <div class="overlay">
+          <div class="sheet">
+            <div class="s-handle"></div>
+            <!-- flat 9-item list -->
+            <div class="s-row"><span class="s-icon">🏠</span><div class="s-body">Home</div></div>
+            <div class="s-row"><span class="s-icon">📋</span><div class="s-body">Copy transcript</div></div>
+            <div class="s-row"><span class="s-icon">⚙️</span><div class="s-body">Reading settings</div></div>
+            <div class="s-row"><span class="s-icon">🕐</span><div class="s-body">Timestamps: shown</div></div>
+            <div class="s-row"><span class="s-icon">🧠</span><div class="s-body">Quiz me</div></div>
+            <div class="s-row"><span class="s-icon">👤</span><div class="s-body">Sign in</div></div>
+            <div class="s-row"><span class="s-icon">✏️</span><div class="s-body">Rename</div></div>
+            <div class="s-row"><span class="s-icon">ℹ️</span><div class="s-body">File details</div></div>
+            <div class="s-row danger"><span class="s-icon">🗑️</span><div class="s-body">Delete recording</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note">9 items, no grouping, no hierarchy. Delete sits next to Sign in. Home duplicates the back button.</div>
+    </div>
+
+    <div class="ba-arrow">→</div>
+
+    <!-- AFTER -->
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone" style="position:relative;">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn">🔍</button><button class="ibtn">⬇</button><button class="ibtn active-icon">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="content" style="opacity:.3;pointer-events:none;"><div class="tline"><span class="ts">0:04</span><span class="ttext">Alright, let's get started…</span></div></div>
+        <div class="preview-banner"><span>Free preview</span><a>Sign up →</a></div>
+        <div class="player dim"><div class="p-track"><span class="p-time">1:52</span><div class="pbar"><div class="pfill" style="width:28%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button></div></div>
+        <div class="overlay">
+          <div class="sheet">
+            <div class="s-handle"></div>
+            <div class="s-group">
+              <div class="s-glabel">Reading</div>
+              <div class="s-row"><span class="s-icon">⚙️</span><div class="s-body"><div>Reading settings</div><div class="s-desc">Text size, speakers, timestamps</div></div></div>
+              <div class="s-row"><span class="s-icon">📋</span><div class="s-body">Copy full transcript</div></div>
+            </div>
+            <div class="s-group">
+              <div class="s-glabel">File</div>
+              <div class="s-row"><span class="s-icon">✏️</span><div class="s-body">Rename</div></div>
+              <div class="s-row"><span class="s-icon">ℹ️</span><div class="s-body">File details</div></div>
+            </div>
+            <div class="s-group">
+              <div class="s-row danger"><span class="s-icon">🗑️</span><div class="s-body">Delete recording</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note change">4 items in 3 groups. Quiz me → Summary tab. Sign in → preview boundary. Home → removed (back button does this). Danger is visually isolated.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION C — Search (inline highlight, no result card)
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">C · Search — <span>inline highlight, no duplicate result card</span></div>
+  <div class="ba-row">
+
+    <!-- BEFORE -->
+    <div class="ba-col">
+      <span class="ba-tag before">Before</span>
+      <div class="phone before-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn active-icon">🔍</button><button class="ibtn">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="search-bar"><input class="s-input" value="onboarding" /><span class="s-count">1/1</span></div>
+        <div class="content">
+          <!-- duplicate result card at top -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;">RESULT 1 OF 1 · 0:31</div>
+            <div style="font-size:13px;color:var(--text);">…current <span class="hl">onboarding</span> flow drops…</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px;">James · 0:31</div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s1">Sarah · 0:00</div>
+            <div class="tline"><span class="ts">0:04</span><span class="ttext-before">Alright, let's get started with the Q3 roadmap.</span></div>
+            <div class="tline"><span class="ts">0:18</span><span class="ttext-before">First item is the <span class="hl">onboarding</span> redesign.</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s2">James · 0:31</div>
+            <div class="tline"><span class="ts">0:31</span><span class="ttext-before">So the current <span class="hl">onboarding</span> flow drops 60% of users.</span></div>
+          </div>
+        </div>
+        <div class="preview-banner"><span>Free preview</span><a>Sign up →</a></div>
+        <div class="player"><div class="p-track"><span class="p-time">0:31</span><div class="pbar"><div class="pfill" style="width:8%"></div><div class="pthumb" style="left:8%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button><button class="cspeed">1×</button></div></div>
+      </div>
+      <div class="ba-note">Result card at top duplicates the match already visible in the transcript below it. Two views of the same content.</div>
+    </div>
+
+    <div class="ba-arrow">→</div>
+
+    <!-- AFTER -->
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn active-icon">🔍</button><button class="ibtn">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="search-bar">
+          <input class="s-input" value="onboarding" />
+          <span class="s-count">2 / 3</span>
+          <div class="s-nav"><button>↑</button><button>↓</button></div>
+          <button class="s-close">✕</button>
+        </div>
+        <div class="content">
+          <div class="spk-block">
+            <div class="spk-name s1">Sarah · 0:00</div>
+            <div class="tline"><span class="ts">0:04</span><span class="ttext">Alright, let's get started with the Q3 roadmap.</span></div>
+            <div class="tline"><span class="ts">0:18</span><span class="ttext">First item is the <span class="hl">onboarding</span> redesign.</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s2">James · 0:31</div>
+            <!-- current match highlighted in-place -->
+            <div class="tline playing"><span class="ts">0:31</span><span class="ttext">So the current <span class="hl-current">onboarding</span> flow drops 60% of users.</span></div>
+            <div class="tline"><span class="ts">0:48</span><span class="ttext">The proposal to remove <span class="hl">onboarding</span> friction is solid.</span></div>
+          </div>
+        </div>
+        <div class="preview-banner"><span>Free preview</span><a>Sign up →</a></div>
+        <div class="player"><div class="p-track"><span class="p-time">0:31</span><div class="pbar"><div class="pfill" style="width:8%"></div><div class="pthumb" style="left:8%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button><button class="cspeed">1×</button></div></div>
+      </div>
+      <div class="ba-note change">No result card. Match highlighted in-place, view auto-scrolled to it. ↑↓ nav + counter in the search bar. Current match gets a stronger highlight.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION D — Download sheet (unified panel style)
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">D · Download — <span>pre-select last format, one-tap CTA</span></div>
+  <div class="ba-row">
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone" style="position:relative;">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn">🔍</button><button class="ibtn active-icon">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="content" style="opacity:.25;pointer-events:none;"><div class="tline"><span class="ts">0:04</span><span class="ttext">Alright, let's get started…</span></div></div>
+        <div class="preview-banner"><span>Free preview</span><a>Sign up →</a></div>
+        <div class="player dim"><div class="p-track"><span class="p-time">1:52</span><div class="pbar"><div class="pfill" style="width:28%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button></div></div>
+        <div class="overlay">
+          <div class="sheet">
+            <div class="s-handle"></div>
+            <div class="s-title">Download transcript</div>
+            <div class="chips">
+              <div class="chip on">.txt</div>
+              <div class="chip">.docx</div>
+              <div class="chip">.srt</div>
+              <div class="chip">.vtt</div>
+              <div class="chip">.pdf</div>
+            </div>
+            <div class="tog-row"><div><div class="tog-lbl">Include timestamps</div></div><div class="tog"></div></div>
+            <div class="tog-row"><div><div class="tog-lbl">Include speaker names</div></div><div class="tog"></div></div>
+            <div class="s-group">
+              <div class="s-glabel">Also export</div>
+              <div class="s-row"><span class="s-icon">📄</span><div class="s-body">Summary as .txt</div></div>
+              <div class="s-row"><span class="s-icon">💾</span><div class="s-body">Save to Google Drive</div></div>
+              <div class="s-row"><span class="s-icon">🌐</span><div class="s-body">Translated subtitles</div><span class="s-badge">Pro</span></div>
+            </div>
+            <div class="s-cta"><button class="btn-primary">⬇ Download .txt</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note change">Format chips pre-select last used. One "Download .txt" button — one tap for the most common case. Drive and subtitles grouped separately so they don't clutter the primary path.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION E — Reading settings (new: Show speakers toggle)
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">E · Reading settings — <span>added Show speakers + Highlight current line</span></div>
+  <div class="ba-row">
+    <div class="ba-col">
+      <span class="ba-tag before">Before</span>
+      <div class="phone before-phone" style="position:relative;">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn">🔍</button><button class="ibtn">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="content" style="opacity:.25;pointer-events:none;"></div>
+        <div class="preview-banner"><span>Free preview</span><a>Sign up →</a></div>
+        <div class="player dim"><div class="p-track"><span class="p-time">1:52</span><div class="pbar"><div class="pfill" style="width:28%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn play">▶</button></div></div>
+        <div class="overlay">
+          <div class="sheet">
+            <div class="s-handle"></div>
+            <div class="s-title">Reading settings</div>
+            <div class="tog-row"><div><div class="tog-lbl">Show timestamps</div></div><div class="tog"></div></div>
+            <div style="padding:0 16px 10px;">
+              <div class="s-glabel" style="padding:0 0 6px;">Text size</div>
+              <div class="sz-row">
+                <button class="sz-btn" style="font-size:11px;">A</button>
+                <button class="sz-btn on" style="font-size:14px;">A</button>
+                <button class="sz-btn" style="font-size:17px;">A</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note">Only 2 controls. No way to hide speaker names for a noisy meeting. No way to toggle playback highlighting.</div>
+    </div>
+
+    <div class="ba-arrow">→</div>
+
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone" style="position:relative;">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn">🔍</button><button class="ibtn">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="content" style="opacity:.25;pointer-events:none;"></div>
+        <div class="preview-banner"><span>Free preview</span><a>Sign up →</a></div>
+        <div class="player dim"><div class="p-track"><span class="p-time">1:52</span><div class="pbar"><div class="pfill" style="width:28%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn play">▶</button></div></div>
+        <div class="overlay">
+          <div class="sheet">
+            <div class="s-handle"></div>
+            <div class="s-title">Reading settings</div>
+            <div class="set-section">
+              <div class="set-label">Text size</div>
+              <div class="sz-row">
+                <button class="sz-btn" style="font-size:11px;">A</button>
+                <button class="sz-btn on" style="font-size:14px;">A</button>
+                <button class="sz-btn" style="font-size:17px;">A</button>
+              </div>
+            </div>
+            <div class="set-section">
+              <div class="set-label">Display</div>
+              <div class="tog-row"><div><div class="tog-lbl">Show timestamps</div></div><div class="tog"></div></div>
+              <div class="tog-row"><div><div class="tog-lbl">Show speaker names</div><div class="tog-sub">Labels each block by speaker</div></div><div class="tog"></div></div>
+              <div class="tog-row"><div><div class="tog-lbl">Highlight current line</div><div class="tog-sub">Follows playback</div></div><div class="tog off"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note change">3 controls in 2 sections. Show speakers — needed for meetings. Highlight current line — off by default, power-user opt-in.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION F — Preview boundary (inline CTA)
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">F · Preview boundary — <span>CTA inline at the right moment</span></div>
+  <div class="ba-row">
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn">🔍</button><button class="ibtn">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="content">
+          <div class="spk-block">
+            <div class="spk-name s1">Sarah · 4:58</div>
+            <div class="tline"><span class="ts">4:58</span><span class="ttext">That's the last item on the agenda. Does anyone have anything to add?</span></div>
+          </div>
+          <div class="preview-fade" style="position:relative;">
+            <div class="spk-block">
+              <div class="spk-name s2">James · 5:06</div>
+              <div class="tline"><span class="ts">5:06</span><span class="ttext">Just one thing — I'll send the updated spec doc by end of day.</span></div>
+            </div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(transparent,var(--bg));pointer-events:none;"></div>
+          </div>
+          <div class="preview-boundary">
+            <p>You've reached the end of your free preview.<br/>Sign up to read the full transcript.</p>
+            <button class="btn-primary">✦ Sign up free — 30 seconds</button>
+            <button class="btn-sec">Sign in to existing account</button>
+          </div>
+        </div>
+        <!-- no slim banner here — inline CTA replaces it at the boundary -->
+        <div class="player">
+          <div class="p-track">
+            <span class="p-time">5:06</span>
+            <div class="pbar"><div class="pfill" style="width:78%"></div><div class="pthumb" style="left:78%"></div></div>
+            <span class="p-time r">6:34</span>
+          </div>
+          <div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button><button class="cspeed">1×</button></div>
+        </div>
+      </div>
+      <div class="ba-note change">Full sign-up CTA appears only at the boundary — where it's contextually correct. The slim banner is absent here (no need to remind them twice).</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION G — Text selection (NEW — was missing)
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">G · Text selection — <span>new state (not in original)</span></div>
+  <div class="ba-row">
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone" style="position:relative;">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn">🔍</button><button class="ibtn">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab">Summary</button><button class="tab">Chat</button></div>
+        <div class="content">
+          <div class="spk-block">
+            <div class="spk-name s2">James · 0:31</div>
+            <div class="tline"><span class="ts">0:31</span><span class="ttext">Sure. So the current onboarding flow drops about 60% of users at the account step.</span></div>
+            <div class="tline playing">
+              <span class="ts">0:48</span>
+              <span class="ttext">The proposal is to move billing out of the <span class="sel-line">signup path entirely and ask only when the user hits</span> a limit.</span>
+            </div>
+            <div class="tline"><span class="ts">1:02</span><span class="ttext">That makes sense — we saw the same in A/B tests.</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s3">Priya · 1:15</div>
+            <div class="tline"><span class="ts">1:15</span><span class="ttext">I'd also suggest social login. It cut drop-off by half.</span></div>
+          </div>
+        </div>
+        <div class="preview-banner"><span>Free preview · 48% read</span><a>Sign up →</a></div>
+        <div class="player"><div class="p-track"><span class="p-time">0:48</span><div class="pbar"><div class="pfill" style="width:12%"></div><div class="pthumb" style="left:12%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button><button class="cspeed">1×</button></div></div>
+
+        <!-- selection action bubble -->
+        <div class="sel-bubble">
+          <button class="sel-btn"><span class="si">📋</span> Copy</button>
+          <div class="sel-divider"></div>
+          <button class="sel-btn"><span class="si">🔍</span> Search</button>
+          <div class="sel-divider"></div>
+          <button class="sel-btn"><span class="si">▶</span> Play from here</button>
+          <div class="sel-divider"></div>
+          <button class="sel-btn"><span class="si">✦</span> Ask AI</button>
+        </div>
+      </div>
+      <div class="ba-note change">Long-press a line → selection highlighted + action bubble above the player. 4 actions: Copy, Search, Play from here, Ask AI. Bubble dismisses on tap outside.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION H — 4 speakers at 320 px
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">H · Four speakers at 320 px — <span>colour-coded labels, compact timestamps</span></div>
+  <div class="ba-row">
+    <div class="ba-col">
+      <span class="ba-tag after">After · 320 px</span>
+      <div class="phone after-phone w320">
+        <div class="sb" style="padding:10px 16px 5px;"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>🔋</span></div></div>
+        <div class="hdr" style="padding:3px 10px 6px;">
+          <button class="hdr-back" style="width:30px;height:30px;font-size:13px;">←</button>
+          <span class="hdr-title" style="font-size:12px;">Product kickoff — Jun 2025</span>
+          <!-- at 320px: collapse 3 icons into one overflow button -->
+          <button class="ibtn" style="font-size:12px;">···</button>
+        </div>
+        <div class="tabs"><button class="tab on" style="font-size:11px;">Transcript</button><button class="tab" style="font-size:11px;">Summary</button><button class="tab" style="font-size:11px;">Chat</button></div>
+        <div class="content" style="padding:10px;">
+          <div class="spk-block">
+            <div class="spk-name s1">Sarah · 0:00</div>
+            <div class="tline playing"><span class="ts" style="min-width:28px;">0:04</span><span class="ttext" style="font-size:13px;">Alright, let's get started. Q3 roadmap first.</span></div>
+            <div class="tline"><span class="ts" style="min-width:28px;">0:18</span><span class="ttext" style="font-size:13px;">First up — onboarding redesign. James?</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s2">James · 0:31</div>
+            <div class="tline"><span class="ts" style="min-width:28px;">0:31</span><span class="ttext" style="font-size:13px;">Current flow drops 60% at account step. Proposal: remove billing from signup.</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s3">Priya · 1:02</div>
+            <div class="tline"><span class="ts" style="min-width:28px;">1:02</span><span class="ttext" style="font-size:13px;">Agree. Friction at step 3 is the main drop-off. Add social login too.</span></div>
+          </div>
+          <div class="spk-block">
+            <div class="spk-name s4">Marcus · 1:38</div>
+            <div class="tline"><span class="ts" style="min-width:28px;">1:38</span><span class="ttext" style="font-size:13px;">OAuth in two weeks. Session migration takes one more. Need a feature flag.</span></div>
+          </div>
+        </div>
+        <div class="preview-banner" style="height:36px;padding:0 10px;">
+          <span style="font-size:10px;">Free preview · 48%</span>
+          <a style="font-size:10px;padding:3px 8px;">Sign up →</a>
+        </div>
+        <div class="player" style="height:66px;padding:0 10px;">
+          <div class="p-track"><span class="p-time">1:38</span><div class="pbar"><div class="pfill" style="width:25%"></div><div class="pthumb" style="left:25%"></div></div><span class="p-time r">6:34</span></div>
+          <div class="p-ctrls" style="gap:12px;"><button class="cbtn" style="font-size:14px;">⟨⟨15</button><button class="cbtn play" style="width:34px;height:34px;">▶</button><button class="cbtn" style="font-size:14px;">15⟩⟩</button><button class="cspeed">1×</button></div>
+        </div>
+      </div>
+      <div class="ba-note change">At 320 px: 3 header icons collapse into a single ··· overflow button. Text size drops to 13 px. Timestamps to 10 px. 4 speaker colours remain distinct. Line heights tight but readable.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION I — Processing / loading skeleton (NEW)
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">I · Processing state — <span>new (completely missing in original)</span></div>
+  <div class="ba-row">
+    <div class="ba-col">
+      <span class="ba-tag after">After</span>
+      <div class="phone after-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">New recording · 12:04 PM</span><div class="hdr-acts"><button class="ibtn dim">🔍</button><button class="ibtn dim">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="tabs"><button class="tab on">Transcript</button><button class="tab dim">Summary</button><button class="tab dim">Chat</button></div>
+        <div class="content">
+          <div class="proc-card">
+            <span class="proc-icon">🎙️</span>
+            <div class="proc-body">
+              <div class="proc-title">Transcribing…</div>
+              <div class="proc-sub">Usually under 2 minutes · 6:34 recording</div>
+              <div class="proc-bar"><div class="proc-fill"></div></div>
+            </div>
+          </div>
+          <div class="spk-block"><div class="skel sk-line sk-s"></div><div class="skel sk-line sk-l"></div><div class="skel sk-line sk-f"></div><div class="skel sk-line sk-m"></div></div>
+          <div class="spk-block"><div class="skel sk-line sk-s"></div><div class="skel sk-line sk-f"></div><div class="skel sk-line sk-l"></div><div class="skel sk-line sk-m"></div><div class="skel sk-line sk-f"></div></div>
+          <div class="spk-block"><div class="skel sk-line sk-s"></div><div class="skel sk-line sk-m"></div><div class="skel sk-line sk-l"></div></div>
+        </div>
+        <div class="player dim"><div class="p-track"><span class="p-time">0:00</span><div class="pbar"><div class="pfill" style="width:0%"></div></div><span class="p-time r">6:34</span></div><div class="p-ctrls"><button class="cbtn">⟨⟨15</button><button class="cbtn play">▶</button><button class="cbtn">15⟩⟩</button><button class="cspeed">1×</button></div></div>
+      </div>
+      <div class="ba-note change">Status card sets expectation: "Usually under 2 minutes". Skeleton lines show content shape. Player and action icons disabled — nothing to act on yet. Summary and Chat tabs dimmed.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SECTION J — Load failure + Not on this account
+═══════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">J · Error states — <span>load failure + not on this account</span></div>
+  <div class="ba-row">
+
+    <div class="ba-col">
+      <span class="ba-tag after">Load failure</span>
+      <div class="phone after-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn dim">🔍</button><button class="ibtn dim">⬇</button><button class="ibtn">···</button></div></div>
+        <div class="err-state">
+          <div class="err-icon">⚠️</div>
+          <div class="err-title">Couldn't load transcript</div>
+          <div class="err-sub">Looks like a connection issue.<br/>Your recording is safe — nothing was lost.</div>
+          <div class="err-acts">
+            <button class="btn-primary">↺ Try again</button>
+            <button class="btn-sec">← Back to library</button>
+          </div>
+        </div>
+      </div>
+      <div class="ba-note change">Copy says "Your recording is safe" — addresses the first fear. Two clear recovery paths. Action icons greyed out.</div>
+    </div>
+
+    <div class="ba-col">
+      <span class="ba-tag after">Not on this account</span>
+      <div class="phone after-phone">
+        <div class="sb"><span class="sb-time">9:41</span><div class="sb-icons"><span>●●●●</span><span>WiFi</span><span>🔋</span></div></div>
+        <div class="hdr"><button class="hdr-back">←</button><span class="hdr-title">Product kickoff</span><div class="hdr-acts"><button class="ibtn dim">🔍</button><button class="ibtn dim">⬇</button><button class="ibtn dim">···</button></div></div>
+        <div class="not-yours">
+          <div class="ny-icon">🔒</div>
+          <div class="ny-title">This isn't on your account</div>
+          <div class="ny-sub">This transcript belongs to a different account. You're currently signed in as:</div>
+          <div class="ny-email"><strong>princy@example.com</strong>Personal account</div>
+          <button class="btn-primary" style="margin-bottom:8px;">Switch account</button>
+          <button class="btn-sec">← Back to library</button>
+        </div>
+      </div>
+      <div class="ba-note change">Shows which account is signed in. "Switch account" is the primary action — the likely intent. Back to library is secondary.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="page-footer"></div>
+</body>
+</html>
