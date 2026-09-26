@@ -48,9 +48,17 @@ async def clerk_webhook_handler(request: Request, db: Session = Depends(get_db))
 
     # Verify signature if WEBHOOK_SECRET is set
     if WEBHOOK_SECRET and WEBHOOK_SECRET != "whsec_sample_secret_key_for_clerk":
+        if not Webhook:
+            logger.error("Svix library is not installed")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Webhook verification library missing",
+            )
         try:
+            # Convert request.headers to dict mapping for Svix compatibility
+            headers_dict = dict(headers)
             wh = Webhook(WEBHOOK_SECRET)
-            payload = wh.verify(body, headers)
+            wh.verify(body, headers_dict)
         except WebhookVerificationError as e:
             logger.error(f"Clerk Webhook Verification Failed: {e}")
             raise HTTPException(
@@ -58,22 +66,22 @@ async def clerk_webhook_handler(request: Request, db: Session = Depends(get_db))
                 detail="Invalid Webhook signature",
             )
         except Exception as e:
-            logger.error(f"Clerk Webhook Error: {e}")
+            logger.error(f"Clerk Webhook Verification Error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid Webhook payload",
+                detail="Webhook verification failed",
             )
-    else:
-        # Fallback for local development testing without strict Svix signature requirement
-        import json
-        try:
-            payload = json.loads(body.decode("utf-8"))
-        except Exception as e:
-            logger.error(f"Clerk Webhook JSON decode error: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid JSON payload",
-            )
+
+    # Parse JSON body into payload dict
+    import json
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except Exception as e:
+        logger.error(f"Clerk Webhook JSON decode error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid JSON payload",
+        )
 
     if not isinstance(payload, dict) or not payload:
         logger.error(f"Clerk Webhook payload is not a non-empty dict: {payload}")
