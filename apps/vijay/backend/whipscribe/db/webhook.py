@@ -39,6 +39,12 @@ async def clerk_webhook_handler(request: Request, db: Session = Depends(get_db))
         )
 
     body = await request.body()
+    if not body:
+        logger.error("Clerk Webhook: Empty request body")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty request body",
+        )
 
     # Verify signature if WEBHOOK_SECRET is set
     if WEBHOOK_SECRET and WEBHOOK_SECRET != "whsec_sample_secret_key_for_clerk":
@@ -51,17 +57,44 @@ async def clerk_webhook_handler(request: Request, db: Session = Depends(get_db))
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid Webhook signature",
             )
+        except Exception as e:
+            logger.error(f"Clerk Webhook Error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Webhook payload",
+            )
     else:
         # Fallback for local development testing without strict Svix signature requirement
         import json
-        payload = json.loads(body.decode("utf-8"))
+        try:
+            payload = json.loads(body.decode("utf-8"))
+        except Exception as e:
+            logger.error(f"Clerk Webhook JSON decode error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON payload",
+            )
+
+    if not isinstance(payload, dict) or not payload:
+        logger.error(f"Clerk Webhook payload is not a non-empty dict: {payload}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or empty webhook payload",
+        )
 
     event_type = payload.get("type")
-    event_data = payload.get("data", {})
+    event_data = payload.get("data")
+    if not isinstance(event_data, dict):
+        event_data = {}
 
     logger.info(f"Clerk Webhook Received: Event '{event_type}' for ID '{event_data.get('id')}'")
 
     if event_type in ("user.created", "user.updated"):
+        if not event_data.get("id"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing user ID in webhook data",
+            )
         user = upsert_user_from_clerk(db, event_data)
         return {
             "status": "success",

@@ -94,7 +94,35 @@ class TestSecurityAndGuardrails(unittest.TestCase):
         user_id = verify_clerk_token(expired_token)
         self.assertIsNone(user_id)
 
+    def test_webhook_handles_null_or_empty_payload(self):
+        from fastapi.testclient import TestClient
+        from main import app
+
+        client = TestClient(app)
+        headers = {
+            "svix-id": "msg_test_123",
+            "svix-timestamp": "1234567890",
+            "svix-signature": "v1,dummy_signature",
+        }
+
+        # Test empty body
+        resp = client.post("/api/webhooks/clerk", headers=headers, content=b"")
+        self.assertEqual(resp.status_code, 400)
+
+        # Test null json payload
+        resp = client.post("/api/webhooks/clerk", headers=headers, content=b"null")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_webhook_missing_svix_headers(self):
+        from fastapi.testclient import TestClient
+        from main import app
+
+        client = TestClient(app)
+        resp = client.post("/api/webhooks/clerk", json={"type": "user.created"})
+        self.assertEqual(resp.status_code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
