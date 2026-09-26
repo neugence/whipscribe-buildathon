@@ -34,12 +34,27 @@ from whipscribe.agent import AgentOrchestrator, CallIntent
 from whipscribe.client import WhipScribeClient
 from whipscribe.types import TranscriptFormat, JobStatus
 
+import tempfile
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("callbrief-backend")
 
-# Ensure uploads directory exists
-UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# Ensure uploads directory exists (use /tmp on Vercel or read-only filesystems)
+is_serverless = os.getenv("VERCEL") or os.getenv("VERCEL_ENV") or "/var/task" in str(Path(__file__))
+if is_serverless:
+    UPLOAD_DIR = Path(tempfile.gettempdir()) / "uploads"
+else:
+    UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+
+try:
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    logger.warning(f"Could not create upload directory '{UPLOAD_DIR}': {e}")
+    UPLOAD_DIR = Path(tempfile.gettempdir()) / "uploads"
+    try:
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
 
 app = FastAPI(
     title="CallBrief Backend API",
@@ -57,7 +72,8 @@ app.add_middleware(
 )
 
 # Mount static upload files for serving audio previews if needed
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+if UPLOAD_DIR.exists():
+    app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Include Clerk webhook router
 app.include_router(webhook_router)
