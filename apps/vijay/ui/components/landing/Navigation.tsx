@@ -12,13 +12,13 @@ export function Navigation() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/40 transition-all duration-200">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Brand Mark */}
-        <a href="#" className="flex items-center gap-2.5 group">
+        <a href="#" className="flex items-center gap-3 group">
           <img
-            src="/logo-icon-sm.png"
+            src="/logo-icon-md.png"
             alt="CallBrief Logo"
-            className="w-6 h-6 object-contain group-hover:scale-105 transition-transform duration-200"
+            className="w-10 h-10 object-contain group-hover:scale-105 transition-transform duration-200"
           />
-          <span className="font-semibold text-foreground tracking-tight text-lg">
+          <span className="font-semibold text-foreground tracking-tight text-xl">
             CallBrief
           </span>
         </a>
