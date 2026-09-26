@@ -116,10 +116,11 @@ apps/vijay/
 
 ---
 
-## Live Deployments
+## Live Deployments & Demo
 
-- **Frontend Web App**: [https://whipscribe-buildathon-vijay.vercel.app](https://whipscribe-buildathon-vijay.vercel.app)
+- **Frontend Web App**: [https://callbrief-whipscribe.vercel.app](https://callbrief-whipscribe.vercel.app)
 - **Backend API Server**: [https://whipscribe-buildathon-nine.vercel.app](https://whipscribe-buildathon-nine.vercel.app)
+- **2-Minute Demo Video**: [https://youtu.be/V8GwHaY_z94](https://youtu.be/V8GwHaY_z94)
 
 ---
 
