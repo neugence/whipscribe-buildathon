@@ -13,4 +13,5 @@ svix>=1.20.0
 fastapi>=0.110.0
 uvicorn>=0.28.0
 pyjwt>=2.8.0
+python-multipart>=0.0.9
 
