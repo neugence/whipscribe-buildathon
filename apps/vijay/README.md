@@ -97,37 +97,48 @@ flowchart TD
 
 ```text
 apps/vijay/
-├── backend/
-│   ├── whipscribe/      # Python SDK client for WhipScribe API
-│   │   ├── _http.py     # HTTP transport layer
+├── backend/              # FastAPI Server + WhipScribe SDK + Database CRUD & Webhooks
+│   ├── whipscribe/      # Python SDK client for WhipScribe API & Agent Engine
+│   │   ├── agent/       # Intent router, guardrails & tool loop engine
+│   │   ├── db/          # PostgreSQL / SQLite models, CRUD & Clerk webhook sync
 │   │   ├── account.py   # Account & balance endpoints
 │   │   ├── clips.py     # Audio clips & transcription endpoints
 │   │   └── client.py    # Main WhipScribeClient entrypoint
-│   └── .env             # Backend environment settings
-├── frontend/
-│   ├── app/             # Next.js App Router (Landing, Workspace, SSO Callback)
-│   ├── components/      # UI primitives, AuthModal, Hero, Mocks, Motion components
-│   ├── data/            # Features, steps, and call type definitions
-│   └── lib/             # Utility helpers
-├── README.md
-└── scope.md             # Project scope & specifications
+│   ├── main.py          # FastAPI application routes
+│   └── requirements.txt # Python dependencies
+├── ui/                  # Next.js 16 Web Application (App Router + Tailwind CSS + GSAP)
+│   ├── app/             # App Router (Landing, Workspace Dashboard, Settings)
+│   ├── components/      # UI components (Hero, Workspace, Estimates, Auth, Drawers)
+│   └── public/          # Branding assets, 3D banner backgrounds & favicons
+├── README.md            # Problem statement, workflow & vision
+└── scope.md             # Detailed project specifications
 ```
+
+---
+
+## Live Deployments
+
+- **Frontend Web App**: [https://whipscribe-buildathon-vijay.vercel.app](https://whipscribe-buildathon-vijay.vercel.app)
+- **Backend API Server**: [https://whipscribe-buildathon-nine.vercel.app](https://whipscribe-buildathon-nine.vercel.app)
 
 ---
 
 ## How to run
 
-### Frontend Web App
+### 1. Frontend Web App
 ```bash
-cd apps/vijay/frontend
-npm install
-npm run dev
+cd apps/vijay/ui
+pnpm install
+pnpm dev
 ```
 
-### Backend WhipScribe Client
+### 2. Backend API Server
 ```bash
 cd apps/vijay/backend
-python -m pip install -r requirements.txt
+python -m venv venv
+.\venv\Scripts\activate   # On Windows
+pip install -r requirements.txt
+python -m uvicorn main:app --reload --port 8000
 ```
 
 ---
