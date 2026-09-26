@@ -55,12 +55,12 @@ class TestSecurityAndGuardrails(unittest.TestCase):
 
         self.assertEqual(ctx.exception.status_code, 401)
 
-    @patch.dict(os.environ, {"CLERK_SECRET_KEY": "sk_test_Wq3h1EOjfL1KjdymAlksTAGvClhGLOijON8e7HCSZ9"})
+    @patch.dict(os.environ, {"CLERK_SECRET_KEY": "mock_test_secret_key_placeholder_for_unittest_only"})
     def test_verify_clerk_token_extracts_user_id(self):
         import time, jwt
         from main import verify_clerk_token
 
-        # Create a valid Clerk JWT session token payload
+        # Create a valid Clerk JWT session token payload signed with test secret
         now = int(time.time())
         token = jwt.encode(
             {
@@ -69,13 +69,14 @@ class TestSecurityAndGuardrails(unittest.TestCase):
                 "iat": now,
                 "iss": "https://clerk.test.dev",
             },
-            "dummy_rsa_or_secret",
+            "mock_test_secret_key_placeholder_for_unittest_only",
             algorithm="HS256",
         )
 
         user_id = verify_clerk_token(token)
         self.assertEqual(user_id, "user_2r2yVL_test_freelancer")
 
+    @patch.dict(os.environ, {"CLERK_SECRET_KEY": "mock_test_secret_key_placeholder_for_unittest_only"})
     def test_verify_clerk_token_rejects_expired_token(self):
         import time, jwt
         from main import verify_clerk_token
@@ -87,13 +88,14 @@ class TestSecurityAndGuardrails(unittest.TestCase):
                 "exp": now - 3600,  # Expired 1 hour ago
                 "iat": now - 7200,
             },
-            "dummy_secret",
+            "mock_test_secret_key_placeholder_for_unittest_only",
             algorithm="HS256",
         )
 
         user_id = verify_clerk_token(expired_token)
         self.assertIsNone(user_id)
 
+    @patch.dict(os.environ, {"DEBUG": "true"})
     def test_webhook_handles_null_or_empty_payload(self):
         from fastapi.testclient import TestClient
         from main import app
@@ -113,6 +115,20 @@ class TestSecurityAndGuardrails(unittest.TestCase):
         resp = client.post("/api/webhooks/clerk", headers=headers, content=b"null")
         self.assertEqual(resp.status_code, 400)
 
+    @patch.dict(os.environ, {"DEBUG": "false", "ALLOW_UNAUTHENTICATED_DEV": "false", "WEBHOOK_SECRET": ""})
+    def test_webhook_rejected_in_production_without_secret(self):
+        from fastapi.testclient import TestClient
+        from main import app
+
+        client = TestClient(app)
+        headers = {
+            "svix-id": "msg_test_prod_123",
+            "svix-timestamp": "1234567890",
+            "svix-signature": "v1,dummy_signature",
+        }
+        resp = client.post("/api/webhooks/clerk", headers=headers, json={"type": "user.created"})
+        self.assertEqual(resp.status_code, 500)
+
     def test_webhook_missing_svix_headers(self):
         from fastapi.testclient import TestClient
         from main import app
@@ -121,6 +137,7 @@ class TestSecurityAndGuardrails(unittest.TestCase):
         resp = client.post("/api/webhooks/clerk", json={"type": "user.created"})
         self.assertEqual(resp.status_code, 400)
 
+    @patch.dict(os.environ, {"DEBUG": "true"})
     def test_webhook_handles_valid_clerk_user_created_payload(self):
         from fastapi.testclient import TestClient
         from main import app

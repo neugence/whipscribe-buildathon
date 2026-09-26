@@ -85,11 +85,15 @@ class AgentOrchestrator:
             logs.append(f"Intent overridden by user to: {override_intent.value}")
         else:
             logger.info("Orchestrator: Running RouterAgent for intent classification")
-            router_result = self.router.classify(transcript_text, client_history_summary=history_summary)
+            router_result = self.router.classify(
+                transcript_text,
+                client_history_summary=history_summary,
+                confidence_threshold=confidence_threshold,
+            )
             logs.append(f"Router classified intent as '{router_result.intent.value}' with confidence {router_result.confidence:.2f}")
 
         # 4. Check Confidence Guardrail
-        if router_result.needs_human_confirmation and not override_intent and router_result.confidence < confidence_threshold:
+        if router_result.needs_human_confirmation and not override_intent:
             logger.warning("Orchestrator: Intent confidence below threshold. Halting for user confirmation.")
             logs.append("Execution paused: low intent confidence requires user confirmation.")
             return OrchestrationResult(

@@ -63,7 +63,12 @@ class RouterAgent:
     def __init__(self, client_factory: Optional[VertexClientFactory] = None):
         self.factory = client_factory or VertexClientFactory()
 
-    def classify(self, transcript_text: str, client_history_summary: Optional[str] = None) -> RouterResult:
+    def classify(
+        self,
+        transcript_text: str,
+        client_history_summary: Optional[str] = None,
+        confidence_threshold: float = 0.70,
+    ) -> RouterResult:
         """Classifies a transcript text into a CallIntent."""
         prompt = f"### TRANSCRIPT TO CLASSIFY:\n{transcript_text}\n"
         if client_history_summary:
@@ -76,7 +81,7 @@ class RouterAgent:
             temperature=0.1,
         )
 
-        needs_confirmation = response.confidence < 0.75
+        needs_confirmation = response.confidence < confidence_threshold
 
         top_choices = [
             IntentChoice(

@@ -75,7 +75,8 @@ class HttpSession:
         self._backoff_base  = settings.api_backoff_base
 
         self._session = Session()
-        self._session.headers.update({"X-API-Key": self._api_key})
+        if self._api_key:
+            self._session.headers.update({"X-API-Key": self._api_key})
         if user_email:
             self._session.headers.update({"X-User-Email": user_email})
 
@@ -116,6 +117,11 @@ class HttpSession:
         Execute request with exponential-backoff retry on retryable codes.
         Injects timeout unless the caller overrides it.
         """
+        if not self._api_key:
+            raise exc.WhipScribeAuthenticationError(
+                "WHIPSCRIBE_API key is not configured. Please set WHIPSCRIBE_API environment variable or pass api_key to WhipScribeClient."
+            )
+
         kwargs.setdefault("timeout", self._timeout)
         url = self._url(path)
         last_exc: Optional[Exception] = None

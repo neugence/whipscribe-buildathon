@@ -20,18 +20,22 @@ class GuardrailValidator:
     """Enforces safety rules and data integrity checks on agent proposals."""
 
     @staticmethod
+    def verify_timestamp_exists(time_val: str, transcript_text: str) -> bool:
+        """Validates that a timestamp string exists in the transcript text."""
+        time_clean = (time_val or "").strip()
+        if not time_clean:
+            return False
+        return (time_clean in transcript_text) or (f"[{time_clean}]" in transcript_text)
+
+    @staticmethod
     def sanitize_proposal(proposal: AgentProposal, transcript_text: str) -> AgentProposal:
         """Filters out items that lack timestamps or fail verification according to strict 'no timestamp, no item' rule."""
         # 1. Verify requirements
         valid_requirements: List[RequirementItem] = []
         for req in proposal.requirements:
             time_val = (req.time or "").strip()
-            if not time_val:
-                logger.warning(f"Guardrail Drop: Requirement '{req.text}' dropped (lacks timestamp).")
-                continue
-            # If 00:00 provided, verify whether [00:00] or 00:00 is present in the transcript text
-            if time_val == "00:00" and "00:00" not in transcript_text:
-                logger.warning(f"Guardrail Drop: Requirement '{req.text}' dropped (unverified 00:00 timestamp).")
+            if not GuardrailValidator.verify_timestamp_exists(time_val, transcript_text):
+                logger.warning(f"Guardrail Drop: Requirement '{req.text}' dropped (unverified timestamp '{time_val}').")
                 continue
             valid_requirements.append(req)
         proposal.requirements = valid_requirements
@@ -40,11 +44,8 @@ class GuardrailValidator:
         valid_tasks: List[TaskItem] = []
         for task in proposal.tasks:
             time_val = (task.time or "").strip()
-            if not time_val:
-                logger.warning(f"Guardrail Drop: Task '{task.title}' dropped (lacks timestamp).")
-                continue
-            if time_val == "00:00" and "00:00" not in transcript_text:
-                logger.warning(f"Guardrail Drop: Task '{task.title}' dropped (unverified 00:00 timestamp).")
+            if not GuardrailValidator.verify_timestamp_exists(time_val, transcript_text):
+                logger.warning(f"Guardrail Drop: Task '{task.title}' dropped (unverified timestamp '{time_val}').")
                 continue
             valid_tasks.append(task)
         proposal.tasks = valid_tasks
@@ -53,11 +54,8 @@ class GuardrailValidator:
         valid_changes: List[ScopeChangeItem] = []
         for change in proposal.scope_changes:
             time_val = (change.time or "").strip()
-            if not time_val:
-                logger.warning(f"Guardrail Drop: Scope change dropped (lacks timestamp).")
-                continue
-            if time_val == "00:00" and "00:00" not in transcript_text:
-                logger.warning(f"Guardrail Drop: Scope change dropped (unverified 00:00 timestamp).")
+            if not GuardrailValidator.verify_timestamp_exists(time_val, transcript_text):
+                logger.warning(f"Guardrail Drop: Scope change dropped (unverified timestamp '{time_val}').")
                 continue
             valid_changes.append(change)
         proposal.scope_changes = valid_changes

@@ -66,7 +66,7 @@ class UserSubmission(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="submissions")
-    calls = relationship("Call", back_populates="submission")
+    calls = relationship("Call", back_populates="submission", cascade="all, delete-orphan")
 
 
 class Client(Base):
@@ -104,7 +104,7 @@ class Call(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     project_id = Column(String, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
-    user_submission_id = Column(String, ForeignKey("user_submissions.id", ondelete="SET NULL"), nullable=True)
+    user_submission_id = Column(String, ForeignKey("user_submissions.id", ondelete="CASCADE"), nullable=True)
     file_type = Column(String, default="call_recording")  # 'call_recording' | 'voice_note' | 'whatsapp_export'
     transcript_text = Column(Text, nullable=True)
     transcript_data = Column(JSON, nullable=True)

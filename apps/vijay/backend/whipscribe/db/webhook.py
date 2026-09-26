@@ -47,7 +47,20 @@ async def clerk_webhook_handler(request: Request, db: Session = Depends(get_db))
         )
 
     # Verify signature if WEBHOOK_SECRET is set
-    if WEBHOOK_SECRET and WEBHOOK_SECRET != "whsec_sample_secret_key_for_clerk":
+    is_dev_mode = (
+        os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
+        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "false").lower() in ("true", "1", "yes")
+    )
+
+    if not WEBHOOK_SECRET or WEBHOOK_SECRET == "whsec_sample_secret_key_for_clerk":
+        if not is_dev_mode:
+            logger.error("Clerk Webhook rejected: WEBHOOK_SECRET is not configured in production environment.")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="WEBHOOK_SECRET is required in production environment to verify webhook signatures.",
+            )
+        logger.warning("DEBUG MODE ACTIVE: Skipping Svix webhook signature verification.")
+    else:
         if not Webhook:
             logger.error("Svix library is not installed")
             raise HTTPException(

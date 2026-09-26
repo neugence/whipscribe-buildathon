@@ -7,15 +7,26 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:1234@localhost:5432/callbrief"
-)
+import os
+import logging
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-# On Vercel Serverless, if no external DATABASE_URL is set or points to localhost, fallback to SQLite in /tmp
+logger = logging.getLogger("callbrief-db")
+
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+
 is_vercel = os.getenv("VERCEL") or os.getenv("VERCEL_ENV")
-if is_vercel and ("localhost" in DATABASE_URL or "127.0.0.1" in DATABASE_URL):
-    DATABASE_URL = "sqlite:////tmp/callbrief.db"
+
+if not DATABASE_URL:
+    if is_vercel:
+        logger.warning(
+            "WARNING: DATABASE_URL is not set on Vercel. Falling back to temporary SQLite /tmp/callbrief.db. "
+            "Data will reset on serverless function recycles. Configure Postgres DATABASE_URL for permanent persistence."
+        )
+        DATABASE_URL = "sqlite:////tmp/callbrief.db"
+    else:
+        DATABASE_URL = "sqlite:///./callbrief.db"
 
 # Convert postgres:// or postgresql:// to explicit postgresql+psycopg2:// driver if needed
 if DATABASE_URL.startswith("postgres://"):

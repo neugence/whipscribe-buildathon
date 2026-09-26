@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Required
     # ------------------------------------------------------------------
-    whipscribe_api: str
+    whipscribe_api: str = ""
     """
     Your WhipScribe API key (``tk_...``).
     Set as ``WHIPSCRIBE_API=tk_...`` in ``backend/.env`` or as an env var.

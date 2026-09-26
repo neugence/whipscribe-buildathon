@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from whipscribe.db import Base, engine, get_db, crud, models, webhook_router
-from whipscribe.agent import AgentOrchestrator, CallIntent
+from whipscribe.agent import AgentOrchestrator, CallIntent, RouterResult
 from whipscribe.client import WhipScribeClient
 from whipscribe.types import TranscriptFormat, JobStatus
 
@@ -75,45 +75,49 @@ def verify_clerk_token(token: str) -> Optional[str]:
     """Parses and verifies Clerk JWT token, returning subject (User ID)."""
     import time
     try:
+        rsa_public_key = os.getenv("CLERK_PEM_PUBLIC_KEY") or os.getenv("CLERK_RSA_PUBLIC_KEY")
+        secret_key = os.getenv("CLERK_SECRET_KEY")
+        is_debug_mode = (
+            os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
+            or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "false").lower() in ("true", "1", "yes")
+        )
+
+        import jwt
         payload = None
 
-        # 1. Try PyJWT decoding if available
-        try:
-            import jwt
+        if rsa_public_key and rsa_public_key.startswith("-----BEGIN"):
+            try:
+                payload = jwt.decode(token, rsa_public_key, algorithms=["RS256"], options={"verify_exp": True})
+            except Exception as e:
+                logger.warning(f"Clerk JWT signature verification failed with RSA key: {e}")
+                return None
+        elif secret_key:
+            try:
+                payload = jwt.decode(token, secret_key, algorithms=["HS256", "RS256"], options={"verify_exp": True})
+            except Exception as e:
+                logger.warning(f"Clerk JWT signature verification failed with Secret key: {e}")
+                return None
+        elif is_debug_mode:
+            # In dev/debug mode only, allow decoding unverified token if no verification key is configured
             payload = jwt.decode(token, options={"verify_signature": False})
-        except Exception:
-            # 2. Fallback manual base64url JSON payload decoder
-            import base64, json
-            parts = token.split(".")
-            if len(parts) >= 2:
-                payload_b64 = parts[1] + "=" * (-len(parts[1]) % 4)
-                payload_bytes = base64.urlsafe_b64decode(payload_b64)
-                payload = json.loads(payload_bytes.decode("utf-8"))
+        else:
+            # In production, require signature verification key
+            logger.warning("Clerk JWT signature verification failed: No CLERK_PEM_PUBLIC_KEY or CLERK_SECRET_KEY configured in production.")
+            return None
 
         if not isinstance(payload, dict):
             return None
 
-        # 3. Check Token Expiration (exp)
+        # Check Token Expiration (exp)
         exp = payload.get("exp")
         if exp and isinstance(exp, (int, float)) and time.time() > exp:
             logger.warning("Clerk JWT token has expired.")
             return None
 
-        # 4. Extract Clerk User ID (sub)
+        # Extract Clerk User ID (sub)
         user_id = payload.get("sub")
         if not user_id or not isinstance(user_id, str):
             return None
-
-        # 5. Optional signature verification if RSA public key (PEM) is provided in environment
-        rsa_public_key = os.getenv("CLERK_PEM_PUBLIC_KEY") or os.getenv("CLERK_RSA_PUBLIC_KEY")
-        if rsa_public_key and rsa_public_key.startswith("-----BEGIN"):
-            try:
-                import jwt
-                verified = jwt.decode(token, rsa_public_key, algorithms=["RS256"], options={"verify_exp": True})
-                user_id = verified.get("sub")
-            except Exception as e:
-                logger.warning(f"Clerk JWT signature verification failed with RSA public key: {e}")
-                return None
 
         return user_id
     except Exception as e:
@@ -139,8 +143,8 @@ def get_current_user_id(
 
     # 2. Development Mode Fallback (gated behind DEBUG / ALLOW_UNAUTHENTICATED_DEV env vars)
     is_debug_mode = (
-        os.getenv("DEBUG", "true").lower() in ("true", "1", "yes")
-        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "true").lower() in ("true", "1", "yes")
+        os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
+        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "false").lower() in ("true", "1", "yes")
     )
 
     if not user_id and x_user_id:
@@ -274,28 +278,50 @@ def update_user_settings(
 async def upload_audio_file(
     file: UploadFile = File(...),
     source_type: str = Form("audio_file"),
+    consent_confirmed: bool = Form(True),
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Submits uploaded audio file directly to WhipScribe API for transcription without permanent server storage."""
+    if not consent_confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Recording consent must be confirmed before uploading audio files.",
+        )
+
     file_id = str(uuid.uuid4())
     suffix = Path(file.filename).suffix if file.filename else ".mp3"
 
     # Stream to temporary file for WhipScribe API upload
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = Path(tmp.name)
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = Path(tmp.name)
+    finally:
+        await file.close()
 
     job_id = None
     whip_status = "transcribing"
+    is_dev_mode = (
+        os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
+        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "false").lower() in ("true", "1", "yes")
+    )
+
     try:
         client = WhipScribeClient()
         job = client.transcribe.submit_file(str(tmp_path), language="en")
         job_id = job.job_id
         logger.info(f"Submitted file to WhipScribe API: Job ID '{job_id}'")
     except Exception as e:
-        logger.warning(f"WhipScribe API submission note: {e}. Falling back to simulation mode.")
-        job_id = f"job_sim_{file_id[:8]}"
+        if is_dev_mode:
+            logger.warning(f"DEBUG MODE ACTIVE: WhipScribe API submission note: {e}. Falling back to simulation mode.")
+            job_id = f"job_sim_{file_id[:8]}"
+        else:
+            logger.error(f"WhipScribe API submission failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"WhipScribe API transcription submission failed: {str(e)}",
+            )
     finally:
         # Immediately delete temporary file after sending to WhipScribe API
         if tmp_path.exists():
@@ -416,7 +442,13 @@ def get_submission_audio(
 
     job_id = sub.transcript_job_id
     backend_base = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
-    local_audio_url = f"{backend_base}{sub.source_location}" if sub.source_location else None
+
+    # Check if local audio file actually exists on disk before offering local fallback URL
+    local_audio_url = None
+    if sub.source_location and not sub.source_location.startswith("/tmp"):
+        raw_name = os.path.basename(sub.source_location)
+        if (Path("uploads") / raw_name).exists():
+            local_audio_url = f"{backend_base}/uploads/{raw_name}"
 
     # Query WhipScribe API playback URL if real job ID
     if job_id and not job_id.startswith("job_sim_"):
@@ -437,7 +469,7 @@ def get_submission_audio(
     return {
         "submission_id": sub.id,
         "audio_url": local_audio_url,
-        "source": "local",
+        "source": "local" if local_audio_url else "none",
         "expires_in": None,
         "local_fallback": local_audio_url,
     }
@@ -753,9 +785,16 @@ async def process_agent_call_stream(
                 user_name=user_name,
             )
         elif selected_intent == CallIntent.CHANGE_REQUEST:
+            previous_history = crud.get_previous_brief_for_project_or_client(
+                db=db,
+                user_id=user_id,
+                project_id=payload.project_id,
+                client_id=payload.client_id,
+            )
             proposal = await asyncio.to_thread(
                 orchestrator.playbooks.run_change_request,
                 transcript_text,
+                previous_brief_summary=previous_history,
                 hourly_rate=settings.hourly_rate,
                 currency=settings.currency,
                 message_tone=settings.message_tone,
