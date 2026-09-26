@@ -64,11 +64,23 @@ export function Hero() {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-screen flex flex-col justify-center pt-32 pb-20 px-6 max-w-5xl mx-auto border-b border-border/40"
+      className="relative w-full min-h-screen flex flex-col justify-center pt-32 pb-20 overflow-hidden border-b border-border/40"
     >
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-foreground/5 blur-[120px] pointer-events-none rounded-full" />
+      {/* 1. Background Image with 3D Illustration & Texture */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-45 scale-105 transform-gpu"
+        style={{ backgroundImage: `url('/banner_bg.png')` }}
+      />
 
-      <div className="flex flex-col items-center text-center space-y-8 z-10">
+      {/* 2. Dark Gradient & Vignette Overlay for Readability */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-background/90 via-background/65 to-background pointer-events-none" />
+      <div className="absolute inset-0 z-0 bg-background/30 backdrop-blur-[2px] pointer-events-none" />
+
+      {/* 3. Ambient Purple/Blue Glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-purple-600/15 blur-[140px] pointer-events-none rounded-full z-0" />
+
+      {/* Main Hero Content */}
+      <div className="relative z-10 max-w-5xl mx-auto px-6 flex flex-col items-center text-center space-y-8">
         <h1
           ref={headlineRef}
           className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-foreground max-w-3xl leading-[1.08]"

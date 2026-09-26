@@ -1,6 +1,5 @@
 import { Navigation } from "@/components/landing/Navigation";
 import { Hero } from "@/components/landing/Hero";
-import { BannerShowcase } from "@/components/landing/BannerShowcase";
 import { Problem } from "@/components/landing/Problem";
 import { Transformation } from "@/components/landing/Transformation";
 import { WorkspaceShowcase } from "@/components/landing/WorkspaceShowcase";
@@ -33,9 +32,6 @@ export default function Home() {
 
         {/* 06 — The Outcome */}
         <Outcome />
-
-        {/* Full Width Banner Showcase (Just before footer) */}
-        <BannerShowcase />
 
         {/* 07 — Final CTA & Footer */}
         <FinalCta />
