@@ -53,19 +53,19 @@ export function Outcome() {
           <span className="seq-step px-4 py-2 rounded bg-card border border-border text-foreground font-semibold">
             CALL
           </span>
-          <span className="seq-step text-muted-foreground/60">↓</span>
+          <span className="seq-step text-muted-foreground/60">→</span>
           <span className="seq-step px-4 py-2 rounded bg-card border border-border text-foreground font-semibold">
             BRIEF
           </span>
-          <span className="seq-step text-muted-foreground/60">↓</span>
+          <span className="seq-step text-muted-foreground/60">→</span>
           <span className="seq-step px-4 py-2 rounded bg-card border border-border text-foreground font-semibold">
             TASKS
           </span>
-          <span className="seq-step text-muted-foreground/60">↓</span>
+          <span className="seq-step text-muted-foreground/60">→</span>
           <span className="seq-step px-4 py-2 rounded bg-card border border-border text-foreground font-semibold">
             QUOTE
           </span>
-          <span className="seq-step text-muted-foreground/60">↓</span>
+          <span className="seq-step text-muted-foreground/60">→</span>
           <span className="seq-step px-4 py-2 rounded bg-card border border-border text-foreground font-semibold">
             CLIENT
           </span>

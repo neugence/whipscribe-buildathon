@@ -72,9 +72,11 @@ export function AuthShowcase() {
 
       {/* Brand Header */}
       <div className="flex items-center gap-2 z-10">
-        <div className="w-5 h-5 rounded-sm bg-foreground flex items-center justify-center text-background font-mono font-bold text-xs">
-          C
-        </div>
+        <img
+          src="/logo-icon-sm.png"
+          alt="CallBrief Logo"
+          className="w-5 h-5 object-contain"
+        />
         <span className="font-semibold text-foreground tracking-tight text-sm">
           CallBrief
         </span>

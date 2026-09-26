@@ -64,9 +64,11 @@ export function FinalCta() {
       {/* Subtle Footer Bar */}
       <div className="w-full pt-16 border-t border-border/40 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-muted-foreground font-mono">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-sm bg-foreground flex items-center justify-center text-background font-mono font-bold text-[10px]">
-            C
-          </div>
+          <img
+            src="/logo-icon-sm.png"
+            alt="CallBrief Logo"
+            className="w-5 h-5 object-contain"
+          />
           <span className="font-sans font-semibold text-foreground tracking-tight text-sm">
             CallBrief
           </span>
@@ -76,9 +78,6 @@ export function FinalCta() {
         </div>
 
         <nav className="flex items-center gap-6 font-sans">
-          <a href="#product" className="hover:text-foreground transition-colors">
-            Product
-          </a>
           <a
             href="#how-it-works"
             className="hover:text-foreground transition-colors"

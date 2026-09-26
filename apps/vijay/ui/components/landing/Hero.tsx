@@ -126,13 +126,6 @@ export function Hero() {
             </p>
           </div>
 
-          <div className="flex justify-center -my-3">
-            <div className="text-muted-foreground text-xs font-sans tracking-widest uppercase flex items-center gap-2 bg-card px-3 py-1 rounded-full border border-border/60">
-              <span>Transforming</span>
-              <span>↓</span>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 font-sans">
             <div className="space-y-2">
               <div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
