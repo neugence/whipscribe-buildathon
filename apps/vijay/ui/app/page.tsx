@@ -19,9 +19,6 @@ export default function Home() {
         {/* 01 — Hero */}
         <Hero />
 
-        {/* 01b — Full Width Banner Showcase */}
-        <BannerShowcase />
-
         {/* 02 — The Problem */}
         <Problem />
 
@@ -36,6 +33,9 @@ export default function Home() {
 
         {/* 06 — The Outcome */}
         <Outcome />
+
+        {/* Full Width Banner Showcase (Just before footer) */}
+        <BannerShowcase />
 
         {/* 07 — Final CTA & Footer */}
         <FinalCta />
