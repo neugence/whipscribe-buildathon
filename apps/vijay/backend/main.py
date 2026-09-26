@@ -39,23 +39,6 @@ import tempfile
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("callbrief-backend")
 
-# Ensure uploads directory exists (use /tmp on Vercel or read-only filesystems)
-is_serverless = os.getenv("VERCEL") or os.getenv("VERCEL_ENV") or "/var/task" in str(Path(__file__))
-if is_serverless:
-    UPLOAD_DIR = Path(tempfile.gettempdir()) / "uploads"
-else:
-    UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
-
-try:
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-except Exception as e:
-    logger.warning(f"Could not create upload directory '{UPLOAD_DIR}': {e}")
-    UPLOAD_DIR = Path(tempfile.gettempdir()) / "uploads"
-    try:
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    except Exception:
-        pass
-
 app = FastAPI(
     title="CallBrief Backend API",
     description="Full backend service supporting user uploads, WhipScribe transcription, Vertex AI Agent orchestration, and PostgreSQL database storage.",
@@ -70,10 +53,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Mount static upload files for serving audio previews if needed
-if UPLOAD_DIR.exists():
-    app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Include Clerk webhook router
 app.include_router(webhook_router)
@@ -298,35 +277,39 @@ async def upload_audio_file(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    """Receives audio file upload, saves locally, and submits to WhipScribe API for transcription."""
+    """Submits uploaded audio file directly to WhipScribe API for transcription without permanent server storage."""
     file_id = str(uuid.uuid4())
-    safe_filename = f"{file_id}_{file.filename}"
-    saved_path = UPLOAD_DIR / safe_filename
+    suffix = Path(file.filename).suffix if file.filename else ".mp3"
 
-    # Save uploaded file
-    with open(saved_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Stream to temporary file for WhipScribe API upload
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = Path(tmp.name)
 
-    logger.info(f"Saved audio file to '{saved_path}' for user '{user_id}'")
-
-    # Submit file to WhipScribe API
     job_id = None
     whip_status = "transcribing"
     try:
         client = WhipScribeClient()
-        job = client.transcribe.submit_file(str(saved_path), language="en")
+        job = client.transcribe.submit_file(str(tmp_path), language="en")
         job_id = job.job_id
         logger.info(f"Submitted file to WhipScribe API: Job ID '{job_id}'")
     except Exception as e:
         logger.warning(f"WhipScribe API submission note: {e}. Falling back to simulation mode.")
         job_id = f"job_sim_{file_id[:8]}"
+    finally:
+        # Immediately delete temporary file after sending to WhipScribe API
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except Exception:
+                pass
 
     # Save UserSubmission in PostgreSQL
     submission = crud.create_user_submission(
         db=db,
         user_id=user_id,
         source_type=source_type,
-        source_location=f"/uploads/{safe_filename}",
+        source_location=file.filename,
         transcript_job_id=job_id,
     )
 
