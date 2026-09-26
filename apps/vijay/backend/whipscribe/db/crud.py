@@ -45,7 +45,19 @@ def upsert_user_from_clerk(db: Session, clerk_user_data: Dict[str, Any]) -> User
     last_name = clerk_user_data.get("last_name")
     avatar_url = clerk_user_data.get("image_url") or clerk_user_data.get("profile_image_url")
 
+    # Find existing user by clerk_id or email
     user = db.query(User).filter(User.id == clerk_id).first()
+    existing_by_email = db.query(User).filter(User.email == email).first()
+
+    if existing_by_email and existing_by_email.id != clerk_id:
+        # Handle email conflict from past dev/test accounts
+        if not user:
+            # Re-key existing user to new clerk_id if primary key change
+            existing_by_email.email = f"{existing_by_email.id}_old@placeholder.clerk"
+            db.flush()
+        else:
+            existing_by_email.email = f"{existing_by_email.id}_old@placeholder.clerk"
+            db.flush()
 
     if user:
         user.email = email

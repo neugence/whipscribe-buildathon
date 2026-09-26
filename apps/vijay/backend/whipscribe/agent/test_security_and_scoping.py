@@ -121,8 +121,41 @@ class TestSecurityAndGuardrails(unittest.TestCase):
         resp = client.post("/api/webhooks/clerk", json={"type": "user.created"})
         self.assertEqual(resp.status_code, 400)
 
+    def test_webhook_handles_valid_clerk_user_created_payload(self):
+        from fastapi.testclient import TestClient
+        from main import app
+
+        client = TestClient(app)
+        headers = {
+            "svix-id": "msg_test_user_created",
+            "svix-timestamp": "1790452943989",
+            "svix-signature": "v1,dummy_signature",
+        }
+        payload = {
+            "type": "user.created",
+            "data": {
+                "id": "user_3JsbuFC6RPOo8MuVZxaOs1tP0DT",
+                "first_name": "Vijay",
+                "last_name": "Singh",
+                "image_url": "https://img.clerk.com/dummy.jpg",
+                "email_addresses": [
+                    {
+                        "id": "idn_3JsbtWJqp0tV250Qi9NBthdRE3O",
+                        "email_address": "vijaysingh.handler@gmail.com",
+                    }
+                ],
+                "primary_email_address_id": "idn_3JsbtWJqp0tV250Qi9NBthdRE3O",
+            },
+        }
+        resp = client.post("/api/webhooks/clerk", headers=headers, json=payload)
+        self.assertEqual(resp.status_code, 200)
+        json_data = resp.json()
+        self.assertEqual(json_data["status"], "success")
+        self.assertIn("user_3JsbuFC6RPOo8MuVZxaOs1tP0DT", json_data["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
 
