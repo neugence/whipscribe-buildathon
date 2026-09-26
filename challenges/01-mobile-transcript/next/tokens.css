@@ -1,0 +1,36 @@
+/* WhipScribe reader tokens, read from the live reader with getComputedStyle
+   (whipscribe.com/view, 26 Sep 2026). Two values are darkened so small text
+   passes 4.5:1; the live value is in the comment. */
+:root {
+  --ink: #202a25;          /* --wt-text, 14.8:1 on white */
+  --ink-strong: #0f172a;   /* --ink-900, headings */
+  --muted: #5f675f;        /* live --wt-muted #737c73 is 4.32:1; this is 5.85:1 */
+  --accent: #4d7508;       /* --brand-800; live tabs use #54801e (4.68:1, 4.18:1 on tint) */
+  --accent-btn: #456b22;   /* --wt-button, white text 6.21:1 */
+  --lime: #c5f44f;         /* --brand-1, the "Keep reading" button */
+  --on-lime: #1a2e05;      /* --violet-950 (green despite the name), 11.4:1 on lime */
+  --tint: #eef5df;         /* --wt-tint, current line */
+  --side: #f5f7f1;         /* --wt-side, bars and search */
+  --line: #e4e8dd;         /* --wt-line */
+  --sel: #cfe3ff;          /* --wt-sel, text selection */
+  --mark: #fde68a;         /* search match */
+  --mark-now: #fbbf24;     /* current search match */
+  --error: #b91c1c;
+  --warn: #9a3412;
+  --white: #ffffff;
+
+  /* four speaker colours: dots only, the name is always written next to them */
+  --sp1: #4d7508;
+  --sp2: #1d4ed8;
+  --sp3: #b45309;
+  --sp4: #9d174d;
+
+  --font: Inter, -apple-system, BlinkMacSystemFont, "SF Pro", system-ui, sans-serif;
+  --mono: ui-monospace, "JetBrains Mono", Menlo, monospace;
+  --text: 16px;            /* live reader body is 15px; 16px here, also stops iOS zoom on inputs */
+  --radius: 12px;
+  --tap: 44px;
+  --dock: 64px;
+  --header: 56px;
+  --tabs: 48px;
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Challenge 01 — next pass</title><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="reader.css">
+<style>
+ body { background: var(--side); }
+ .wrap { max-width: 1400px; margin: 0 auto; padding: 24px 16px 64px; }
+ h1 { font-size: 26px; color: var(--ink-strong); margin: 0 0 4px; }
+ h2 { font-size: 19px; color: var(--ink-strong); margin: 0 0 4px; }
+ .lead { color: var(--muted); max-width: 46em; margin: 0 0 24px; }
+ a { color: var(--accent); font-weight: 600; }
+ .row { background: var(--white); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin: 0 0 20px; }
+ .row p.note { margin: 0 0 16px; color: var(--ink); max-width: 60em; }
+ .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--tint); color: var(--accent); margin-left: 8px; vertical-align: middle; }
+ .pair { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+ figure { margin: 0; max-width: 100%; }
+ figcaption { font-size: 13px; font-weight: 650; color: var(--muted); margin: 0 0 6px; }
+ .phone img, .phone iframe { display: block; max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--white); }
+ .phone iframe { height: var(--h); }
+ .scaled { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; max-width: 100%; }
+ .scaled iframe { border: 0; transform: scale(.5); transform-origin: 0 0; }
+ ul.screens { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+ ul.screens a { display: block; padding: 14px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--ink); min-height: 44px; }
+ ul.screens b { display: block; color: var(--ink-strong); }
+ ul.screens span { font-size: 14px; color: var(--muted); font-weight: 400; }
+</style></head><body><main class="wrap">
+<h1>Challenge 01 — the next pass on the phone reader</h1><p class="lead">A static HTML prototype: open it from the file system or on a phone. The sample content is a fictional meeting written for this prototype. There is no audio and no server; search, sheets, selection and rename work in the page. <a href="compare.html">Now and next, side by side →</a> · <a href="README.md">What changed and why</a></p><ul class="screens"><li><a href="screens/01-reader.html"><b>01 · Reader</b><span>Default reader, free preview. Try search, the ⋯ menu and Copy or download.</span></a></li>
+<li><a href="screens/02-processing.html"><b>02 · Processing</b><span>New: still transcribing.</span></a></li>
+<li><a href="screens/03-four-speakers-320.html"><b>03 · Four speakers</b><span>New: a meeting, best at 320 px. Tap a name to rename.</span></a></li>
+<li><a href="screens/04-search.html"><b>04 · Search</b><span>Search open with a word typed.</span></a></li>
+<li><a href="screens/05-panel.html"><b>05 · One sheet pattern</b><span>Copy or download, the shared sheet.</span></a></li>
+<li><a href="screens/06-more-menu.html"><b>06 · More, reduced</b><span>Four items plus the View row.</span></a></li>
+<li><a href="screens/07-selection.html"><b>07 · After selecting</b><span>Copy, Share quote, Play from here.</span></a></li>
+<li><a href="screens/08-keep-reading-keyboard.html"><b>08 · Preview boundary</b><span>End of the free preview. Add ?kbd to the address to see the keyboard state.</span></a></li>
+<li><a href="screens/09-load-failure.html"><b>09 · Load failure</b><span>Plain words, one action.</span></a></li>
+<li><a href="screens/10-not-on-this-account.html"><b>10 · Not on this account</b><span>Private transcript, and the wording for a deleted one.</span></a></li>
+<li><a href="screens/11-desktop-1280.html"><b>11 · Desktop 1280</b><span>The laptop page with the shared fixes.</span></a></li></ul>
+</main></body></html>
