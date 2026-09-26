@@ -1,5 +1,6 @@
 import { Navigation } from "@/components/landing/Navigation";
 import { Hero } from "@/components/landing/Hero";
+import { BannerShowcase } from "@/components/landing/BannerShowcase";
 import { Problem } from "@/components/landing/Problem";
 import { Transformation } from "@/components/landing/Transformation";
 import { WorkspaceShowcase } from "@/components/landing/WorkspaceShowcase";
@@ -13,10 +14,13 @@ export default function Home() {
       {/* Top Header Navigation */}
       <Navigation />
 
-      {/* Main Storytelling Sections (7 Sections) */}
+      {/* Main Storytelling Sections */}
       <main className="w-full">
         {/* 01 — Hero */}
         <Hero />
+
+        {/* 01b — Full Width Banner Showcase */}
+        <BannerShowcase />
 
         {/* 02 — The Problem */}
         <Problem />
