@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   DollarSign,
   Clock,
@@ -201,9 +202,9 @@ export const Estimate: React.FC<EstimateProps> = ({
 
           {showDraftPreview && (
             <div className="p-4 space-y-3">
-              <pre className="whitespace-pre-wrap font-sans text-xs text-foreground/90 leading-relaxed bg-muted/20 p-3.5 rounded-lg border border-border/40 select-all custom-scrollbar max-h-60 overflow-y-auto">
-                {draftText}
-              </pre>
+              <div className="text-xs text-foreground/90 leading-relaxed bg-muted/20 p-4 rounded-lg border border-border/40 select-all custom-scrollbar max-h-72 overflow-y-auto font-sans [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_h1]:text-sm [&_h1]:font-bold [&_h1]:my-2 [&_h2]:text-xs [&_h2]:font-bold [&_h2]:my-1.5 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:my-1 [&_p]:my-1.5 [&_li]:my-0.5 [&_code]:bg-muted/80 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_strong]:font-semibold [&_strong]:text-foreground">
+                <ReactMarkdown>{draftText}</ReactMarkdown>
+              </div>
 
               <div className="flex items-center justify-between pt-1">
                 <span className="text-[11px] text-muted-foreground flex items-center gap-1">

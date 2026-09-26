@@ -169,40 +169,59 @@ export const ResizablePanels: React.FC<ResizablePanelsProps> = ({
           {/* Right Panel: Workspace Tabs & Details */}
           <Panel defaultSize={52} minSize={30} maxSize={70} className="h-full">
             <div className="h-full pl-2 flex flex-col space-y-3">
-              {/* Tab Navigation Header */}
-              <div className="flex items-center gap-1.5 p-1 bg-muted/40 border border-border/60 rounded-xl">
+              {/* Responsive Dropdown Selector (< lg screens) */}
+              <div className="lg:hidden flex items-center justify-between p-2 bg-muted/40 border border-border/60 rounded-xl gap-2">
+                <div className="flex items-center gap-2 text-xs font-semibold text-foreground px-1">
+                  {activeTab === "brief" && <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />}
+                  {activeTab === "tasks" && <ListTodo className="w-4 h-4 text-blue-400 shrink-0" />}
+                  {activeTab === "estimate" && <Calculator className="w-4 h-4 text-purple-400 shrink-0" />}
+                  <span className="truncate font-mono uppercase text-[11px] text-muted-foreground">Section:</span>
+                </div>
+                <select
+                  value={activeTab}
+                  onChange={(e) => setActiveTab(e.target.value as TabType)}
+                  className="flex-1 bg-background border border-border/60 text-foreground text-xs font-semibold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                >
+                  <option value="brief">Brief & Requirements ({requirements.length})</option>
+                  <option value="tasks">Tasks ({tasks.length})</option>
+                  <option value="estimate">Estimate & Quote</option>
+                </select>
+              </div>
+
+              {/* Compact Horizontal Tab Navigation Header (>= lg screens) */}
+              <div className="hidden lg:flex items-center gap-1 p-1 bg-muted/40 border border-border/60 rounded-xl">
                 <button
                   onClick={() => setActiveTab("brief")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                     activeTab === "brief"
                       ? "bg-background text-foreground shadow-sm border border-border/50"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Brief & Requirements ({requirements.length})</span>
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate">Brief ({requirements.length})</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("tasks")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                     activeTab === "tasks"
                       ? "bg-background text-foreground shadow-sm border border-border/50"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <ListTodo className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Tasks ({tasks.length})</span>
+                  <ListTodo className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  <span className="truncate">Tasks ({tasks.length})</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("estimate")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
                     activeTab === "estimate"
                       ? "bg-background text-foreground shadow-sm border border-border/50"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Calculator className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Estimate & Quote</span>
+                  <Calculator className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                  <span className="truncate">Estimate & Quote</span>
                 </button>
               </div>
 
