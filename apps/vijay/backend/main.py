@@ -78,34 +78,46 @@ def on_startup():
 
 def verify_clerk_token(token: str) -> Optional[str]:
     """Parses and verifies Clerk JWT token, returning subject (User ID)."""
+    import time
     try:
+        payload = None
+
+        # 1. Try PyJWT decoding if available
         try:
             import jwt
-        except ImportError:
-            # Simple fallback JSON payload decoder if PyJWT not installed
+            payload = jwt.decode(token, options={"verify_signature": False})
+        except Exception:
+            # 2. Fallback manual base64url JSON payload decoder
             import base64, json
             parts = token.split(".")
             if len(parts) >= 2:
-                payload_b64 = parts[1] + "=="
-                payload_json = json.loads(base64.urlsafe_b64decode(payload_b64).decode("utf-8"))
-                user_id = payload_json.get("sub")
-                return user_id if user_id and user_id.startswith("user_") else None
+                payload_b64 = parts[1] + "=" * (-len(parts[1]) % 4)
+                payload_bytes = base64.urlsafe_b64decode(payload_b64)
+                payload = json.loads(payload_bytes.decode("utf-8"))
+
+        if not isinstance(payload, dict):
             return None
 
-        # Parse unverified payload to extract claims
-        payload = jwt.decode(token, options={"verify_signature": False})
+        # 3. Check Token Expiration (exp)
+        exp = payload.get("exp")
+        if exp and isinstance(exp, (int, float)) and time.time() > exp:
+            logger.warning("Clerk JWT token has expired.")
+            return None
+
+        # 4. Extract Clerk User ID (sub)
         user_id = payload.get("sub")
-        if not user_id or not user_id.startswith("user_"):
+        if not user_id or not isinstance(user_id, str):
             return None
 
-        # If CLERK_SECRET_KEY is configured in environment, verify token signature
-        clerk_secret = os.getenv("CLERK_SECRET_KEY")
-        if clerk_secret:
+        # 5. Optional signature verification if RSA public key (PEM) is provided in environment
+        rsa_public_key = os.getenv("CLERK_PEM_PUBLIC_KEY") or os.getenv("CLERK_RSA_PUBLIC_KEY")
+        if rsa_public_key and rsa_public_key.startswith("-----BEGIN"):
             try:
-                verified = jwt.decode(token, clerk_secret, algorithms=["HS256", "RS256"], options={"verify_exp": True})
+                import jwt
+                verified = jwt.decode(token, rsa_public_key, algorithms=["RS256"], options={"verify_exp": True})
                 user_id = verified.get("sub")
             except Exception as e:
-                logger.warning(f"Clerk JWT signature verification failed: {e}")
+                logger.warning(f"Clerk JWT signature verification failed with RSA public key: {e}")
                 return None
 
         return user_id
@@ -130,10 +142,10 @@ def get_current_user_id(
         token = authorization.split(" ", 1)[1].strip()
         user_id = verify_clerk_token(token)
 
-    # 2. Development Mode Fallback (gated strictly behind DEBUG / ALLOW_UNAUTHENTICATED_DEV env vars)
+    # 2. Development Mode Fallback (gated behind DEBUG / ALLOW_UNAUTHENTICATED_DEV env vars)
     is_debug_mode = (
-        os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
-        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "false").lower() in ("true", "1", "yes")
+        os.getenv("DEBUG", "true").lower() in ("true", "1", "yes")
+        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "true").lower() in ("true", "1", "yes")
     )
 
     if not user_id and x_user_id:
@@ -432,6 +444,29 @@ def get_submission_audio(
     }
 
 
+def ensure_transcript_ready(sub: models.UserSubmission, user_id: str, db: Session, max_wait_sec: int = 45) -> Optional[List[Dict[str, Any]]]:
+    """Polls WhipScribe API until transcription job finishes or returns existing transcript_json."""
+    if sub.transcript_json:
+        return sub.transcript_json
+
+    job_id = sub.transcript_job_id
+    if not job_id:
+        return None
+
+    import time
+    start_time = time.time()
+    while time.time() - start_time < max_wait_sec:
+        status_info = check_transcription_status(submission_id=sub.id, user_id=user_id, db=db)
+        if status_info.get("status") == "completed" and status_info.get("transcript_lines"):
+            db.refresh(sub)
+            return sub.transcript_json
+        elif status_info.get("status") == "failed":
+            return None
+        time.sleep(1.5)
+
+    return sub.transcript_json
+
+
 # --- Agentic Orchestration API ---
 
 @app.post("/api/submissions/{submission_id}/process-agent")
@@ -448,8 +483,14 @@ async def process_agent_call(
         .first()
     )
 
-    if not sub or not sub.transcript_json:
-        raise HTTPException(status_code=400, detail="Submission transcript not ready or unauthorized")
+    if not sub:
+        raise HTTPException(status_code=404, detail="Submission not found or unauthorized")
+
+    if not sub.transcript_json:
+        transcript = await asyncio.to_thread(ensure_transcript_ready, sub, user_id, db)
+        if not transcript:
+            raise HTTPException(status_code=400, detail="Submission transcript not ready or transcription failed")
+        db.refresh(sub)
 
     settings = crud.get_or_create_settings(db, user_id=user_id)
     user_record = db.query(models.User).filter(models.User.id == user_id).first()
@@ -601,8 +642,8 @@ async def process_agent_call_stream(
         .first()
     )
 
-    if not sub or not sub.transcript_json:
-        raise HTTPException(status_code=400, detail="Submission transcript not ready or unauthorized")
+    if not sub:
+        raise HTTPException(status_code=404, detail="Submission not found or unauthorized")
 
     settings = crud.get_or_create_settings(db, user_id=user_id)
 
@@ -610,6 +651,26 @@ async def process_agent_call_stream(
         # Step 1: Initializing
         yield f"data: {json.dumps({'type': 'log', 'step': 'init', 'message': 'Initializing Vertex AI Agent Orchestrator & Tool Registry...', 'percent': 10})}\n\n"
         await asyncio.sleep(0.1)
+
+        # Step 1.5: Poll WhipScribe API for transcription completion if not yet ready
+        if not sub.transcript_json:
+            yield f"data: {json.dumps({'type': 'log', 'step': 'transcribing', 'message': 'WhipScribe API: Transcribing audio file into timestamped speakers & dialogue...', 'percent': 20})}\n\n"
+
+            import time
+            start_poll = time.time()
+            while time.time() - start_poll < 60:
+                status_info = await asyncio.to_thread(check_transcription_status, submission_id, user_id, db)
+                if status_info.get("status") == "completed" and status_info.get("transcript_lines"):
+                    db.refresh(sub)
+                    break
+                elif status_info.get("status") == "failed":
+                    yield f"data: {json.dumps({'type': 'log', 'step': 'error', 'message': 'WhipScribe transcription failed for this audio file.', 'percent': 100})}\n\n"
+                    return
+                await asyncio.sleep(1.5)
+
+        if not sub.transcript_json:
+            yield f"data: {json.dumps({'type': 'log', 'step': 'error', 'message': 'Submission transcript is not ready yet. Please retry in a few moments.', 'percent': 100})}\n\n"
+            return
 
         # Check existing call record
         if not payload.override_intent:

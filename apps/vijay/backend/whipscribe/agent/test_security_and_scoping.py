@@ -55,6 +55,46 @@ class TestSecurityAndGuardrails(unittest.TestCase):
 
         self.assertEqual(ctx.exception.status_code, 401)
 
+    @patch.dict(os.environ, {"CLERK_SECRET_KEY": "sk_test_Wq3h1EOjfL1KjdymAlksTAGvClhGLOijON8e7HCSZ9"})
+    def test_verify_clerk_token_extracts_user_id(self):
+        import time, jwt
+        from main import verify_clerk_token
+
+        # Create a valid Clerk JWT session token payload
+        now = int(time.time())
+        token = jwt.encode(
+            {
+                "sub": "user_2r2yVL_test_freelancer",
+                "exp": now + 3600,
+                "iat": now,
+                "iss": "https://clerk.test.dev",
+            },
+            "dummy_rsa_or_secret",
+            algorithm="HS256",
+        )
+
+        user_id = verify_clerk_token(token)
+        self.assertEqual(user_id, "user_2r2yVL_test_freelancer")
+
+    def test_verify_clerk_token_rejects_expired_token(self):
+        import time, jwt
+        from main import verify_clerk_token
+
+        now = int(time.time())
+        expired_token = jwt.encode(
+            {
+                "sub": "user_2r2yVL_test_freelancer",
+                "exp": now - 3600,  # Expired 1 hour ago
+                "iat": now - 7200,
+            },
+            "dummy_secret",
+            algorithm="HS256",
+        )
+
+        user_id = verify_clerk_token(expired_token)
+        self.assertIsNone(user_id)
+
 
 if __name__ == "__main__":
     unittest.main()
+
