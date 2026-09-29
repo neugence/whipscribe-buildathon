@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f8faf4">
+  <title>WhipScribe mobile reader — next pass</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="proposal-shell">
+    <section class="proposal-copy" aria-labelledby="proposal-title">
+      <p class="eyebrow">UI challenge 01 · next pass</p>
+      <h1 id="proposal-title">The transcript is the interface.</h1>
+      <p class="lede">This pass gives the words more room, keeps listening one tap away, and moves secondary actions into one predictable tools sheet.</p>
+
+      <div class="principles" aria-label="Design principles">
+        <article><strong>Read first</strong><span>Speaker, words and time form one tappable block.</span></article>
+        <article><strong>One bottom stack</strong><span>Preview and playback never compete for the same space.</span></article>
+        <article><strong>Progressive tools</strong><span>Export and display options appear only when asked for.</span></article>
+      </div>
+
+      <div class="scenario-control">
+        <label for="scenario">Prototype state</label>
+        <select id="scenario">
+          <option value="reader">Four-speaker reader</option>
+          <option value="scrolled">Reader, scrolled</option>
+          <option value="preview">Preview boundary</option>
+          <option value="search">Search</option>
+          <option value="tools">Reader tools</option>
+          <option value="export">Export</option>
+          <option value="display">Display settings</option>
+          <option value="selection">Text selection</option>
+          <option value="ask">Ask AI about selection</option>
+          <option value="signup">Keep reading</option>
+          <option value="processing">Processing</option>
+          <option value="error">Load failure</option>
+          <option value="account">Wrong account</option>
+        </select>
+        <p>Every control is real. Try search, tools, playback, and the preview call to action.</p>
+      </div>
+    </section>
+
+    <section class="device-stage" aria-label="Interactive mobile transcript prototype">
+      <div class="phone" id="phone">
+        <div class="phone-screen">
+          <header class="app-header">
+            <div class="title-row">
+              <button class="icon-button" type="button" aria-label="Back to recordings" data-action="back">
+                <svg aria-hidden="true"><use href="#icon-back"></use></svg>
+              </button>
+              <div class="recording-title">
+                <h2>Quarterly planning</h2>
+                <p>32 min · English</p>
+              </div>
+              <button class="icon-button" type="button" aria-label="Open reader tools" data-action="tools">
+                <svg aria-hidden="true"><use href="#icon-more"></use></svg>
+              </button>
+            </div>
+            <div class="reader-nav">
+              <div class="tabs" role="tablist" aria-label="Recording views">
+                <button role="tab" aria-selected="true">Transcript</button>
+                <button role="tab" aria-selected="false">Summary</button>
+                <button role="tab" aria-selected="false">Ask</button>
+              </div>
+              <button class="icon-button search-button" type="button" aria-label="Search transcript" data-action="search">
+                <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+              </button>
+            </div>
+          </header>
+
+          <section class="search-panel" aria-label="Search transcript" hidden>
+            <div class="search-field">
+              <svg aria-hidden="true"><use href="#icon-search"></use></svg>
+              <label class="sr-only" for="search-input">Search transcript</label>
+              <input id="search-input" type="search" value="onboarding" placeholder="Search transcript" autocomplete="off">
+              <button type="button" aria-label="Clear search" data-action="clear-search">×</button>
+            </div>
+            <div class="search-meta"><span><strong id="match-count">2</strong> matches</span><button type="button" data-action="close-search">Done</button></div>
+          </section>
+
+          <div class="content-scroller" id="content-scroller" tabindex="0">
+            <section class="status-screen processing-screen" aria-live="polite" hidden>
+              <div class="status-art processing-art" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+              <p class="status-kicker">Transcribing recording</p>
+              <h3>Making every word searchable</h3>
+              <p>Speaker labels are next. You can leave—this recording will keep processing.</p>
+              <div class="progress-track" aria-label="Transcription progress: 68 percent"><span style="width:68%"></span></div>
+              <div class="progress-meta"><strong>68%</strong><span>About 2 min left</span></div>
+              <button class="secondary-button" type="button">Notify me when it’s ready</button>
+            </section>
+
+            <section class="status-screen error-screen" hidden>
+              <div class="status-art error-art" aria-hidden="true"><svg><use href="#icon-cloud-off"></use></svg></div>
+              <p class="status-kicker">Couldn’t load transcript</p>
+              <h3>Your recording is safe.</h3>
+              <p>Check your connection and try again. If this keeps happening, come back in a few minutes.</p>
+              <button class="primary-button" type="button">Try again</button>
+              <button class="text-button" type="button">Back to recordings</button>
+            </section>
+
+            <section class="status-screen account-screen" hidden>
+              <div class="status-art account-art" aria-hidden="true"><svg><use href="#icon-lock"></use></svg></div>
+              <p class="status-kicker">Different account</p>
+              <h3>This transcript isn’t in your current workspace.</h3>
+              <p>Switch to the account that received this link, or ask its owner to share it with you.</p>
+              <button class="primary-button" type="button">Switch account</button>
+              <button class="text-button" type="button">Back to recordings</button>
+            </section>
+
+            <section class="transcript" aria-label="Transcript">
+              <p class="day-marker">Today · 10:04 AM</p>
+
+              <article class="utterance speaker-maya" data-search="thanks joining quarterly planning review goals today">
+                <button class="time" type="button" aria-label="Play from 0 minutes 0 seconds">0:00</button>
+                <div class="utterance-body"><div class="speaker"><span aria-hidden="true">MK</span><strong>Maya</strong></div><p>Thanks for joining. Let’s leave with owners for the launch risks we can fix this week.</p></div>
+              </article>
+
+              <article class="utterance speaker-leo" data-search="onboarding new teams stalled invite step unclear">
+                <button class="time" type="button" aria-label="Play from 0 minutes 14 seconds">0:14</button>
+                <div class="utterance-body"><div class="speaker"><span aria-hidden="true">LC</span><strong>Leo</strong></div><p><mark class="search-hit">Onboarding</mark> is the biggest one. New teams are stalling because the invite step feels optional.</p></div>
+              </article>
+
+              <article class="utterance speaker-nia selected-utterance" data-search="show reminder after first upload product">
+                <button class="time" type="button" aria-label="Play from 0 minutes 31 seconds">0:31</button>
+                <div class="utterance-body"><div class="speaker"><span aria-hidden="true">NR</span><strong>Nia</strong></div><p>We can show that reminder after the first upload, while the value is still obvious.</p></div>
+              </article>
+
+              <div class="selection-toolbar" role="toolbar" aria-label="Actions for selected transcript text" hidden>
+                <button type="button"><svg aria-hidden="true"><use href="#icon-copy"></use></svg>Copy</button>
+                <button type="button" data-action="ask"><svg aria-hidden="true"><use href="#icon-spark"></use></svg>Ask</button>
+                <button type="button"><svg aria-hidden="true"><use href="#icon-bookmark"></use></svg>Save</button>
+              </div>
+
+              <article class="utterance speaker-omar" data-search="measure completion not button clicks analytics">
+                <button class="time" type="button" aria-label="Play from 0 minutes 46 seconds">0:46</button>
+                <div class="utterance-body"><div class="speaker"><span aria-hidden="true">OS</span><strong>Omar</strong></div><p>I’ll measure completed invites, not button clicks. The event is already in analytics.</p></div>
+              </article>
+
+              <article class="utterance speaker-maya" data-search="decision nia owns onboarding change leo copy friday">
+                <button class="time" type="button" aria-label="Play from 1 minute 2 seconds">1:02</button>
+                <div class="utterance-body"><div class="speaker"><span aria-hidden="true">MK</span><strong>Maya</strong></div><p>Decision: Nia owns the <mark class="search-hit">onboarding</mark> change. Leo, please review the copy by Friday.</p></div>
+              </article>
+
+              <article class="utterance speaker-leo" data-search="works share draft tomorrow">
+                <button class="time" type="button" aria-label="Play from 1 minute 17 seconds">1:17</button>
+                <div class="utterance-body"><div class="speaker"><span aria-hidden="true">LC</span><strong>Leo</strong></div><p>Works for me. I’ll share a draft tomorrow.</p></div>
+              </article>
+
+              <section class="preview-boundary" hidden>
+                <span class="preview-icon" aria-hidden="true"><svg><use href="#icon-lock"></use></svg></span>
+                <p class="status-kicker">End of free preview · 48% read</p>
+                <h3>Keep the rest of the conversation.</h3>
+                <p>Create a free account to read, search and download this transcript.</p>
+                <button class="primary-button" type="button" data-action="signup">Create free account</button>
+                <button class="text-button" type="button">Already have an account? Sign in</button>
+              </section>
+            </section>
+          </div>
+
+          <div class="preview-strip">
+            <div><strong>48% of preview read</strong><span>Sign up to keep reading</span></div>
+            <button type="button" data-action="signup">Keep reading</button>
+          </div>
+
+          <footer class="player" aria-label="Audio player">
+            <button class="play-button" type="button" aria-label="Play recording" data-action="play"><svg aria-hidden="true"><use href="#icon-play"></use></svg></button>
+            <div class="player-main">
+              <div class="player-time"><span id="elapsed">0:31</span><span>32:08</span></div>
+              <div class="seek-track" aria-hidden="true"><span></span><i></i></div>
+            </div>
+            <button class="speed-button" type="button" aria-label="Playback speed, 1 times">1×</button>
+          </footer>
+
+          <div class="scrim" hidden data-action="close-sheet"></div>
+
+          <section class="sheet tools-sheet" role="dialog" aria-modal="true" aria-labelledby="tools-title" hidden>
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-heading"><div><p class="status-kicker">Quarterly planning</p><h3 id="tools-title">Reader tools</h3></div><button class="icon-button" type="button" aria-label="Close reader tools" data-action="close-sheet">×</button></div>
+            <div class="tool-grid">
+              <button type="button" data-action="export"><span><svg aria-hidden="true"><use href="#icon-download"></use></svg></span><strong>Export</strong><small>Text or subtitles</small></button>
+              <button type="button" data-action="display"><span><svg aria-hidden="true"><use href="#icon-text"></use></svg></span><strong>Display</strong><small>Text and speakers</small></button>
+              <button type="button"><span><svg aria-hidden="true"><use href="#icon-info"></use></svg></span><strong>Details</strong><small>File and language</small></button>
+            </div>
+            <button class="sheet-row danger" type="button"><svg aria-hidden="true"><use href="#icon-trash"></use></svg><span><strong>Delete recording</strong><small>Move it to Recently deleted</small></span><svg class="chevron" aria-hidden="true"><use href="#icon-chevron"></use></svg></button>
+          </section>
+
+          <section class="sheet export-sheet" role="dialog" aria-modal="true" aria-labelledby="export-title" hidden>
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-heading"><button class="icon-button" type="button" aria-label="Back to reader tools" data-action="tools"><svg aria-hidden="true"><use href="#icon-back"></use></svg></button><h3 id="export-title">Export transcript</h3><button class="icon-button" type="button" aria-label="Close export" data-action="close-sheet">×</button></div>
+            <label class="field-label" for="format">Format</label>
+            <select class="field" id="format"><option>Text (.txt)</option><option>Word document (.docx)</option><option>Subtitles (.srt)</option><option>WebVTT (.vtt)</option></select>
+            <label class="toggle-row"><span><strong>Include timestamps</strong><small>Add a time before each passage</small></span><input type="checkbox" checked><i aria-hidden="true"></i></label>
+            <label class="toggle-row"><span><strong>Include speaker names</strong><small>Maya, Leo, Nia and Omar</small></span><input type="checkbox" checked><i aria-hidden="true"></i></label>
+            <button class="primary-button wide" type="button"><svg aria-hidden="true"><use href="#icon-download"></use></svg>Download .txt</button>
+            <button class="text-button" type="button">Translate before exporting</button>
+          </section>
+
+          <section class="sheet display-sheet" role="dialog" aria-modal="true" aria-labelledby="display-title" hidden>
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-heading"><button class="icon-button" type="button" aria-label="Back to reader tools" data-action="tools"><svg aria-hidden="true"><use href="#icon-back"></use></svg></button><h3 id="display-title">Display</h3><button class="icon-button" type="button" aria-label="Close display settings" data-action="close-sheet">×</button></div>
+            <fieldset class="size-picker"><legend>Text size</legend><button type="button">A<small>Small</small></button><button class="active" type="button">A<small>Default</small></button><button type="button">A<small>Large</small></button></fieldset>
+            <label class="toggle-row"><span><strong>Speaker names</strong><small>Use names and color markers</small></span><input type="checkbox" checked><i aria-hidden="true"></i></label>
+            <label class="toggle-row"><span><strong>Timestamps</strong><small>Show a playable time on each passage</small></span><input type="checkbox" checked><i aria-hidden="true"></i></label>
+            <p class="sheet-note">These choices change only this reader. Exports have their own options.</p>
+          </section>
+
+          <section class="sheet signup-sheet" role="dialog" aria-modal="true" aria-labelledby="signup-title" hidden>
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <button class="icon-button sheet-close" type="button" aria-label="Close sign up" data-action="close-sheet">×</button>
+            <span class="signup-mark" aria-hidden="true">W</span>
+            <p class="status-kicker">Free account</p>
+            <h3 id="signup-title">Finish this transcript.</h3>
+            <p>Read all 32 minutes, search every word, and export a copy. No card required.</p>
+            <button class="google-button" type="button"><span aria-hidden="true">G</span>Continue with Google</button>
+            <button class="secondary-button wide" type="button">Continue with email</button>
+            <p class="fine-print">By continuing, you agree to the Terms and Privacy Policy.</p>
+          </section>
+
+          <section class="sheet ask-sheet" role="dialog" aria-modal="true" aria-labelledby="ask-title" hidden>
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <div class="sheet-heading"><div><p class="status-kicker">Ask WhipScribe</p><h3 id="ask-title">Ask about this moment</h3></div><button class="icon-button" type="button" aria-label="Close Ask AI" data-action="close-sheet">×</button></div>
+            <blockquote class="selection-quote">
+              <div><span aria-hidden="true">NR</span><strong>Nia · 0:31</strong></div>
+              <p>“We can show that reminder after the first upload, while the value is still obvious.”</p>
+            </blockquote>
+            <p class="ask-context"><svg aria-hidden="true"><use href="#icon-spark"></use></svg>Answers use this passage and the full recording.</p>
+            <div class="prompt-chips" aria-label="Suggested questions">
+              <button type="button" data-prompt="What decision led to this?">What led to this?</button>
+              <button type="button" data-prompt="Who owns the follow-up?">Who owns the follow-up?</button>
+            </div>
+            <form class="ask-composer">
+              <label class="sr-only" for="ask-input">Ask a question about this moment</label>
+              <textarea id="ask-input" rows="2" placeholder="Ask about this moment…"></textarea>
+              <button type="submit" aria-label="Send question"><svg aria-hidden="true"><use href="#icon-send"></use></svg></button>
+            </form>
+            <p class="sheet-note">Answers link back to the exact moments they use.</p>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <svg class="svg-defs" aria-hidden="true">
+    <symbol id="icon-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+    <symbol id="icon-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="m9 7 8 5-8 5Z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M9 7v10M15 7v10"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14"/></symbol>
+    <symbol id="icon-text" viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M8 19h8"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+    <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 3 1.3 4.2L17 9l-3.7 1.8L12 15l-1.3-4.2L7 9l3.7-1.8L12 3Zm6 12 .7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7L18 15Z"/></symbol>
+    <symbol id="icon-bookmark" viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4Z"/></symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="icon-cloud-off" viewBox="0 0 24 24"><path d="m3 3 18 18M7.2 7.2A5 5 0 0 1 17 9a4 4 0 0 1 1.8 7.6M6 18a4 4 0 0 1-1.6-7.7"/></symbol>
+    <symbol id="icon-send" viewBox="0 0 24 24"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></symbol>
+  </svg>
+  <script src="app.js"></script>
+</body>
+</html>
