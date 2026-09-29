@@ -1,0 +1,3057 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhipScribe — Mobile Transcript Reader Redesign (UI Challenge 01)</title>
+<!-- Google Fonts: Inter, Plus Jakarta Sans, JetBrains Mono + Material Symbols -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;word-wrap:normal;direction:ltr;user-select:none;-webkit-user-select:none;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;}.material-symbols-outlined.filled{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;}</style>
+
+<style>
+  /* ============================================================
+     Design Tokens & Variables — WhipScribe Pro Studio System
+     WCAG AAA Validated (7:1+ on surface, 4.5:1 on muted)
+     ============================================================ */
+  :root {
+    /* Palette */
+    --brand: #00D46A;
+    --brand-glow: rgba(0, 135, 68, 0.35);
+    --brand-fill: #008744;      /* primary-container */
+    --brand-primary: #006b35;   /* primary */
+    --brand-hover: #005828;
+    --brand-tint: #c9f6dc;      /* secondary-container tint */
+    --brand-border: #bdcabc;    /* outline-variant */
+    --brand-dark: #002311;
+
+    /* Cream surface */
+    --bg-stage: #080A09;
+    --bg-surface: #fef9ef;
+    --bg-surface-alt: #f8f3ea;       /* surface-container-low */
+    --bg-surface-mid: #f3ede4;       /* surface-container */
+    --bg-surface-high: #ede8df;      /* surface-container-high */
+    --bg-surface-highest: #e7e2d9;   /* surface-container-highest */
+    --bg-elevated: #ffffff;          /* surface-container-lowest */
+    --border-subtle: #bdcabc;        /* outline-variant */
+    --border-medium: #6e7a6e;        /* outline */
+
+    /* Text tones */
+    --text-primary: #1d1c16;         /* on-surface */
+    --text-secondary: #3e4a3f;       /* on-surface-variant */
+    --text-muted: #6e7a6e;           /* outline */
+    --text-disabled: #9eab9e;
+
+    --danger: #BA1A1A;
+    --danger-fill: #93000A;
+    --danger-tint: #FFDAD6;
+    --danger-border: #FFB4AB;
+
+    /* Typography */
+    --font-ui: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px -2px rgba(0,0,0,0.08), 0 2px 6px -1px rgba(0,0,0,0.04);
+    --shadow-lg: 0 16px 36px -4px rgba(0,0,0,0.18), 0 6px 16px -2px rgba(0,0,0,0.08);
+    --shadow-device: 0 25px 60px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 26px;
+    --radius-full: 9999px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    background-color: var(--bg-stage);
+    background-image: 
+      radial-gradient(circle at 50% 0%, rgba(0, 212, 106, 0.12) 0%, transparent 60%),
+      radial-gradient(circle at 85% 20%, rgba(26, 115, 232, 0.08) 0%, transparent 50%),
+      linear-gradient(180deg, #0A0D0B 0%, #050706 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    outline: none;
+  }
+
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2.5px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  /* ============================================================
+     Workbench Showcase Header
+     ============================================================ */
+  .workbench {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 24px 28px 12px;
+    color: #F0F5F2;
+  }
+
+  .wb-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .wb-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .chip-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(0, 212, 106, 0.14);
+    border: 1px solid rgba(0, 212, 106, 0.35);
+    border-radius: var(--radius-full);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #4EEDB0;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .chip-pill .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00D46A;
+    box-shadow: 0 0 8px #00D46A;
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .wb-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #FFFFFF 30%, #A5C0B2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+  }
+
+  .wb-desc {
+    color: #92A69B;
+    font-size: 13.5px;
+    max-width: 820px;
+    line-height: 1.5;
+  }
+
+  .wb-desc strong {
+    color: #E2ECE6;
+  }
+
+  /* Workbench Controls Toolbar */
+  .wb-toolbar {
+    background: rgba(18, 24, 20, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-xl);
+    padding: 12px 18px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .tool-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tool-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #748A7D;
+    white-space: nowrap;
+  }
+
+  .seg-control {
+    display: inline-flex;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .seg-btn {
+    padding: 6px 14px;
+    min-height: 34px;
+    border-radius: var(--radius-full);
+    color: #92A69B;
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .seg-btn:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .seg-btn[aria-pressed="true"] {
+    background: linear-gradient(135deg, #00C864 0%, #008744 100%);
+    color: #FFFFFF;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(0, 200, 100, 0.35);
+  }
+
+  .states-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .state-pill {
+    padding: 5px 12px;
+    min-height: 32px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #CAD5CE;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.18s ease;
+  }
+
+  .state-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #FFF;
+  }
+
+  .state-pill[aria-pressed="true"] {
+    background: rgba(0, 212, 106, 0.18);
+    border-color: #00D46A;
+    color: #4EEDB0;
+    font-weight: 700;
+  }
+
+  /* ============================================================
+     Stage & Device Frames
+     ============================================================ */
+  .stage {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 36px;
+    padding: 30px 24px;
+    align-items: flex-start;
+  }
+
+  .frame {
+    display: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .frame[data-show="1"] {
+    display: block;
+  }
+
+  .stage.is-sbs .frame--after,
+  .stage.is-sbs .frame--before {
+    display: block;
+  }
+
+  .stage.is-sbs .frame--desktop {
+    display: none;
+  }
+
+  .frame-label {
+    text-align: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .frame-label .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 12px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .frame-label .tag--new {
+    background: rgba(0, 212, 106, 0.2);
+    color: #00E575;
+    border: 1px solid rgba(0, 212, 106, 0.35);
+  }
+
+  .frame-label .tag--old {
+    background: rgba(255, 255, 255, 0.1);
+    color: #B2C0B8;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .frame-label small {
+    font-weight: 500;
+    color: #8C9F94;
+    font-size: 11.5px;
+  }
+
+  /* Titanium iPhone Chassis Mockup */
+  .phone-chassis {
+    position: relative;
+    width: var(--device-w, 390px);
+    height: 780px;
+    background: #181B19;
+    border-radius: 52px;
+    padding: 12px;
+    box-shadow: var(--shadow-device);
+    border: 3.5px solid #2C332F;
+    box-sizing: content-box;
+    transition: width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Hardware accents (buttons) */
+  .phone-chassis::before {
+    content: "";
+    position: absolute;
+    top: 140px;
+    left: -7px;
+    width: 4px;
+    height: 50px;
+    background: #252A27;
+    border-radius: 3px 0 0 3px;
+    box-shadow: 0 65px 0 #252A27, 0 125px 0 #252A27;
+  }
+
+  .phone-chassis::after {
+    content: "";
+    position: absolute;
+    top: 170px;
+    right: -7px;
+    width: 4px;
+    height: 80px;
+    background: #252A27;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .phone-screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 42px;
+    overflow: hidden;
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Dynamic Island Notch */
+  .dynamic-island {
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 28px;
+    background: #000000;
+    border-radius: 20px;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .island-cam {
+    width: 10.5px;
+    height: 10.5px;
+    background: #11141E;
+    border-radius: 50%;
+    box-shadow: inset 0 0 2px #264380;
+  }
+
+  .island-sensor {
+    width: 7.5px;
+    height: 7.5px;
+    background: #0D0F14;
+    border-radius: 50%;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    z-index: 10;
+    font-family: var(--font-ui);
+  }
+
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ============================================================
+     App Shell (Mobile Screen Contents)
+     ============================================================ */
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* App Navigation Header */
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 14px 10px;
+    background: rgba(254, 249, 239, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    z-index: 5;
+  }
+
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    transition: background-color 0.15s ease, transform 0.1s;
+  }
+
+  .icon-btn:hover {
+    background: var(--bg-surface-alt);
+  }
+
+  .icon-btn:active {
+    transform: scale(0.96);
+  }
+
+  .header-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .doc-title {
+    font-size: 15px;
+    font-weight: 750;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+  }
+
+  .doc-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Timestamps Switch Toggle (Header - Change 4) */
+  .ts-switch-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 10px 0 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    background: var(--bg-surface-high);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .ts-switch-pill:hover {
+    border-color: var(--brand-primary);
+    background: var(--bg-surface-alt);
+  }
+
+  .ts-switch-pill input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .ts-track {
+    width: 26px;
+    height: 15px;
+    background: var(--bg-surface-highest);
+    border-radius: var(--radius-full);
+    position: relative;
+    transition: background-color 0.2s ease;
+  }
+
+  .ts-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .ts-switch-pill input:checked + .ts-track {
+    background: var(--brand-fill);
+  }
+
+  .ts-switch-pill input:checked + .ts-track .ts-thumb {
+    transform: translateX(11px);
+    background: #FFFFFF;
+  }
+
+  /* Three-Tab Navigation */
+  .nav-tabs {
+    display: flex;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    z-index: 5;
+  }
+
+  .nav-tab-btn {
+    flex: 1;
+    min-height: 44px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-ui);
+    color: var(--text-muted);
+    position: relative;
+    transition: color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .nav-tab-btn:hover {
+    color: var(--text-secondary);
+  }
+
+  .nav-tab-btn.is-active {
+    color: var(--brand-primary);
+    font-weight: 600;
+  }
+
+  .nav-tab-btn.is-active::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 12px;
+    right: 12px;
+    height: 2.5px;
+    background: var(--brand-fill);
+    border-radius: 2px;
+  }
+
+  /* Main View Body */
+  .app-body {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-surface);
+  }
+
+  .view-pane {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    padding: 14px 16px;
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
+  }
+
+  .view-pane[hidden] {
+    display: none;
+  }
+
+  /* Speaker Avatars Strip (Change 5: Multi-Speaker Support at 320px) */
+  .speaker-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    scrollbar-width: none;
+  }
+
+  .speaker-legend::-webkit-scrollbar {
+    display: none;
+  }
+
+  .speaker-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 4px;
+    border-radius: var(--radius-full);
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-subtle);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.01em;
+  }
+
+  .avatar-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    flex-shrink: 0;
+    font-family: var(--font-heading);
+  }
+
+  /* Avatar colors */
+  .avatar-J { background: #1565C0; }
+  .avatar-S { background: #6A1B9A; }
+  .avatar-M { background: #00695C; }
+  .avatar-A { background: #E65100; }
+
+  /* Transcript Entries & Timeline Gutter */
+  .transcript-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 24px;
+  }
+
+  .entry-row {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    column-gap: 10px;
+    align-items: start;
+    transition: background-color 0.15s;
+    border-radius: var(--radius-sm);
+    padding: 4px 6px;
+    margin: -4px -6px;
+  }
+
+  .entry-row.is-active-speaker {
+    background: rgba(0, 212, 106, 0.06);
+  }
+
+  .gutter-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding-top: 2px;
+  }
+
+  .timecode-pill {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-subtle);
+    padding: 1px 4px;
+    border-radius: 4px;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+
+  .timecode-pill:hover {
+    border-color: var(--brand);
+    color: var(--brand-fill);
+  }
+
+  .entry-row.inpast .timecode-pill {
+    background: var(--brand-tint);
+    border-color: var(--brand-border);
+    color: var(--brand-dark);
+    font-weight: 700;
+  }
+
+  .content-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .speaker-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sp-name {
+    font-size: 12px;
+    font-weight: 750;
+    color: var(--text-primary);
+  }
+
+  .sp-role {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .transcript-text {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    cursor: text;
+    border-radius: 4px;
+    font-family: var(--font-ui);
+  }
+
+  mark.sel-match {
+    background: rgba(0, 135, 68, 0.15);
+    color: var(--brand-primary);
+    font-weight: 600;
+    padding: 1px 3px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 135, 68, 0.3);
+  }
+
+  .app.no-timestamps .gutter-col {
+    display: none;
+  }
+
+  .app.no-timestamps .entry-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* ============================================================
+     Change 1: Redesigned High-Performance Bottom Bar & Player
+     ============================================================ */
+  .app-bottom-dock {
+    background: rgba(254, 249, 239, 0.9);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-subtle);
+    box-shadow: 0 -4px 18px rgba(0,0,0,0.04);
+    z-index: 10;
+  }
+
+  /* Sleek Scrub Bar with Preview Cutoff */
+  .scrub-container {
+    padding: 8px 14px 2px;
+  }
+
+  .scrub-track {
+    position: relative;
+    height: 4px;
+    background: var(--bg-surface-highest);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    overflow: visible;
+  }
+
+  .scrub-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 48%;
+    background: var(--brand-fill);
+    border-radius: var(--radius-full);
+    transition: width 0.1s linear;
+  }
+
+  .scrub-thumb {
+    position: absolute;
+    left: 48%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--brand-primary);
+    border: 2.5px solid #FFFFFF;
+    box-shadow: 0 1px 4px rgba(0,107,53,0.4);
+  }
+
+  /* Single-line Preview Callout (takes minimal vertical height) */
+  .preview-inline-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    padding: 4px 14px 2px;
+    color: var(--text-secondary);
+  }
+
+  .preview-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+  }
+
+  .preview-indicator .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #008744;
+  }
+
+  .preview-cta-link {
+    font-size: 11.5px;
+    font-weight: 750;
+    color: var(--brand-fill);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .preview-cta-link:hover {
+    color: var(--brand-hover);
+  }
+
+  /* Player Controls Row (Compact 44px+ Hit Targets) */
+  .player-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 10px 6px;
+  }
+
+  .p-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: background-color 0.15s, transform 0.1s;
+  }
+
+  .p-action-btn:hover {
+    background: var(--bg-surface-alt);
+    color: var(--text-primary);
+  }
+
+  .p-action-btn:active {
+    transform: scale(0.94);
+  }
+
+  .play-pause-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--brand-fill);
+    color: #FFFFFF;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 107, 53, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .play-pause-btn:hover {
+    background: var(--brand-primary);
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px rgba(0, 107, 53, 0.5);
+  }
+
+  .speed-pill-btn {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 0 8px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Animated Sound Waveform Indicator */
+  .waveform-bars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 18px;
+    padding: 0 6px;
+  }
+
+  .wave-bar {
+    width: 2.5px;
+    height: 5px;
+    background: var(--brand-fill);
+    border-radius: 1px;
+    transition: height 0.2s ease;
+  }
+
+  .app.is-playing .wave-bar:nth-child(1) { animation: wave 0.8s infinite alternate 0.1s; }
+  .app.is-playing .wave-bar:nth-child(2) { animation: wave 0.8s infinite alternate 0.3s; }
+  .app.is-playing .wave-bar:nth-child(3) { animation: wave 0.8s infinite alternate 0.5s; }
+  .app.is-playing .wave-bar:nth-child(4) { animation: wave 0.8s infinite alternate 0.2s; }
+
+  @keyframes wave {
+    0% { height: 4px; }
+    100% { height: 16px; }
+  }
+
+  /* ============================================================
+     Unified Bottom Sheet Architecture (Change 3)
+     ============================================================ */
+  .overlay-container {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 14, 12, 0.55);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+
+  .sheet-backdrop[data-on="1"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .bottom-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 82%;
+    background: var(--bg-elevated);
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -10px 36px rgba(0,0,0,0.18), 0 -1px 0 var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    transform: translateY(105%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.25, 1);
+    z-index: 110;
+    pointer-events: auto;
+  }
+
+  .bottom-sheet[data-open="1"] {
+    transform: translateY(0);
+  }
+
+  .sheet-grabber {
+    width: 36px;
+    height: 4px;
+    background: var(--bg-surface-highest);
+    border-radius: var(--radius-full);
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+
+  .sheet-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 18px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sheet-heading {
+    font-size: 16px;
+    font-weight: 750;
+    color: var(--text-primary);
+  }
+
+  .sheet-close-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+  }
+
+  .sheet-close-btn:hover {
+    background: var(--bg-surface-alt);
+  }
+
+  .sheet-scroll-body {
+    overflow-y: auto;
+    padding: 14px 18px 24px;
+    scrollbar-width: thin;
+  }
+
+  /* More Menu Items (Change 2: 4 Context-Aware Items) */
+  .menu-action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .menu-action-item {
+    width: 100%;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    text-align: left;
+    transition: background-color 0.15s;
+    letter-spacing: -0.01em;
+  }
+
+  .menu-action-item:hover {
+    background: var(--bg-surface-alt);
+  }
+
+  .menu-action-item .m-icon {
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .menu-action-item .m-title {
+    flex: 1;
+  }
+
+  .menu-action-item .m-trail {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .menu-action-item--danger {
+    color: var(--danger);
+  }
+
+  .menu-action-item--danger .m-icon {
+    color: var(--danger);
+  }
+
+  .menu-divider {
+    height: 1px;
+    background: var(--bg-surface-highest);
+    margin: 4px 2px;
+  }
+
+  /* Search Sheet (Change 8: Pinned Search & Highlight) */
+  .search-input-wrapper {
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .search-box-input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px 0 44px;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    background: var(--bg-surface-alt);
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+
+  .search-box-input:focus {
+    outline: none;
+    border-color: var(--brand-fill);
+    background: var(--bg-elevated);
+  }
+
+  .search-lead-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--brand-primary);
+    pointer-events: none;
+    display: inline-flex;
+  }
+
+  .search-result-count {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: var(--brand-primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .search-result-count::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand-fill);
+  }
+
+  .search-result-card {
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface-alt);
+    margin-bottom: 6px;
+    transition: all 0.15s;
+  }
+
+  .search-result-card:hover {
+    border-color: var(--brand-fill);
+    background: var(--bg-surface-mid);
+  }
+
+  .search-result-time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .search-result-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    line-height: 1.5;
+  }
+
+  /* Selection Sheet (Change 6: Text Selection Actions) */
+  .selection-quote-box {
+    background: rgba(0, 107, 53, 0.06);
+    border-left: 3px solid var(--brand-fill);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-style: italic;
+    margin-bottom: 16px;
+  }
+
+  .selection-btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .action-tile-btn {
+    min-height: 48px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface-alt);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    transition: all 0.15s;
+    letter-spacing: -0.01em;
+  }
+
+  .action-tile-btn:hover {
+    background: var(--bg-surface-high);
+    border-color: var(--border-medium);
+  }
+
+  .action-tile-btn--primary {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+    color: #FFFFFF;
+  }
+
+  .action-tile-btn--primary:hover {
+    background: var(--brand-hover);
+    border-color: var(--brand-hover);
+  }
+
+  /* Export Sheet */
+  .format-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .format-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface-alt);
+    transition: all 0.15s;
+    width: 100%;
+    text-align: left;
+  }
+
+  .format-card:hover {
+    border-color: var(--brand-fill);
+    background: var(--bg-surface-mid);
+  }
+
+  .format-pill {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    min-width: 36px;
+    text-align: center;
+  }
+
+  .format-info {
+    flex: 1;
+  }
+
+  .format-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+  }
+
+  .format-sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-family: var(--font-ui);
+    margin-top: 1px;
+  }
+
+  /* Loading State Skeleton (Change 7) */
+  .skeleton-loader-wrap {
+    padding: 8px 4px;
+  }
+
+  .processing-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-ui);
+    color: var(--brand-primary);
+    background: rgba(0, 107, 53, 0.08);
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(0, 107, 53, 0.15);
+  }
+
+  .loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 107, 53, 0.15);
+    border-top-color: var(--brand-fill);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .skeleton-row {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: start;
+  }
+
+  .sk-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-surface-highest);
+    animation: pulse-sk 1.4s ease infinite;
+  }
+
+  .sk-time {
+    width: 36px;
+    height: 12px;
+    border-radius: 4px;
+    background: var(--bg-surface-high);
+    margin-bottom: 4px;
+  }
+
+  .sk-bar {
+    height: 12px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--bg-surface-alt) 25%, var(--bg-surface-highest) 37%, var(--bg-surface-alt) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    margin-bottom: 7px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
+
+  @keyframes pulse-sk {
+    50% { opacity: 0.5; }
+  }
+
+  /* Keyboard Simulation (Change 8) */
+  .virtual-keyboard {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #D5DAD6;
+    padding: 8px 6px 18px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+    transform: translateY(105%);
+    transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.25, 1);
+    z-index: 120;
+    pointer-events: auto;
+  }
+
+  .virtual-keyboard[data-on="1"] {
+    transform: translateY(0);
+  }
+
+  .kb-key-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+
+  .kb-key-btn {
+    min-width: 0;
+    width: 8.8%;
+    height: 42px;
+    background: #FFFFFF;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    font-size: 15px;
+    font-weight: 500;
+    color: #121614;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .kb-key-btn.wide { width: 13%; }
+  .kb-key-btn.space { width: 44%; font-size: 12px; }
+
+  /* Toast Notification */
+  .toast-layer {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .toast-pill {
+    background: #151916;
+    color: #FFFFFF;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255,255,255,0.15);
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .toast-pill.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ============================================================
+     Change 9: Failure, Recovery & Edge States
+     ============================================================ */
+  .status-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 100%;
+    padding: 24px 20px;
+  }
+
+  .status-icon-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .status-icon-ring--error { background: var(--danger-tint); color: var(--danger-fill); }
+  .status-icon-ring--neutral { background: var(--bg-surface-high); color: var(--text-secondary); }
+
+  .status-heading {
+    font-size: 17px;
+    font-weight: 750;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .status-body {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 300px;
+    margin-bottom: 18px;
+  }
+
+  .status-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .status-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    margin-top: 14px;
+  }
+
+  /* Offline banner (Change 9) */
+  .offline-banner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: #FFF4E0;
+    border-bottom: 1px solid #F2D9AC;
+    color: #7A5A17;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 6;
+  }
+
+  .app.is-offline .offline-banner { display: flex; }
+
+  /* Ask AI composer (Change 10) */
+  .ask-quote-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+  .ask-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand-dark);
+    background: var(--brand-tint);
+    border: 1px solid var(--brand-border);
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+  }
+
+  .ask-chip--speaker {
+    font-family: var(--font-ui);
+    background: var(--bg-surface-mid);
+    color: var(--text-secondary);
+    border-color: var(--border-subtle);
+  }
+
+  .ask-textarea {
+    width: 100%;
+    min-height: 76px;
+    resize: vertical;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface-alt);
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    line-height: 1.55;
+  }
+
+  .ask-textarea:focus { outline: none; border-color: var(--brand-fill); background: var(--bg-elevated); }
+
+  .ask-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 14px; }
+
+  .ask-suggestion {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand-primary);
+    background: rgba(0, 107, 53, 0.08);
+    border: 1px solid rgba(0, 107, 53, 0.2);
+    padding: 6px 10px;
+    border-radius: var(--radius-full);
+    min-height: 32px;
+  }
+
+  .ask-suggestion:hover { background: rgba(0, 107, 53, 0.14); }
+
+  /* Screenshot mode (?shot=1 hides the workbench chrome) */
+  body.shot-mode .workbench { display: none !important; }
+  body.shot-mode .stage { padding-top: 24px; }
+
+  /* ============================================================
+     BEFORE Frame (Legacy Comparison Baseline)
+     ============================================================ */
+  .legacy-preview-box {
+    background: #EBF8F0;
+    border: 1.5px solid #BAECCB;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    margin: 10px 14px 4px;
+  }
+
+  .legacy-preview-box p {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+
+  .legacy-cta-btn {
+    width: 100%;
+    min-height: 42px;
+    background: #008744;
+    color: #FFFFFF;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+
+  .legacy-player {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px 12px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .legacy-inline-search {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: #FAFBF9;
+  }
+
+  /* ============================================================
+     Desktop Frame (1280px Unchanged)
+     ============================================================ */
+  .desktop-mockup-wrapper {
+    background: #FFFFFF;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 720px;
+  }
+
+  .d-sidebar {
+    background: #F6F8F6;
+    border-right: 1px solid var(--border-subtle);
+    padding: 20px 14px;
+  }
+
+  .d-brand {
+    font-size: 16px;
+    font-weight: 850;
+    color: var(--brand-fill);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .d-nav-link {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .d-nav-link.active {
+    background: #E5F6EB;
+    color: var(--brand-dark);
+    font-weight: 750;
+  }
+
+  .d-main-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .d-topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .d-title-group {
+    flex: 1;
+  }
+
+  .d-doc-heading {
+    font-size: 18px;
+    font-weight: 750;
+    color: var(--text-primary);
+  }
+
+  .d-doc-info {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .d-btn {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    background: #FFFFFF;
+    color: var(--text-primary);
+  }
+
+  .d-btn--green {
+    background: var(--brand-fill);
+    border-color: var(--brand-fill);
+    color: #FFFFFF;
+  }
+
+  .d-tabs-row {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .d-tab-btn {
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 2.5px solid transparent;
+  }
+
+  .d-tab-btn.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--brand-fill);
+    font-weight: 700;
+  }
+
+  .d-body-split {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .d-transcript-scroll {
+    padding: 24px 28px;
+    overflow-y: auto;
+  }
+
+  .d-insights-panel {
+    border-left: 1px solid var(--border-subtle);
+    background: #FAFBF9;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .d-card-box {
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+  }
+
+  .d-card-title {
+    font-size: 11.5px;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--brand-fill);
+    margin-bottom: 10px;
+  }
+
+  .d-card-box ul {
+    padding-left: 18px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .d-bottom-player {
+    border-top: 1px solid var(--border-subtle);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: #FFFFFF;
+  }
+
+  @media (max-width: 768px) {
+    .phone-chassis { height: 720px; }
+    .wb-toolbar { flex-direction: column; align-items: flex-start; }
+    .tool-group { width: 100%; overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= WORKBENCH HEADER ================= -->
+<header class="workbench">
+  <div class="wb-top">
+    <div>
+      <div class="wb-badge-row">
+        <span class="chip-pill">Challenge 01 — the reader on a phone</span>
+      </div>
+      <h1 class="wb-title">My next pass at the mobile reader</h1>
+      <p class="wb-desc">
+        Built from the reasoning in <strong>challenges/01-mobile-transcript/REDESIGN.md</strong>.
+        Switch between the current reader and mine at 320, 375 and 390 px, and try every state:
+        the audio dock, the 4-item menu, the sheets, search with the keyboard up, the speaker
+        badges, text selection, and the failure and edge states.
+      </p>
+    </div>
+  </div>
+
+  <!-- Interactive Controls Toolbar -->
+  <div class="wb-toolbar">
+    <div class="tool-group">
+      <span class="tool-label">Device Width</span>
+      <div class="seg-control" role="group" aria-label="Screen Width">
+        <button class="seg-btn" data-size="320">320px</button>
+        <button class="seg-btn" data-size="375">375px</button>
+        <button class="seg-btn" data-size="390" aria-pressed="true">390px</button>
+        <button class="seg-btn" data-size="1280">1280px (Desktop)</button>
+      </div>
+    </div>
+
+    <div class="tool-group">
+      <span class="tool-label">Comparison Mode</span>
+      <div class="seg-control" role="group" aria-label="Comparison Mode">
+        <button class="seg-btn" data-view="after" aria-pressed="true">After (Redesigned)</button>
+        <button class="seg-btn" data-view="before">Before (Current)</button>
+        <button class="seg-btn" data-view="sbs">Side-by-Side</button>
+      </div>
+    </div>
+
+    <div class="tool-group">
+      <span class="tool-label">Interactive States</span>
+      <div class="states-row" role="group" aria-label="Interactive States">
+        <button class="state-pill" data-state="reader" aria-pressed="true">Reader</button>
+        <button class="state-pill" data-state="search">Search</button>
+        <button class="state-pill" data-state="keyboard">Keyboard</button>
+        <button class="state-pill" data-state="menu">More Menu</button>
+        <button class="state-pill" data-state="selection">Text Selection</button>
+        <button class="state-pill" data-state="loading">Processing Skeleton</button>
+        <button class="state-pill" data-state="signup">Sign Up</button>
+        <button class="state-pill" data-state="settings">Settings</button>
+        <button class="state-pill" data-state="download">Export</button>
+        <button class="state-pill" data-state="ask">Ask AI</button>
+        <button class="state-pill" data-state="error">Load Failure</button>
+        <button class="state-pill" data-state="wrongaccount">Wrong Account</button>
+        <button class="state-pill" data-state="deleted">Deleted</button>
+        <button class="state-pill" data-state="empty">Empty Transcript</button>
+        <button class="state-pill" data-state="offline">Offline</button>
+      </div>
+    </div>
+
+    <div class="tool-group">
+      <span class="tool-label">Standalone screens</span>
+      <div class="states-row" role="group" aria-label="Standalone screens">
+        <a class="state-pill" href="screens/reader-320px.html" target="_blank" title="Open 320px Narrow Viewport in new tab">↗ 320px Screen</a>
+        <a class="state-pill" href="screens/search-sheet.html" target="_blank" title="Open Search Sheet in new tab">↗ Search Sheet</a>
+        <a class="state-pill" href="screens/export-sheet.html" target="_blank" title="Open Export Sheet in new tab">↗ Export Sheet</a>
+        <a class="state-pill" href="screens/processing-skeleton.html" target="_blank" title="Open Processing Skeleton in new tab">↗ Skeleton State</a>
+        <a class="state-pill" href="screens/more-menu.html" target="_blank" title="Open More Menu in new tab">↗ 4-Item Menu</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= STAGE AREA ================= -->
+<main class="stage" id="stage">
+
+  <!-- ================= AFTER FRAME (REDESIGNED PHONE) ================= -->
+  <section class="frame frame--after" id="frameAfter" data-show="1" aria-label="Redesigned Mobile Reader">
+    <div class="frame-label">
+      <span class="tag tag--new">After — my pass</span>
+      <small>The dock takes ~15% of the screen · 4-item menu · one sheet pattern · 44px+ targets</small>
+    </div>
+
+    <div class="phone-chassis" id="phoneAfter">
+      <div class="phone-screen">
+        <!-- Dynamic Island -->
+        <div class="dynamic-island">
+          <div class="island-cam"></div>
+          <div class="island-sensor"></div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M1 9.5h1.5v-2H1v2zm3.5 0H6v-4H4.5v4zm3.5 0h1.5v-6H8v6zm3.5 0H13v-8h-1.5v8z"/></svg>
+            <svg width="15" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.5a9.8 9.8 0 0 1 6.5 2.5l-6.5 7-6.5-7A9.8 9.8 0 0 1 8 2.5z"/></svg>
+            <svg width="22" height="11" viewBox="0 0 24 12" fill="currentColor"><rect x="1" y="1" width="19" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="3" width="12" height="6" rx="1.5"/><path d="M21 4.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+
+        <!-- Application Shell -->
+        <div class="app" id="appAfter">
+          <!-- Top Navigation Header -->
+          <header class="app-header">
+            <button class="icon-btn" aria-label="Back">
+              <span class="material-symbols-outlined" style="font-size:22px">arrow_back_ios_new</span>
+            </button>
+            <div style="width:32px;height:32px;border-radius:8px;background:rgba(0,107,53,0.1);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span class="material-symbols-outlined" style="font-size:18px;color:var(--brand-primary)">description</span>
+            </div>
+            <div class="header-meta">
+              <span class="doc-title" id="afterTitle">long.m4a</span>
+              <span class="doc-sub">1m 44s · EN · 4 Spk</span>
+            </div>
+            <div class="header-actions">
+              <!-- Timestamps Toggle Pill (Change 4) -->
+              <label class="ts-switch-pill" title="Toggle timestamps">
+                <input type="checkbox" id="afterTs" checked>
+                <span class="ts-track"><span class="ts-thumb"></span></span>
+                <span>Time</span>
+              </label>
+              <!-- More Menu Button -->
+              <button class="icon-btn" data-open="menu" aria-label="More options">
+                <span class="material-symbols-outlined" style="font-size:22px">more_vert</span>
+              </button>
+            </div>
+          </header>
+
+          <!-- Tab Bar -->
+          <nav class="nav-tabs" role="tablist" aria-label="Recording Views">
+            <button class="nav-tab-btn is-active" role="tab" aria-selected="true" data-tab="transcript">Transcript</button>
+            <button class="nav-tab-btn" role="tab" aria-selected="false" data-tab="summary">Summary</button>
+            <button class="nav-tab-btn" role="tab" aria-selected="false" data-tab="chat">AI Chat</button>
+          </nav>
+
+          <!-- Main View Body -->
+          <div class="app-body">
+            <!-- Transcript View -->
+            <div class="view-pane view--transcript" data-viewname="transcript" role="tabpanel">
+              <!-- Speaker Legend Strip (Change 5) -->
+              <div class="speaker-legend" id="afterSpeakers"></div>
+              <!-- Transcript Content Rows -->
+              <div class="transcript-entries" id="afterEntries"></div>
+            </div>
+
+            <!-- Summary View -->
+            <div class="view-pane view--summary" data-viewname="summary" role="tabpanel" hidden>
+              <div style="background:var(--bg-surface-alt);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px;margin-bottom:12px">
+                <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:0.6px;color:var(--brand-fill);margin-bottom:8px">Executive Summary</h3>
+                <ul style="padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--text-secondary)">
+                  <li>Q3 Revenue landed at <strong>$22.4M</strong>, outperforming projection by <strong>+11%</strong>.</li>
+                  <li>Upside was driven by enterprise expansions alongside the March pricing realignment.</li>
+                  <li>Net revenue retention remained stable; churn held steady at 1.9% quarter-over-quarter.</li>
+                  <li>Mina to review flagged Q1 cohort metrics prior to budget finalization.</li>
+                  <li>Avery to circulate updated territory coverage documents post-call.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- AI Chat View -->
+            <div class="view-pane view--chat" data-viewname="chat" role="tabpanel" hidden>
+              <div style="display:flex;flex-direction:column;gap:12px;padding-bottom:70px">
+                <div style="align-self:flex-start;max-width:88%;background:var(--bg-surface-alt);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 12px;font-size:13.5px">
+                  <span style="font-size:11px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:2px">You</span>
+                  What drove the revenue upside this quarter?
+                </div>
+                <div style="align-self:flex-end;max-width:88%;background:var(--brand-fill);color:#FFFFFF;border-radius:var(--radius-md);padding:10px 12px;font-size:13.5px">
+                  <span style="font-size:11px;font-weight:700;opacity:0.85;display:block;margin-bottom:2px">WhipScribe AI</span>
+                  Two thirds of the upside stemmed from enterprise expansion, with the remainder from March pricing updates.
+                  <button style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:4px 8px;background:rgba(255,255,255,0.2);color:#FFF;border-radius:var(--radius-full);font-size:11px;font-weight:700" data-jump="00:36">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Jump to 00:36
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loading Skeleton View (Change 7) -->
+            <div class="view-pane view--loading" data-viewname="loading" role="status" hidden>
+              <div class="skeleton-loader-wrap">
+                <div class="processing-header">
+                  <span class="loading-spinner"></span>
+                  <span>Transcribing audio… · ~1m 30s remaining</span>
+                </div>
+                <div class="skeleton-row">
+                  <div><div class="sk-time"></div><div class="sk-avatar"></div></div>
+                  <div><div class="sk-bar" style="width:90%"></div><div class="sk-bar" style="width:65%"></div></div>
+                </div>
+                <div class="skeleton-row">
+                  <div><div class="sk-time"></div><div class="sk-avatar"></div></div>
+                  <div><div class="sk-bar" style="width:100%"></div><div class="sk-bar" style="width:80%"></div><div class="sk-bar" style="width:45%"></div></div>
+                </div>
+                <div class="skeleton-row">
+                  <div><div class="sk-time"></div><div class="sk-avatar"></div></div>
+                  <div><div class="sk-bar" style="width:75%"></div><div class="sk-bar" style="width:90%"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Load Failure State (Change 9) -->
+            <div class="view-pane view--error" data-viewname="error" role="alert" hidden>
+              <div class="status-center">
+                <div class="status-icon-ring status-icon-ring--error">
+                  <span class="material-symbols-outlined" style="font-size:30px">cloud_off</span>
+                </div>
+                <h3 class="status-heading">This transcript didn't load</h3>
+                <p class="status-body">The server took too long to answer, so we stopped waiting. Your audio and this recording are safe — nothing was lost.</p>
+                <div class="status-actions">
+                  <button class="action-tile-btn action-tile-btn--primary" data-action="retry" style="width:100%">Try again</button>
+                  <button class="action-tile-btn" data-action="back-library" style="width:100%">Back to library</button>
+                </div>
+                <span class="status-meta">Error 504 · waited 30s · job ws_8f21</span>
+              </div>
+            </div>
+
+            <!-- Wrong Account State (Change 9) -->
+            <div class="view-pane view--wrongaccount" data-viewname="wrongaccount" role="alert" hidden>
+              <div class="status-center">
+                <div class="status-icon-ring status-icon-ring--neutral">
+                  <span class="material-symbols-outlined" style="font-size:30px">lock_person</span>
+                </div>
+                <h3 class="status-heading">Shared with the wrong account</h3>
+                <p class="status-body">This recording lives in <strong>alex@studio.co</strong>, and you're signed in as <strong>you@example.com</strong>. Ask Alex to reshare it, or switch accounts.</p>
+                <div class="status-actions">
+                  <button class="action-tile-btn action-tile-btn--primary" data-action="switch-account" style="width:100%">Switch account</button>
+                  <button class="action-tile-btn" data-action="back-library" style="width:100%">Open my library</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deleted State (Change 9) -->
+            <div class="view-pane view--deleted" data-viewname="deleted" role="status" hidden>
+              <div class="status-center">
+                <div class="status-icon-ring status-icon-ring--neutral">
+                  <span class="material-symbols-outlined" style="font-size:30px">delete_sweep</span>
+                </div>
+                <h3 class="status-heading">Recording deleted</h3>
+                <p class="status-body">You deleted this recording. You have 30 days to restore it from the library's Recently deleted folder.</p>
+                <div class="status-actions">
+                  <button class="action-tile-btn action-tile-btn--primary" data-action="undo-delete" style="width:100%">Undo delete</button>
+                  <button class="action-tile-btn" data-action="back-library" style="width:100%">Back to library</button>
+                </div>
+                <span class="status-meta">In trash until Oct 29 · 6.1 MB · transcript kept</span>
+              </div>
+            </div>
+
+            <!-- Empty Transcript State (Change 9) -->
+            <div class="view-pane view--empty" data-viewname="empty" role="status" hidden>
+              <div class="status-center">
+                <div class="status-icon-ring status-icon-ring--neutral">
+                  <span class="material-symbols-outlined" style="font-size:30px">hearing_disabled</span>
+                </div>
+                <h3 class="status-heading">No speech detected</h3>
+                <p class="status-body">The job finished, but WhipScribe couldn't find any words in this 3-minute recording. It may be music, silence, or the mic was too far away.</p>
+                <div class="status-actions">
+                  <button class="action-tile-btn" data-action="listen-anyway" style="width:100%">Play the audio anyway</button>
+                  <button class="action-tile-btn" data-action="reupload" style="width:100%">Re-upload a cleaner file</button>
+                </div>
+                <span class="status-meta">Finished in 22s · 0 words · audio intact</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offline Banner (Change 9) -->
+          <div class="offline-banner" role="status">
+            <span class="material-symbols-outlined" style="font-size:16px">wifi_off</span>
+            <span>Offline — reading from cache. Playback and search work; export waits for a connection.</span>
+          </div>
+
+          <!-- Bottom Bar: Redesigned High-Performance Dock (Change 1) -->
+          <footer class="app-bottom-dock">
+            <!-- Audio Scrubber Row -->
+            <div class="scrub-container">
+              <div class="scrub-track" id="afterScrubTrack" role="slider" tabindex="0" aria-label="Playback progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="48">
+                <div class="scrub-progress" id="afterScrubFill"></div>
+                <span class="scrub-thumb" id="afterScrubThumb"></span>
+              </div>
+            </div>
+
+            <!-- Single Line Preview Limit Link -->
+            <div class="preview-inline-bar">
+              <span class="preview-indicator"><span class="dot"></span> Preview limit (48%)</span>
+              <button class="preview-cta-link" data-open="signup">
+                Sign up to unlock full audio
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <!-- Compact Player Transport Controls -->
+            <div class="player-controls">
+                          <!-- Rewind 10s -->
+              <button class="p-action-btn" id="rewindBtn" aria-label="Rewind 10 seconds" title="Rewind 10s">
+                <span class="material-symbols-outlined" style="font-size:22px">replay_10</span>
+              </button>
+
+              <!-- Play / Pause Main CTA -->
+              <button class="play-pause-btn" id="playToggleBtn" aria-label="Play or Pause" title="Play">
+                <span class="material-symbols-outlined" id="playIcon" style="font-size:22px">play_arrow</span>
+                <span class="material-symbols-outlined" id="pauseIcon" style="font-size:22px;display:none">pause</span>
+              </button>
+
+              <!-- Forward 10s -->
+              <button class="p-action-btn" id="forwardBtn" aria-label="Forward 10 seconds" title="Forward 10s">
+                <span class="material-symbols-outlined" style="font-size:22px">forward_10</span>
+              </button>
+
+              <!-- Waveform Indicator -->
+              <div class="waveform-bars" title="Audio Activity">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
+
+              <!-- Speed Selector -->
+              <button class="speed-pill-btn" id="speedToggleBtn" aria-label="Playback speed" title="Playback speed">1.0x</button>
+
+                            <!-- Search in Transcript Drawer Trigger -->
+              <button class="p-action-btn" data-open="search" aria-label="Search" title="Search transcript">
+                <span class="material-symbols-outlined" style="font-size:22px">search</span>
+              </button>
+
+              <!-- Export Sheet Trigger -->
+              <button class="p-action-btn" data-open="download" aria-label="Export" title="Export formats">
+                <span class="material-symbols-outlined" style="font-size:22px">download</span>
+              </button>
+            </div>
+          </footer>
+        </div>
+
+        <!-- Overlays (Unified Sheets) -->
+        <div class="overlay-container" id="afterOverlay">
+          <div class="sheet-backdrop" id="afterBackdrop"></div>
+
+                    <!-- SEARCH SHEET (Change 8: Sticky Pinned Search Input) -->
+          <section class="bottom-sheet" data-sheet="search" aria-label="Search transcript">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Search in Transcript</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close search">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div class="search-input-wrapper">
+                <span class="search-lead-icon">
+                  <span class="material-symbols-outlined" style="font-size:20px">search</span>
+                </span>
+                <input type="search" class="search-box-input" id="afterSearch" placeholder="Type keyword (e.g., revenue, churn, cohort)…" autocomplete="off">
+              </div>
+              <div class="search-result-count" id="afterSearchCount">3 matching mentions</div>
+              <div class="search-results-list" id="afterResults"></div>
+            </div>
+          </section>
+
+                    <!-- MORE MENU (Change 2: 4 Context-Aware Items) -->
+          <section class="bottom-sheet" data-sheet="menu" aria-label="More options">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Recording Options</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close menu">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div class="menu-action-list">
+                <button class="menu-action-item" data-goto="settings">
+                  <span class="m-icon"><span class="material-symbols-outlined" style="font-size:22px">tune</span></span>
+                  <span class="m-title">Reading &amp; Audio Settings</span>
+                  <span class="m-trail">Customize</span>
+                </button>
+                <button class="menu-action-item" data-action="ts">
+                  <span class="m-icon"><span class="material-symbols-outlined" style="font-size:22px">timer</span></span>
+                  <span class="m-title">Toggle Timestamps</span>
+                  <span class="m-trail" id="menuTsStatus">Visible</span>
+                </button>
+                <button class="menu-action-item" data-goto="details">
+                  <span class="m-icon"><span class="material-symbols-outlined" style="font-size:22px">edit_note</span></span>
+                  <span class="m-title">File Details &amp; Rename</span>
+                </button>
+                <div class="menu-divider"></div>
+                <button class="menu-action-item menu-action-item--danger" data-action="delete">
+                  <span class="m-icon"><span class="material-symbols-outlined" style="font-size:22px">delete</span></span>
+                  <span class="m-title">Delete Recording</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+                    <!-- SELECTION SHEET (Change 6: Instant Text Action Toolbar) -->
+          <section class="bottom-sheet" data-sheet="selection" aria-label="Selection options">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Selected Passage</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close selection">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div class="selection-quote-box" id="selSnippetText">
+                &ldquo;Revenue came in 11% above target this quarter &mdash; twenty-two point four million.&rdquo;
+              </div>
+              <div class="selection-btn-grid">
+                <button class="action-tile-btn" data-action="copy">
+                  <span class="material-symbols-outlined" style="font-size:20px">content_copy</span>
+                  Copy
+                </button>
+                <button class="action-tile-btn" data-action="quote">
+                  <span class="material-symbols-outlined" style="font-size:20px">format_quote</span>
+                  Quote
+                </button>
+                <button class="action-tile-btn" data-action="share">
+                  <span class="material-symbols-outlined" style="font-size:20px">ios_share</span>
+                  Share
+                </button>
+                <button class="action-tile-btn action-tile-btn--primary" data-action="ask" style="grid-column: 1 / -1">
+                  <span class="material-symbols-outlined" style="font-size:18px">auto_awesome</span>
+                  Ask AI about this passage
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- SIGNUP SHEET -->
+          <section class="bottom-sheet" data-sheet="signup" aria-label="Unlock full transcript">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Unlock Full Transcript</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close signup">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <p style="font-size:13.5px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5">
+                You've reached the free preview limit (48%). Create a free account to unlock the full 100% transcript, audio playback, AI questions, and subtitle exports.
+              </p>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                <div style="display:flex;gap:8px;font-size:13px;color:var(--text-primary)"><span style="color:var(--brand-fill);font-weight:800">✓</span> Full transcripts with speaker labels</div>
+                <div style="display:flex;gap:8px;font-size:13px;color:var(--text-primary)"><span style="color:var(--brand-fill);font-weight:800">✓</span> Audio search across your full library</div>
+                <div style="display:flex;gap:8px;font-size:13px;color:var(--text-primary)"><span style="color:var(--brand-fill);font-weight:800">✓</span> 3 free transcription uploads every month</div>
+              </div>
+              <input type="email" placeholder="Enter your email" style="width:100%;min-height:48px;border:1.5px solid var(--border-medium);border-radius:var(--radius-md);padding:0 14px;font-size:14px;margin-bottom:10px">
+              <button class="action-tile-btn action-tile-btn--primary" style="width:100%;margin-bottom:8px" data-action="create">Continue with Email</button>
+              <button class="action-tile-btn" style="width:100%" data-action="google">Continue with Google</button>
+            </div>
+          </section>
+
+          <!-- EXPORT SHEET -->
+          <section class="bottom-sheet" data-sheet="download" aria-label="Export recording">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Export Transcript</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close export">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div class="format-card-list">
+                <button class="format-card" data-fmt="JSON">
+                  <span class="format-pill">JSON</span>
+                  <div class="format-info">
+                    <div class="format-name">Structured JSON</div>
+                    <div class="format-sub">Includes speakers, word-level timestamps &amp; confidence</div>
+                  </div>
+                  <span class="material-symbols-outlined" style="font-size:18px;color:var(--text-muted)">download</span>
+                </button>
+                <button class="format-card" data-fmt="SRT">
+                  <span class="format-pill">SRT</span>
+                  <div class="format-info">
+                    <div class="format-name">SubRip Subtitles</div>
+                    <div class="format-sub">Standard video subtitles with exact second timecodes</div>
+                  </div>
+                  <span class="material-symbols-outlined" style="font-size:18px;color:var(--text-muted)">download</span>
+                </button>
+                <button class="format-card" data-fmt="VTT">
+                  <span class="format-pill">VTT</span>
+                  <div class="format-info">
+                    <div class="format-name">WebVTT Subtitles</div>
+                    <div class="format-sub">Optimized for HTML5 web video players</div>
+                  </div>
+                  <span class="material-symbols-outlined" style="font-size:18px;color:var(--text-muted)">download</span>
+                </button>
+                <button class="format-card" data-fmt="TXT">
+                  <span class="format-pill">TXT</span>
+                  <div class="format-info">
+                    <div class="format-name">Plain Text</div>
+                    <div class="format-sub">Clean paragraph text without time markers</div>
+                  </div>
+                  <span class="material-symbols-outlined" style="font-size:18px;color:var(--text-muted)">download</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ASK AI COMPOSER SHEET (Change 10: selection → question) -->
+          <section class="bottom-sheet" data-sheet="ask" aria-label="Ask AI about this passage">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Ask about this passage</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close ask">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div class="selection-quote-box" id="askQuoteText" style="font-size:12.5px;max-height:88px;overflow:hidden">
+                &ldquo;Revenue came in 11% above target this quarter &mdash; twenty-two point four million.&rdquo;
+              </div>
+              <div class="ask-quote-chips">
+                <span class="ask-chip ask-chip--speaker" id="askChipSpeaker">Jordan · VP Sales</span>
+                <span class="ask-chip" id="askChipTime">◷ 00:12</span>
+                <span class="ask-chip">long.m4a</span>
+              </div>
+              <label for="askInput" style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">Your question (the quote, speaker and time are attached automatically)</label>
+              <textarea id="askInput" class="ask-textarea" placeholder="e.g., What did Jordan mean by &ldquo;twenty-two point four million&rdquo;?">What drove the 11% beat against target?</textarea>
+              <div class="ask-suggestions">
+                <button class="ask-suggestion" data-ask-fill="Summarize what Jordan said in plain words">Summarize in plain words</button>
+                <button class="ask-suggestion" data-ask-fill="What evidence in the recording backs this claim?">What's the evidence?</button>
+                <button class="ask-suggestion" data-ask-fill="Who disagreed with this, and when?">Who disagreed?</button>
+              </div>
+              <button class="action-tile-btn action-tile-btn--primary" style="width:100%" data-action="ask-send">
+                <span class="material-symbols-outlined" style="font-size:18px">auto_awesome</span> Ask WhipScribe AI
+              </button>
+            </div>
+          </section>
+
+          <!-- DETAILS SHEET -->
+          <section class="bottom-sheet" data-sheet="details" aria-label="Details and rename">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Recording Details</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close details">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:16px">
+                <div><strong>Duration:</strong> 1 minute 44 seconds</div>
+                <div><strong>Language:</strong> English (99.4% confidence)</div>
+                <div><strong>Source:</strong> Microphone upload (AAC/m4a)</div>
+                <div><strong>Transcribed:</strong> Today at 14:06</div>
+              </div>
+              <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px">Rename Title</label>
+              <input type="text" id="renameInput" value="long.m4a" style="width:100%;min-height:46px;border:1.5px solid var(--border-medium);border-radius:var(--radius-md);padding:0 14px;font-size:14px;margin-bottom:14px">
+              <button class="action-tile-btn action-tile-btn--primary" style="width:100%" data-action="rename-save">Save Title</button>
+            </div>
+          </section>
+
+          <!-- SETTINGS SHEET -->
+          <section class="bottom-sheet" data-sheet="settings" aria-label="Reading settings">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">Reader Settings</h2>
+              <button class="sheet-close-btn" data-close aria-label="Close settings">
+                <span class="material-symbols-outlined" style="font-size:20px">close</span>
+              </button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;min-height:52px;border-bottom:1px solid var(--border-subtle);padding:4px 0">
+                <span style="font-size:14px;font-weight:500;font-family:var(--font-ui);color:var(--text-primary);letter-spacing:-0.01em">Auto-scroll during playback</span>
+                <span style="padding:4px 10px;background:rgba(0,107,53,0.1);color:var(--brand-primary);font-size:12px;font-weight:600;border-radius:var(--radius-full);font-family:var(--font-ui)">On</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;min-height:52px;border-bottom:1px solid var(--border-subtle);padding:4px 0">
+                <span style="font-size:14px;font-weight:500;font-family:var(--font-ui);color:var(--text-primary);letter-spacing:-0.01em">Show speaker initials</span>
+                <span style="padding:4px 10px;background:rgba(0,107,53,0.1);color:var(--brand-primary);font-size:12px;font-weight:600;border-radius:var(--radius-full);font-family:var(--font-ui)">On</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;min-height:52px;padding:4px 0">
+                <span style="font-size:14px;font-weight:500;font-family:var(--font-ui);color:var(--text-primary);letter-spacing:-0.01em">High contrast labels</span>
+                <span style="padding:4px 10px;background:rgba(0,107,53,0.1);color:var(--brand-primary);font-size:12px;font-weight:600;border-radius:var(--radius-full);font-family:var(--font-ui)">WCAG AAA</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- VIRTUAL KEYBOARD SIMULATOR -->
+          <div class="virtual-keyboard" id="afterKb">
+            <div class="kb-key-row">
+              <button class="kb-key-btn">q</button><button class="kb-key-btn">w</button><button class="kb-key-btn">e</button><button class="kb-key-btn">r</button><button class="kb-key-btn">t</button><button class="kb-key-btn">y</button><button class="kb-key-btn">u</button><button class="kb-key-btn">i</button><button class="kb-key-btn">o</button><button class="kb-key-btn">p</button>
+            </div>
+            <div class="kb-key-row">
+              <button class="kb-key-btn">a</button><button class="kb-key-btn">s</button><button class="kb-key-btn">d</button><button class="kb-key-btn">f</button><button class="kb-key-btn">g</button><button class="kb-key-btn">h</button><button class="kb-key-btn">j</button><button class="kb-key-btn">k</button><button class="kb-key-btn">l</button>
+            </div>
+            <div class="kb-key-row">
+              <button class="kb-key-btn wide">⇧</button><button class="kb-key-btn">z</button><button class="kb-key-btn">x</button><button class="kb-key-btn">c</button><button class="kb-key-btn">v</button><button class="kb-key-btn">b</button><button class="kb-key-btn">n</button><button class="kb-key-btn">m</button><button class="kb-key-btn wide">⌫</button>
+            </div>
+            <div class="kb-key-row">
+              <button class="kb-key-btn wide">123</button><button class="kb-key-btn space">space</button><button class="kb-key-btn wide">Search</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback Toast Notification -->
+        <div class="toast-layer" id="afterToast" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BEFORE FRAME (CURRENT DESIGN) ================= -->
+  <section class="frame frame--before" id="frameBefore" data-show="0" aria-label="Current Mobile Reader Baseline">
+    <div class="frame-label">
+      <span class="tag tag--old">Before — the current reader</span>
+      <small>The preview box + player take ~35% of the screen · 9-item menu · three panel patterns</small>
+    </div>
+
+    <div class="phone-chassis" id="phoneBefore">
+      <div class="phone-screen">
+        <div class="dynamic-island">
+          <div class="island-cam"></div>
+          <div class="island-sensor"></div>
+        </div>
+        <div class="status-bar">
+          <span>9:41</span>
+          <div class="status-icons">
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor"><path d="M1 9.5h1.5v-2H1v2zm3.5 0H6v-4H4.5v4zm3.5 0h1.5v-6H8v6zm3.5 0H13v-8h-1.5v8z"/></svg>
+            <svg width="15" height="11" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.5a9.8 9.8 0 0 1 6.5 2.5l-6.5 7-6.5-7A9.8 9.8 0 0 1 8 2.5z"/></svg>
+            <svg width="22" height="11" viewBox="0 0 24 12" fill="currentColor"><rect x="1" y="1" width="19" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="3" width="12" height="6" rx="1.5"/><path d="M21 4.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+
+        <div class="app" id="appBefore">
+          <header class="app-header">
+            <button class="icon-btn" aria-label="Back">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div class="header-meta">
+              <span class="doc-title">long.m4a</span>
+              <span class="doc-sub">1m 44s • EN</span>
+            </div>
+            <button class="icon-btn" data-open="menu" aria-label="More options">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </header>
+
+          <nav class="nav-tabs" role="tablist">
+            <button class="nav-tab-btn is-active" data-tab="transcript">Transcript</button>
+            <button class="nav-tab-btn" data-tab="summary">Summary</button>
+            <button class="nav-tab-btn" data-tab="chat">AI Chat</button>
+          </nav>
+
+          <!-- Inline Search (Before) -->
+          <div class="legacy-inline-search" id="beforeSearchBox" style="display:none">
+            <input type="search" placeholder="Search transcript…" style="width:100%;height:38px;padding:0 10px;border:1px solid #D0D8D2;border-radius:8px">
+          </div>
+
+          <div class="app-body">
+            <div class="view-pane view--transcript" data-viewname="transcript">
+              <div class="transcript-entries" id="beforeEntries"></div>
+            </div>
+          </div>
+
+          <!-- Bottom: Bulky Preview Box (~35% Height) -->
+          <footer style="border-top:1px solid var(--border-subtle);background:#FFF">
+            <div class="legacy-preview-box">
+              <p>You're reading the free preview (first 48%). Sign up to read the full transcript and chat with AI.</p>
+              <button class="legacy-cta-btn" data-open="signup">Keep reading →</button>
+            </div>
+            <div class="legacy-player">
+              <button class="p-action-btn">●</button>
+              <button class="p-action-btn">⏪</button>
+              <button class="p-action-btn" style="color:#008744;font-size:20px">▶</button>
+              <button class="p-action-btn">✚</button>
+              <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">1x</span>
+              <button class="p-action-btn" data-open="menu">⋮</button>
+            </div>
+          </footer>
+        </div>
+
+        <div class="overlay-container" id="beforeOverlay">
+          <div class="sheet-backdrop" id="beforeBackdrop"></div>
+          <!-- 9-Item Cluttered More Menu (Before) -->
+          <section class="bottom-sheet" data-sheet="menu" aria-label="More options">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-header-row">
+              <h2 class="sheet-heading">More (9 Items)</h2>
+              <button class="sheet-close-btn" data-close>✕</button>
+            </div>
+            <div class="sheet-scroll-body">
+              <div class="menu-action-list">
+                <button class="menu-action-item"><span class="m-title">Home</span></button>
+                <button class="menu-action-item"><span class="m-title">Copy Transcript</span></button>
+                <button class="menu-action-item"><span class="m-title">Settings</span></button>
+                <button class="menu-action-item"><span class="m-title">Timestamps</span></button>
+                <button class="menu-action-item"><span class="m-title">Generate Quiz</span></button>
+                <button class="menu-action-item"><span class="m-title">Sign In</span></button>
+                <button class="menu-action-item"><span class="m-title">Rename</span></button>
+                <button class="menu-action-item"><span class="m-title">Details</span></button>
+                <div class="menu-divider"></div>
+                <button class="menu-action-item menu-action-item--danger"><span class="m-title">Delete</span></button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="toast-layer" id="beforeToast" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DESKTOP FRAME (1280px UNCHANGED) ================= -->
+  <section class="frame frame--desktop" id="frameDesktop" data-show="0" aria-label="Desktop Reader Layout">
+    <div class="frame-label">
+      <span class="tag tag--new">1280px desktop</span>
+      <small>Left as is: the desktop reader already uses its space well, and this challenge is about the phone</small>
+    </div>
+
+    <div class="desktop-mockup-wrapper">
+      <div class="desktop-grid">
+        <aside class="d-sidebar">
+          <div class="d-brand">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            WhipScribe
+          </div>
+          <nav style="display:flex;flex-direction:column;gap:4px">
+            <button class="d-nav-link active">Library</button>
+            <button class="d-nav-link">Recent Recordings</button>
+            <button class="d-nav-link">Starred Folders</button>
+            <button class="d-nav-link">Account &amp; API Keys</button>
+          </nav>
+        </aside>
+
+        <main class="d-main-content">
+          <div class="d-topbar">
+            <button class="d-btn">‹ Back</button>
+            <div class="d-title-group">
+              <h2 class="d-doc-heading">long.m4a</h2>
+              <div class="d-doc-info">1m 44s • English • 4 Speakers • Transcribed with WhipScribe AI</div>
+            </div>
+            <button class="d-btn">Share</button>
+            <button class="d-btn d-btn--green">Export</button>
+          </div>
+
+          <div class="d-tabs-row">
+            <button class="d-tab-btn active">Transcript</button>
+            <button class="d-tab-btn">Summary</button>
+            <button class="d-tab-btn">AI Chat &amp; Questions</button>
+          </div>
+
+          <div class="d-body-split">
+            <div class="d-transcript-scroll" id="desktopEntries"></div>
+            <aside class="d-insights-panel">
+              <div class="d-card-box">
+                <h4 class="d-card-title">Executive Summary</h4>
+                <ul>
+                  <li>Q3 revenue came in at $22.4M (+11% vs target).</li>
+                  <li>Enterprise expansion drove 66% of upside.</li>
+                  <li>Churn flat at 1.9% quarter-over-quarter.</li>
+                </ul>
+              </div>
+              <div class="d-card-box">
+                <h4 class="d-card-title">Identified Speakers</h4>
+                <ul>
+                  <li><strong>Jordan:</strong> Meeting lead / VP Revenue</li>
+                  <li><strong>Sara:</strong> Finance &amp; Modeling</li>
+                  <li><strong>Mina:</strong> Product Strategy</li>
+                  <li><strong>Avery:</strong> Operations &amp; Accounts</li>
+                </ul>
+              </div>
+            </aside>
+          </div>
+
+          <div class="d-bottom-player">
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">00:52</span>
+            <div style="flex:1;height:6px;background:#E2E8E4;border-radius:4px;position:relative">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:48%;background:var(--brand-fill);border-radius:4px"></div>
+            </div>
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">01:44</span>
+            <button class="d-btn" style="min-width:44px">⏪ 10s</button>
+            <button class="d-btn d-btn--green" style="min-width:44px">▶ Play</button>
+            <button class="d-btn" style="min-width:44px">10s ⏩</button>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ================= JAVASCRIPT LOGIC ================= -->
+<script>
+(function(){
+  "use strict";
+
+  /* Speaker definitions with avatar gradients and talk-time percentages */
+  var SPEAKERS = [
+    { id: "J", name: "Jordan", role: "VP Sales",     pct: "38%", cls: "avatar-J" },
+    { id: "S", name: "Sara",   role: "CFO",          pct: "26%", cls: "avatar-S" },
+    { id: "M", name: "Mina",   role: "Product Lead", pct: "24%", cls: "avatar-M" },
+    { id: "A", name: "Avery",  role: "Operations",   pct: "12%", cls: "avatar-A" }
+  ];
+
+  /* Transcript lines */
+  var ENTRIES = [
+    { t: "00:12", s: "J", txt: 'All right team, let\'s kick off. Q3 revenue came in at twenty-two point four million — <mark class="sel-match">Revenue came in 11%</mark> above target this quarter.' },
+    { t: "00:24", s: "S", txt: "That's well ahead of what we modeled in July. What drove the primary upside?" },
+    { t: "00:36", s: "M", txt: "Two thirds came from enterprise tier expansion, the rest from the March pricing changes." },
+    { t: "00:52", s: "J", txt: "Excellent. Let's dig into the churn number before we review the product roadmap." },
+    { t: "01:08", s: "S", txt: "Net revenue churn held steady at one point nine percent, which is flat quarter-over-quarter." },
+    { t: "01:26", s: "M", txt: "I want to compare that against the cohort we flagged in Q1 before executive sign-off." },
+    { t: "01:44", s: "A", txt: "Territory coverage confirmed — I'll circulate the finalized sheet immediately after the call." }
+  ];
+
+  /* DOM selectors */
+  function $(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function $$(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+
+  var stage = $("#stage");
+  var frameAfter = $("#frameAfter");
+  var frameBefore = $("#frameBefore");
+  var frameDesktop = $("#frameDesktop");
+  var phoneAfter = $("#phoneAfter");
+  var phoneBefore = $("#phoneBefore");
+  var overlayAfter = $("#afterOverlay");
+  var overlayBefore = $("#beforeOverlay");
+  var afterToast = $("#afterToast");
+  var beforeToast = $("#beforeToast");
+
+  var currentSize = "390";
+  var currentView = "after";
+  var isPlaying = false;
+  var playbackSpeed = 1.0;
+  var playTimer = null;
+  var currentProgress = 48; // percent
+
+  /* Render Speaker Strip & Transcript Rows */
+  function renderTranscript(container, speakersLegend) {
+    if (speakersLegend) {
+      speakersLegend.innerHTML = '<span class="speaker-chip" style="background:var(--brand-fill);color:#fff;border-color:var(--brand-fill)"><span class="avatar-badge" style="background:rgba(255,255,255,0.25);color:#fff">4</span>All 4</span>' + SPEAKERS.map(function(sp) {
+        return '<span class="speaker-chip"><span class="avatar-badge ' + sp.cls + '">' + sp.id + '</span>' + sp.name + ' <span style="font-size:10px;font-family:var(--font-mono);opacity:0.75">' + sp.pct + '</span></span>';
+      }).join("");
+    }
+
+    container.innerHTML = ENTRIES.map(function(item, idx) {
+      var sp = SPEAKERS.filter(function(x){ return x.id === item.s; })[0] || SPEAKERS[0];
+      var inPast = idx <= 2 ? " inpast" : "";
+      return '<article class="entry-row' + inPast + '" data-time="' + item.t + '">' +
+        '<div class="gutter-col">' +
+          '<button class="timecode-pill" title="Jump to ' + item.t + '">' + item.t + '</button>' +
+          '<span class="avatar-badge ' + sp.cls + '" title="' + sp.name + '">' + sp.id + '</span>' +
+        '</div>' +
+        '<div class="content-col">' +
+          '<div class="speaker-title-row">' +
+            '<span class="sp-name">' + sp.name + '</span>' +
+            '<span class="sp-role">' + sp.role + '</span>' +
+          '</div>' +
+          '<p class="transcript-text">' + item.txt + '</p>' +
+        '</div>' +
+      '</article>';
+    }).join("");
+  }
+
+  /* Sheet Control Helpers — with focus capture & restore (a11y fix) */
+  var lastFocused = null;
+
+  function restoreFocus() {
+    if (lastFocused && lastFocused.focus) {
+      try { lastFocused.focus({ preventScroll: true }); } catch (err) { lastFocused.focus(); }
+    }
+    lastFocused = null;
+  }
+
+  function focusFirstIn(scope) {
+    var target = $("input, textarea, button[data-close]", scope) || $("button", scope);
+    if (target) {
+      try { target.focus({ preventScroll: true }); } catch (err) { target.focus(); }
+    }
+  }
+
+  function closeAllSheets(overlay) {
+    var wasOpen = $$(".bottom-sheet[data-open='1']", overlay).length > 0 || $(".virtual-keyboard[data-on='1']", overlay) !== null;
+    $$(".bottom-sheet", overlay).forEach(function(sh) {
+      sh.setAttribute("data-open", "0");
+    });
+    var bd = $(".sheet-backdrop", overlay);
+    if (bd) bd.setAttribute("data-on", "0");
+    var kb = $(".virtual-keyboard", overlay);
+    if (kb) kb.setAttribute("data-on", "0");
+    if (wasOpen) restoreFocus();
+  }
+
+  function openSheet(overlay, sheetName, showKeyboard) {
+    closeAllSheets(overlay);
+    lastFocused = document.activeElement;
+    var sh = $('.bottom-sheet[data-sheet="' + sheetName + '"]', overlay);
+    var bd = $(".sheet-backdrop", overlay);
+    var kb = $(".virtual-keyboard", overlay);
+
+    if (bd) bd.setAttribute("data-on", "1");
+    if (sh) {
+      requestAnimationFrame(function() {
+        sh.setAttribute("data-open", "1");
+        focusFirstIn(sh);
+      });
+    }
+    if (kb) {
+      kb.setAttribute("data-on", showKeyboard ? "1" : "0");
+    }
+  }
+
+  /* Toast helper */
+  function showToast(scope, message) {
+    var layer = scope === "before" ? beforeToast : afterToast;
+    var pill = document.createElement("div");
+    pill.className = "toast-pill";
+    pill.textContent = message;
+    layer.appendChild(pill);
+    requestAnimationFrame(function(){ pill.classList.add("show"); });
+    setTimeout(function() {
+      pill.classList.remove("show");
+      setTimeout(function() { pill.remove(); }, 250);
+    }, 2400);
+  }
+
+  /* Viewport Size Switching */
+  function setSize(size) {
+    currentSize = size;
+    $$("[data-size]").forEach(function(btn) {
+      btn.setAttribute("aria-pressed", btn.dataset.size === size ? "true" : "false");
+    });
+
+    [phoneAfter, phoneBefore].forEach(function(phone) {
+      if (phone) phone.style.setProperty("--device-w", size + "px");
+    });
+
+    if (size === "1280") {
+      stage.classList.remove("is-sbs");
+      frameAfter.dataset.show = "0";
+      frameBefore.dataset.show = "0";
+      frameDesktop.dataset.show = "1";
+    } else {
+      frameDesktop.dataset.show = "0";
+      applyViewMode();
+    }
+  }
+
+  /* View Mode (After, Before, Side-by-Side) */
+  function applyViewMode() {
+    stage.classList.toggle("is-sbs", currentView === "sbs" && currentSize !== "1280");
+    if (currentSize === "1280") return;
+    frameAfter.dataset.show = (currentView === "after" || currentView === "sbs") ? "1" : "0";
+    frameBefore.dataset.show = (currentView === "before" || currentView === "sbs") ? "1" : "0";
+  }
+
+  /* Search Highlighting */
+  function updateSearchResults(query) {
+    var resultsBox = $("#afterResults");
+    var countBox = $("#afterSearchCount");
+    if (!resultsBox) return;
+
+    var q = (query || "").trim().toLowerCase();
+    var matches = ENTRIES.filter(function(e) {
+      return !q || e.txt.toLowerCase().indexOf(q) !== -1;
+    });
+
+    countBox.textContent = matches.length + (matches.length === 1 ? " matching mention" : " matching mentions");
+    if (matches.length === 0) {
+      resultsBox.innerHTML = '<div style="text-align:center;padding:18px 0;color:var(--text-muted);font-size:13px">No matches found. Try searching for “revenue”, “churn”, or “upside”.</div>';
+      return;
+    }
+
+    resultsBox.innerHTML = matches.map(function(item) {
+      return '<button class="search-result-card" data-jump="' + item.t + '">' +
+        '<span class="search-result-time">◷ ' + item.t + '</span>' +
+        '<span class="search-result-text">' + item.txt + '</span>' +
+      '</button>';
+    }).join("");
+  }
+
+  /* Tab Switching */
+  function switchTab(appRoot, tabName) {
+    $$("[data-tab]", appRoot).forEach(function(btn) {
+      var isActive = btn.dataset.tab === tabName;
+      btn.classList.toggle("is-active", isActive);
+      btn.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    $$(".view-pane[data-viewname]", appRoot).forEach(function(pane) {
+      pane.hidden = pane.dataset.viewname !== tabName;
+    });
+  }
+
+  /* Audio Playback Simulation — single progress writer keeps aria values honest */
+  function setProgress(pct) {
+    currentProgress = pct;
+    var track = $("#afterScrubTrack");
+    $("#afterScrubFill").style.width = pct + "%";
+    $("#afterScrubThumb").style.left = pct + "%";
+    if (track) {
+      track.setAttribute("aria-valuenow", Math.round(pct));
+      var totalSec = 104; /* 1m 44s */
+      var curSec = Math.round(totalSec * pct / 100);
+      var fmt = function(s) { return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); };
+      track.setAttribute("aria-valuetext", fmt(curSec) + " of " + fmt(totalSec));
+    }
+  }
+
+  function togglePlay() {
+    isPlaying = !isPlaying;
+    var app = $("#appAfter");
+    var playIcon = $("#playIcon");
+    var pauseIcon = $("#pauseIcon");
+
+    app.classList.toggle("is-playing", isPlaying);
+    playIcon.style.display = isPlaying ? "none" : "block";
+    pauseIcon.style.display = isPlaying ? "block" : "none";
+
+    if (isPlaying) {
+      showToast("after", "Playback started (animated waveforms active)");
+      playTimer = setInterval(function() {
+        currentProgress = (currentProgress >= 100) ? 0 : currentProgress + 0.5;
+        setProgress(currentProgress);
+      }, 200);
+    } else {
+      clearInterval(playTimer);
+      showToast("after", "Playback paused");
+    }
+  }
+
+  /* Event Wireups */
+  renderTranscript($("#afterEntries"), $("#afterSpeakers"));
+  renderTranscript($("#beforeEntries"), null);
+  renderTranscript($("#desktopEntries"), null);
+
+  // Viewport and Compare switcher
+  $$("[data-size]").forEach(function(btn) {
+    btn.addEventListener("click", function(){ setSize(this.dataset.size); });
+  });
+
+  $$("[data-view]").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      currentView = this.dataset.view;
+      $$("[data-view]").forEach(function(item){ item.setAttribute("aria-pressed", item === btn ? "true" : "false"); });
+      applyViewMode();
+    });
+  });
+
+  // State Pills
+  $$("[data-state]").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      $$("[data-state]").forEach(function(item){ item.setAttribute("aria-pressed", item === btn ? "true" : "false"); });
+      closeAllSheets(overlayAfter);
+      closeAllSheets(overlayBefore);
+
+      var state = this.dataset.state;
+      if (state === "reader") {
+        switchTab($("#appAfter"), "transcript");
+      } else if (state === "search") {
+        if (currentView === "before") {
+          var s = $("#beforeSearchBox");
+          s.style.display = s.style.display === "none" ? "block" : "none";
+        } else {
+          openSheet(overlayAfter, "search", false);
+        }
+      } else if (state === "keyboard") {
+        openSheet(overlayAfter, "search", true);
+      } else if (state === "loading") {
+        switchTab($("#appAfter"), "loading");
+      } else if (state === "offline") {
+        $("#appAfter").classList.toggle("is-offline");
+      } else if (state === "error" || state === "wrongaccount" || state === "deleted" || state === "empty") {
+        switchTab($("#appAfter"), state);
+      } else {
+        openSheet(overlayAfter, state, false);
+      }
+    });
+  });
+
+  // Delegated App Actions
+  function bindActions(root, overlay, scope) {
+    root.addEventListener("click", function(e) {
+      var btn = e.target.closest("button,[data-open],[data-close],[data-goto],[data-action],[data-fmt],[data-jump]");
+      if (!btn) return;
+
+      if (btn.dataset.open) {
+        e.preventDefault();
+        openSheet(overlay, btn.dataset.open, btn.dataset.open === "search");
+      } else if (btn.dataset.close !== undefined) {
+        closeAllSheets(overlay);
+      } else if (btn.dataset.goto) {
+        openSheet(overlay, btn.dataset.goto, false);
+      } else if (btn.dataset.fmt) {
+        closeAllSheets(overlay);
+        showToast(scope, "Exported as " + btn.dataset.fmt + " (illustrative demo)");
+      } else if (btn.dataset.jump) {
+        closeAllSheets(overlay);
+        showToast(scope, "Jumped to timestamp " + btn.dataset.jump);
+      } else if (btn.dataset.action) {
+        var act = btn.dataset.action;
+        if (act === "ts") {
+          var chk = $("#afterTs");
+          chk.checked = !chk.checked;
+          $("#appAfter").classList.toggle("no-timestamps", !chk.checked);
+          $("#menuTsStatus").textContent = chk.checked ? "Visible" : "Hidden";
+          closeAllSheets(overlay);
+        } else if (act === "delete") {
+          closeAllSheets(overlay);
+          showToast(scope, "Delete is simulated in this prototype.");
+        } else if (act === "rename-save") {
+          var val = $("#renameInput").value.trim();
+          if (val) $("#afterTitle").textContent = val;
+          closeAllSheets(overlay);
+          showToast(scope, "Title saved as " + val);
+        } else if (act === "ask") {
+          openSheet(overlay, "ask", false);
+        } else if (act === "ask-send") {
+          closeAllSheets(overlay);
+          showToast(scope, "Question sent — quote, speaker and time attached (demo)");
+        } else if (act === "retry") {
+          switchTab($("#appAfter"), "transcript");
+          showToast(scope, "Retried — transcript loaded (demo)");
+        } else if (act === "undo-delete") {
+          switchTab($("#appAfter"), "transcript");
+          showToast(scope, "Recording restored from trash");
+        } else if (act === "listen-anyway") {
+          switchTab($("#appAfter"), "transcript");
+          if (!isPlaying) togglePlay();
+        } else if (act === "back-library" || act === "switch-account" || act === "reupload") {
+          showToast(scope, "This navigation is out of the reader's scope (demo)");
+        } else {
+          closeAllSheets(overlay);
+          showToast(scope, act.charAt(0).toUpperCase() + act.slice(1) + " action triggered.");
+        }
+      }
+    });
+
+    var bd = $(".sheet-backdrop", overlay);
+    if (bd) bd.addEventListener("click", function(){ closeAllSheets(overlay); });
+
+    $$("[data-tab]", root).forEach(function(tab) {
+      tab.addEventListener("click", function(){ switchTab(root, this.dataset.tab); });
+    });
+  }
+
+  bindActions($("#appAfter"), overlayAfter, "after");
+  bindActions($("#appBefore"), overlayBefore, "before");
+  bindActions(overlayAfter, overlayAfter, "after");
+  bindActions(overlayBefore, overlayBefore, "before");
+
+  // Transcript Text Click -> Selection Sheet (+ Ask composer context)
+  $$("#afterEntries .transcript-text").forEach(function(el) {
+    el.addEventListener("click", function() {
+      var row = el.closest(".entry-row");
+      var quote = el.textContent.trim();
+      $("#selSnippetText").textContent = '"' + quote + '"';
+      $("#askQuoteText").textContent = '"' + quote + '"';
+      var nameEl = row ? row.querySelector(".sp-name") : null;
+      var roleEl = row ? row.querySelector(".sp-role") : null;
+      if (nameEl) $("#askChipSpeaker").textContent = nameEl.textContent + (roleEl ? " · " + roleEl.textContent : "");
+      if (row) $("#askChipTime").textContent = "◷ " + row.getAttribute("data-time");
+      openSheet(overlayAfter, "selection", false);
+    });
+  });
+
+  // Timestamps Checkbox
+  $("#afterTs").addEventListener("change", function() {
+    $("#appAfter").classList.toggle("no-timestamps", !this.checked);
+    $("#menuTsStatus").textContent = this.checked ? "Visible" : "Hidden";
+  });
+
+  // Search input live filtering
+  $("#afterSearch").addEventListener("input", function() {
+    updateSearchResults(this.value);
+  });
+
+  // Player buttons
+  $("#playToggleBtn").addEventListener("click", togglePlay);
+  $("#rewindBtn").addEventListener("click", function() {
+    setProgress(Math.max(0, currentProgress - 10));
+    showToast("after", "Rewound 10 seconds");
+  });
+  $("#forwardBtn").addEventListener("click", function() {
+    setProgress(Math.min(100, currentProgress + 10));
+    showToast("after", "Skipped forward 10 seconds");
+  });
+  $("#speedToggleBtn").addEventListener("click", function() {
+    var speeds = [1.0, 1.25, 1.5, 2.0];
+    var nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+    playbackSpeed = speeds[nextIdx];
+    this.textContent = playbackSpeed.toFixed(speeds[nextIdx] % 1 === 0 ? 1 : 2) + "x";
+    showToast("after", "Playback speed set to " + this.textContent);
+  });
+
+  // Scrubber keyboard support (slider a11y)
+  $("#afterScrubTrack").addEventListener("keydown", function(e) {
+    if (e.key === "ArrowLeft") { setProgress(Math.max(0, currentProgress - 5)); e.preventDefault(); }
+    if (e.key === "ArrowRight") { setProgress(Math.min(100, currentProgress + 5)); e.preventDefault(); }
+  });
+
+  // Escape closes sheets and the simulated keyboard
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
+      closeAllSheets(overlayAfter);
+      closeAllSheets(overlayBefore);
+    }
+  });
+
+  // Ask suggestions fill the composer
+  $$(".ask-suggestion").forEach(function(b) {
+    b.addEventListener("click", function() {
+      $("#askInput").value = this.getAttribute("data-ask-fill");
+      $("#askInput").focus();
+    });
+  });
+
+  // Initialize — deep links: ?state=… &width=… &view=… &shot=1
+  updateSearchResults("");
+  var params = new URLSearchParams(location.search);
+  if (params.has("shot")) document.body.classList.add("shot-mode");
+  setSize(params.get("width") || "390");
+  var deepView = params.get("view");
+  if (deepView) {
+    var viewBtn = $('[data-view="' + deepView + '"]');
+    if (viewBtn) viewBtn.click();
+  }
+  var deepState = params.get("state");
+  if (deepState) {
+    var deepPill = $('.state-pill[data-state="' + deepState + '"]');
+    if (deepPill) deepPill.click();
+    else showToast("after", "Unknown state: " + deepState);
+  }
+})();
+</script>
+</body>
+</html>
