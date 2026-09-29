@@ -26,6 +26,25 @@
         <div><p class="eyebrow">01 / Start with audio</p><h2 id="setup-title">Your recording</h2></div>
         <p>Uncompressed PCM16 WAV</p>
       </div>
+      <div class="demo-picker" aria-labelledby="demo-title">
+        <div class="demo-intro">
+          <strong id="demo-title">Try a lesson from Raagan</strong>
+          <span>These recordings are bundled with the demo. Pick one or choose your own WAV below.</span>
+        </div>
+        <div class="demo-grid">
+          <button class="demo-card" type="button" data-demo-url="/demo/speech-and-strum.wav" data-demo-name="speech-and-strum.wav" data-guitar-start="25" data-guitar-end="35">
+            <span class="demo-number" aria-hidden="true">01</span>
+            <span><strong>Speech + guitar phrase</strong><small>50.8 seconds · guitar focus 0:25–0:35</small></span>
+            <span class="demo-action">Use sample →</span>
+          </button>
+          <button class="demo-card" type="button" data-demo-url="/demo/c-major-scale-tutorial.wav" data-demo-name="c-major-scale-tutorial.wav">
+            <span class="demo-number" aria-hidden="true">02</span>
+            <span><strong>C major scale tutorial</strong><small>36.0 seconds · full recording</small></span>
+            <span class="demo-action">Use sample →</span>
+          </button>
+        </div>
+      </div>
+      <p class="or-divider"><span>or choose your own</span></p>
       <label class="file-card" for="audio-file">
         <span class="file-icon" aria-hidden="true">♫</span>
         <span class="file-title">Choose lesson audio <strong>WAV</strong></span>
@@ -43,7 +62,7 @@
           </div>
         </details>
         <button id="analyze-button" class="analyze-button" type="submit">Analyze lesson <span aria-hidden="true">→</span></button>
-        <p class="privacy-note">Pitch is analyzed here on your computer. If speech is configured, this action also sends the WAV to WhipScribe for transcription.</p>
+        <p class="privacy-note">Pitch is analyzed by this lesson-review server. If speech is configured, this action also sends the WAV to WhipScribe for transcription. The demo does not save the recording.</p>
       </form>
       <p class="status" id="status" role="status" aria-live="polite">Choose a WAV to begin.</p>
     </section>

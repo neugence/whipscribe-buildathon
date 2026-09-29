@@ -13,6 +13,8 @@ const ASSETS: Record<string, { file: string; type: string }> = {
   "/app.js": { file: "app.js", type: "text/javascript; charset=utf-8" },
   "/speech-mask.js": { file: "speech-mask.js", type: "text/javascript; charset=utf-8" },
   "/style.css": { file: "style.css", type: "text/css; charset=utf-8" },
+  "/demo/speech-and-strum.wav": { file: "demo/speech-and-strum.wav", type: "audio/wav" },
+  "/demo/c-major-scale-tutorial.wav": { file: "demo/c-major-scale-tutorial.wav", type: "audio/wav" },
 };
 
 function sendJson(response: ServerResponse, status: number, value: unknown): void {

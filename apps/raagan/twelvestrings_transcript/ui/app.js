@@ -8,6 +8,7 @@ const review = document.querySelector('#review');
 const timelineList = document.querySelector('#timeline');
 const status = document.querySelector('#status');
 const filters = [...document.querySelectorAll('.filter')];
+const demoButtons = [...document.querySelectorAll('.demo-card')];
 let audioUrl = null;
 let audioFile = null;
 let speechConfigured = false;
@@ -143,9 +144,9 @@ function stopRequests() {
   runId += 1;
 }
 
-audioInput.addEventListener('change', () => {
+function selectAudio(file, guitarStart = '', guitarEnd = '') {
   stopRequests();
-  audioFile = audioInput.files[0] || null;
+  audioFile = file;
   notes = [];
   speech = [];
   guitarRangeSelected = false;
@@ -160,11 +161,33 @@ audioInput.addEventListener('change', () => {
   player.load();
   document.querySelector('#audio-label').textContent = audioFile?.name || 'Select a recording from your computer';
   document.querySelector('#playing-label').textContent = 'Ready to play';
-  document.querySelector('#guitar-range').open = false;
-  document.querySelector('#guitar-start').value = '';
-  document.querySelector('#guitar-end').value = '';
+  document.querySelector('#guitar-range').open = guitarStart !== '' || guitarEnd !== '';
+  document.querySelector('#guitar-start').value = guitarStart;
+  document.querySelector('#guitar-end').value = guitarEnd;
   setStatus(audioFile ? 'Analyze the full recording, or set an optional guitar range.' : 'Choose a WAV to begin.');
+}
+
+audioInput.addEventListener('change', () => {
+  selectAudio(audioInput.files[0] || null);
 });
+
+demoButtons.forEach(button => button.addEventListener('click', async () => {
+  demoButtons.forEach(item => { item.disabled = true; });
+  setStatus(`Loading ${button.querySelector('strong').textContent}…`);
+  try {
+    const response = await fetch(button.dataset.demoUrl);
+    if (!response.ok) throw new Error(`Sample request failed (${response.status}).`);
+    const file = new File([await response.blob()], button.dataset.demoName, { type: 'audio/wav' });
+    audioInput.value = '';
+    selectAudio(file, button.dataset.guitarStart || '', button.dataset.guitarEnd || '');
+    setStatus('Sample ready. Select Analyze lesson to build its timeline.');
+    analyzeForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (error) {
+    setStatus(`Could not load the sample: ${error.message}`, true);
+  } finally {
+    demoButtons.forEach(item => { item.disabled = false; });
+  }
+}));
 
 player.addEventListener('loadedmetadata', () => {
   if (!audioFile || !Number.isFinite(player.duration)) return;
