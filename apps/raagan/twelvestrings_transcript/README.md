@@ -23,12 +23,17 @@ See [PROBLEM.md](PROBLEM.md) for the longer problem statement and
 
 ## Status
 
-TypeScript CLI, a local browser viewer, and synthetic-audio tests are in place. In a manual
+TypeScript CLI, a container-ready browser viewer, two bundled demo recordings,
+and 16 automated tests are in place. In a manual
 smoke test with my own `speech_and_strum.wav`, the CLI returned 3 speech
 segments and 12 estimated note events from one recording. The local recording
 and transcript output are not committed. Pitch accuracy is not validated:
 brief high/low outliers and repeated note switches appeared in that run.
-No independent user test yet.
+The current containerized viewer was also verified against the live API with
+that bundled 50.8-second recording: it returned 2 speech segments and 3 note
+estimates in the preselected guitar interval. The transcript text is not
+committed. No independent user test yet. The GHCR release workflow and public
+deployment have not run yet.
 
 Watch the [1:22 TwelveStrings × WhipScribe demo](TwelveStringsXWhipscribeDemo.mov)
 for a walkthrough of the current prototype. A [54-second follow-up recording](TwelveStringsXWhipscribeDemo-2.mp4)
@@ -64,9 +69,10 @@ transcript fetch, and output save. The key, claim token, and transcript text
 are not included in those progress messages. The CLI still prints the
 timestamped result to stdout after saving the JSON.
 
-## Local lesson viewer
+## Lesson viewer
 
-The dependency-free page in `ui/` takes one PCM16 WAV file. A small local Node
+The dependency-free page in `ui/` offers two bundled examples or takes one
+PCM16 WAV file. A small Node
 server runs the existing YIN detector over the full WAV by default and, when
 `WHIPSCRIBE_API_KEY` is set in the shell, submits the same WAV for speech
 transcription. A guitar-only interval can be set when desired. Notes appear as
@@ -87,13 +93,58 @@ a transcript JSON file.
 npm run ui
 ```
 
-Open `http://127.0.0.1:8765`, select your WAV, and choose **Analyze lesson**.
+Open `http://127.0.0.1:8765`, select a bundled example or your WAV, and choose
+**Analyze lesson**.
 The interval control is optional. The viewer listens on your computer only and
-keeps the file in memory. It accepts WAVs up to 128 MiB. To enable speech,
+keeps the file in memory. It accepts WAVs up to 50 MiB and allows one live
+analysis request at a time. To enable speech,
 set `WHIPSCRIBE_API_KEY` in your shell before starting `npm run ui`; do not
 put it in the browser or a tracked file. The page states when it will send
 audio to WhipScribe. If no key is configured, it runs YIN only. Pitch labels
 are estimates to verify by listening.
+
+The server also exposes `GET /health` for its container health check. Set
+`HOST=0.0.0.0` only when it runs inside a container or another controlled
+network; the local default remains `127.0.0.1`.
+
+## Container and GHCR release
+
+Build and exercise the Linux image locally:
+
+```sh
+cd apps/raagan/twelvestrings_transcript
+docker build --build-arg APP_VERSION=local \
+  -t twelvestrings-lesson-review:local .
+docker run --rm --name twelvestrings-lesson-review \
+  -p 127.0.0.1:8765:8765 \
+  twelvestrings-lesson-review:local
+```
+
+To test real speech locally, add `--env-file /absolute/path/to/private.env` to
+`docker run`. That file contains `WHIPSCRIBE_API_KEY=...`, stays outside the
+repository, and is never copied into the image.
+
+Tags matching `lesson-review-v*.*.*` trigger
+`.github/workflows/publish-lesson-review.yml`. The workflow reruns the tests,
+then publishes Linux AMD64 and ARM64 images such as:
+
+```text
+ghcr.io/raagan-u/twelvestrings-lesson-review:0.1.0
+ghcr.io/raagan-u/twelvestrings-lesson-review:sha-<commit>
+```
+
+For example, after the local checks pass:
+
+```sh
+git tag lesson-review-v0.1.0
+git push origin lesson-review-v0.1.0
+```
+
+The tag is deliberately a manual release decision. No workflow publishes an
+image from an ordinary branch push. After the first release, confirm the GHCR
+package is public so reviewers can pull it without repository credentials.
+The published image supports Linux AMD64 and ARM64. Deployment-specific host,
+proxy, and tunnel configuration stays outside this submission.
 
 ## Vision: two people, twelve strings
 
@@ -120,5 +171,6 @@ performance or chord recognition. It does not integrate into the separate
 TwelveStrings project yet. The vision above is a hypothesis to refine after
 a real user test. The viewer keeps results
 in browser memory only, so a refresh requires reselecting the WAV. The new
-viewer speech path has been checked with mocked API responses, not a live
-WhipScribe submission while its transcription backend is unavailable.
+viewer speech path now has both mocked test coverage and one live WhipScribe
+submission, but the public hostname still needs to be deployed and checked
+outside the local network.
