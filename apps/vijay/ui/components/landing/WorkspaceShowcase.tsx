@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { Play, Pause } from "lucide-react";
 import { getGsap } from "@/lib/gsap";
 
 export function WorkspaceShowcase() {
@@ -8,8 +9,12 @@ export function WorkspaceShowcase() {
   const workspaceRef = useRef<HTMLDivElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const briefRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // State to toggle active timestamp highlight manually or automatically via GSAP
+  // Audio player state
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
   const [activeTimestamp, setActiveTimestamp] = useState<string>("01:28");
 
   useEffect(() => {
@@ -47,12 +52,77 @@ export function WorkspaceShowcase() {
     return () => ctx.revert();
   }, []);
 
+  // Format seconds to mm:ss string
+  const formatTime = (sec: number): string => {
+    if (isNaN(sec) || sec <= 0) return "00:00";
+    const mins = Math.floor(sec / 60);
+    const secs = Math.floor(sec % 60);
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Toggle play/pause
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch((err) => console.error("Audio playback error:", err));
+    }
+  };
+
+  // Jump audio playback to specific timestamp
+  const seekToTimestamp = (timestampLabel: string, seconds: number) => {
+    setActiveTimestamp(timestampLabel);
+    if (audioRef.current) {
+      audioRef.current.currentTime = seconds;
+      audioRef.current.play().catch((err) => console.error("Audio seek error:", err));
+    }
+  };
+
+  // Seek bar click handler
+  const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    const newTime = pct * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   return (
     <section
       ref={containerRef}
       id="workspace"
       className="relative min-h-screen flex flex-col justify-center items-center px-6 py-24 max-w-6xl mx-auto border-b border-border/40"
     >
+      {/* Hidden underlying HTML5 Audio element */}
+      <audio
+        ref={audioRef}
+        src="/assets/demo.mp3"
+        preload="metadata"
+        onTimeUpdate={() => {
+          if (audioRef.current) {
+            const cur = audioRef.current.currentTime;
+            setCurrentTime(cur);
+            // Auto-update active speech timestamp based on playback position
+            if (cur >= 80) setActiveTimestamp("01:28");
+            else if (cur >= 60) setActiveTimestamp("01:12");
+            else if (cur >= 30) setActiveTimestamp("00:42");
+          }
+        }}
+        onLoadedMetadata={() => {
+          if (audioRef.current) {
+            setDuration(audioRef.current.duration);
+          }
+        }}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+      />
+
       <div className="w-full space-y-12">
         {/* Section Headline */}
         <div className="text-center space-y-3">
@@ -100,16 +170,20 @@ export function WorkspaceShowcase() {
               <div className="space-y-4 text-sm">
                 {/* Speech 1 */}
                 <div
-                  className={`p-3 rounded-lg border transition-all duration-200 ${
+                  className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                     activeTimestamp === "00:42"
                       ? "bg-secondary border-foreground/30"
                       : "border-transparent hover:bg-secondary/40"
                   }`}
+                  onClick={() => seekToTimestamp("00:42", 42)}
                 >
                   <div className="flex items-center justify-between text-xs font-mono text-muted-foreground mb-1">
                     <span className="font-semibold text-foreground">Client</span>
                     <button
-                      onClick={() => setActiveTimestamp("00:42")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        seekToTimestamp("00:42", 42);
+                      }}
                       className="hover:text-foreground underline underline-offset-2"
                     >
                       00:42
@@ -122,16 +196,20 @@ export function WorkspaceShowcase() {
 
                 {/* Speech 2 */}
                 <div
-                  className={`p-3 rounded-lg border transition-all duration-200 ${
+                  className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                     activeTimestamp === "01:12"
                       ? "bg-secondary border-foreground/30"
                       : "border-transparent hover:bg-secondary/40"
                   }`}
+                  onClick={() => seekToTimestamp("01:12", 72)}
                 >
                   <div className="flex items-center justify-between text-xs font-mono text-muted-foreground mb-1">
                     <span className="font-semibold text-foreground">Freelancer</span>
                     <button
-                      onClick={() => setActiveTimestamp("01:12")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        seekToTimestamp("01:12", 72);
+                      }}
                       className="hover:text-foreground underline underline-offset-2"
                     >
                       01:12
@@ -144,11 +222,12 @@ export function WorkspaceShowcase() {
 
                 {/* Speech 3 — Highlighted */}
                 <div
-                  className={`p-3 rounded-lg border transition-all duration-200 ${
+                  className={`p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                     activeTimestamp === "01:28"
                       ? "bg-secondary border-foreground/40 ring-1 ring-border"
                       : "border-transparent hover:bg-secondary/40"
                   }`}
+                  onClick={() => seekToTimestamp("01:28", 88)}
                 >
                   <div className="flex items-center justify-between text-xs font-mono text-muted-foreground mb-1">
                     <span className="font-semibold text-foreground flex items-center gap-1.5">
@@ -156,7 +235,10 @@ export function WorkspaceShowcase() {
                       Client
                     </span>
                     <button
-                      onClick={() => setActiveTimestamp("01:28")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        seekToTimestamp("01:28", 88);
+                      }}
                       className="text-foreground font-semibold underline underline-offset-2"
                     >
                       01:28
@@ -187,7 +269,10 @@ export function WorkspaceShowcase() {
                   Requirements
                 </span>
                 <div className="space-y-2 font-sans text-sm">
-                  <div className="p-3 rounded-lg border border-border/60 bg-card text-foreground flex items-center justify-between">
+                  <div
+                    onClick={() => seekToTimestamp("00:42", 42)}
+                    className="p-3 rounded-lg border border-border/60 bg-card text-foreground flex items-center justify-between cursor-pointer hover:bg-secondary/40 transition-colors"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-foreground/60" />
                       Website redesign
@@ -196,7 +281,7 @@ export function WorkspaceShowcase() {
                   </div>
 
                   <div
-                    onClick={() => setActiveTimestamp("01:28")}
+                    onClick={() => seekToTimestamp("01:28", 88)}
                     className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 flex items-center justify-between ${
                       activeTimestamp === "01:28"
                         ? "bg-secondary border-foreground/40 ring-1 ring-border"
@@ -253,17 +338,33 @@ export function WorkspaceShowcase() {
             </div>
           </div>
 
-          {/* Bottom Player / Timeline Bar */}
+          {/* Bottom Player / Timeline Bar (Functional Audio Player) */}
           <div className="h-12 px-6 bg-secondary/80 border-t border-border flex items-center justify-between text-xs font-mono">
             <div className="flex items-center gap-3">
-              <button className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center font-bold text-xs">
-                ▶
+              <button
+                onClick={togglePlay}
+                className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center font-bold text-xs hover:scale-105 active:scale-95 transition-transform cursor-pointer"
+                title={isPlaying ? "Pause audio" : "Play demo audio"}
+              >
+                {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
               </button>
-              <span className="text-muted-foreground">01:28 / 04:15</span>
+              <span className="text-muted-foreground font-mono">
+                {formatTime(currentTime)} / {duration > 0 ? formatTime(duration) : "04:15"}
+              </span>
             </div>
-            <div className="flex-1 max-w-md mx-6 h-1 bg-border rounded-full overflow-hidden">
-              <div className="w-[35%] h-full bg-foreground rounded-full" />
+
+            {/* Clickable Progress Scrub Bar */}
+            <div
+              onClick={handleScrub}
+              className="flex-1 max-w-md mx-6 h-2 bg-border rounded-full overflow-hidden cursor-pointer group py-0.5 relative"
+              title="Click to seek audio"
+            >
+              <div
+                className="h-full bg-foreground rounded-full transition-all duration-75"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
+
             <span className="text-muted-foreground hidden sm:inline">
               TIMESTAMP LINKED
             </span>
