@@ -1,0 +1,135 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ------------------------------------------------------------------
+   Single Dark Visual Theme — CallBrief Design System
+   All colors come from semantic CSS variables.
+------------------------------------------------------------------- */
+:root, .dark {
+  /* Surfaces */
+  --background: oklch(0.12 0 0);          /* Deep near-black background */
+  --foreground: oklch(0.98 0 0);          /* Off-white primary typography */
+  
+  --card: oklch(0.16 0 0);                /* Elevated dark surface */
+  --card-foreground: oklch(0.98 0 0);
+
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+
+  /* Primary Brand — Refined crisp off-white for CTA buttons */
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0.12 0 0);
+
+  /* Secondary Surface */
+  --secondary: oklch(0.20 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+
+  /* Restrained Accent — Subtle Emerald / Precision Teal */
+  --accent: oklch(0.24 0.04 175);
+  --accent-foreground: oklch(0.95 0.05 175);
+
+  /* Quiet UI & Borders */
+  --muted: oklch(0.20 0 0);
+  --muted-foreground: oklch(0.65 0 0);    /* Muted gray secondary text */
+  --border: oklch(1 0 0 / 8%);            /* Very subtle borders */
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.85 0 0 / 30%);
+
+  /* Status */
+  --success: oklch(0.68 0.16 160);
+  --success-foreground: oklch(0.12 0 0);
+  --warning: oklch(0.75 0.15 70);
+  --warning-foreground: oklch(0.12 0 0);
+  --destructive: oklch(0.65 0.20 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Shape */
+  --radius: 0.5rem;
+}
+
+/* Expose tokens to Tailwind inline theme */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+
+  ::selection {
+    background-color: oklch(1 0 0 / 15%);
+    color: var(--foreground);
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 12%);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(1 0 0 / 25%);
+  }
+}

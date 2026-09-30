@@ -1,0 +1,152 @@
+"""
+Agentic Orchestrator for WhipScribe Call Processing.
+
+Main entrypoint coordinating RouterAgent intent detection, Playbook execution,
+ToolRegistry execution, Guardrail safety verification, and Proposal generation.
+"""
+
+import logging
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
+
+from .vertex_client import VertexClientFactory
+from .router import RouterAgent, RouterResult, CallIntent
+from .playbooks import PlaybookProcessor
+from .tools import ToolRegistry, AgentProposal
+from .guardrails import GuardrailValidator
+
+logger = logging.getLogger(__name__)
+
+
+class OrchestrationResult(BaseModel):
+    router_result: RouterResult
+    proposal: Optional[AgentProposal] = None
+    status: str = Field(description="'completed' | 'needs_intent_confirmation'")
+    logs: List[str] = Field(default_factory=list)
+
+
+class AgentOrchestrator:
+    """Main Agentic Orchestrator for turning raw transcripts into structured proposals."""
+
+    def __init__(
+        self,
+        vertex_factory: Optional[VertexClientFactory] = None,
+        model_name: str = "gemini-2.5-flash",
+    ):
+        self.factory = vertex_factory or VertexClientFactory(model_name=model_name)
+        self.router = RouterAgent(client_factory=self.factory)
+        self.playbooks = PlaybookProcessor(client_factory=self.factory)
+        self.tool_registry = ToolRegistry()
+        self.validator = GuardrailValidator()
+
+    def process_call(
+        self,
+        transcript_data: List[Dict[str, Any]],
+        client_id: Optional[str] = None,
+        override_intent: Optional[CallIntent] = None,
+        hourly_rate: float = 100.0,
+        currency: str = "USD",
+        budget: Optional[float] = None,
+        message_tone: str = "friendly and professional",
+        user_name: str = "Freelancer",
+        previous_brief_summary: Optional[str] = None,
+        confidence_threshold: float = 0.70,
+    ) -> OrchestrationResult:
+        """Processes a call transcript through intent classification, tool invocation, playbook execution, and guardrails."""
+        logs = []
+
+        # 1. Execute Tool: get_transcript
+        tx_tool_result = self.tool_registry.execute_tool("get_transcript", transcript_data=transcript_data)
+        if tx_tool_result.success and isinstance(tx_tool_result.data, dict):
+            transcript_text = tx_tool_result.data.get("formatted_text", "")
+            logs.append(f"Tool 'get_transcript' executed: formatted {tx_tool_result.data.get('line_count')} lines.")
+        else:
+            transcript_text = "\n".join([f"[{line.get('time', '00:00')}] {line.get('speaker', 'SPEAKER')}: {line.get('text', '')}" for line in transcript_data])
+            logs.append("Tool 'get_transcript' fallback executed.")
+
+        # 2. Execute Tool: get_client_history (if client_id provided)
+        history_summary = previous_brief_summary
+        if client_id:
+            history_result = self.tool_registry.execute_tool("get_client_history", client_id=client_id)
+            if history_result.success and isinstance(history_result.data, dict):
+                history_summary = history_result.data.get("history_summary")
+                logs.append(f"Tool 'get_client_history' executed for client '{client_id}'.")
+
+        # 3. Intent Detection / Classification via RouterAgent
+        if override_intent:
+            logger.info(f"Orchestrator: Using user-overridden intent '{override_intent.value}'")
+            router_result = RouterResult(
+                intent=override_intent,
+                confidence=1.0,
+                reason="User manually selected this intent.",
+                needs_human_confirmation=False,
+                top_choices=[],
+            )
+            logs.append(f"Intent overridden by user to: {override_intent.value}")
+        else:
+            logger.info("Orchestrator: Running RouterAgent for intent classification")
+            router_result = self.router.classify(
+                transcript_text,
+                client_history_summary=history_summary,
+                confidence_threshold=confidence_threshold,
+            )
+            logs.append(f"Router classified intent as '{router_result.intent.value}' with confidence {router_result.confidence:.2f}")
+
+        # 4. Check Confidence Guardrail
+        if router_result.needs_human_confirmation and not override_intent:
+            logger.warning("Orchestrator: Intent confidence below threshold. Halting for user confirmation.")
+            logs.append("Execution paused: low intent confidence requires user confirmation.")
+            return OrchestrationResult(
+                router_result=router_result,
+                proposal=None,
+                status="needs_intent_confirmation",
+                logs=logs,
+            )
+
+        # 5. Execute Selected Playbook with registered tools
+        selected_intent = router_result.intent
+        logs.append(f"Running Playbook for intent '{selected_intent.value}' with tone '{message_tone}' for '{user_name}'...")
+
+        if selected_intent == CallIntent.DISCOVERY:
+            proposal = self.playbooks.run_discovery(
+                transcript_text,
+                hourly_rate=hourly_rate,
+                currency=currency,
+                budget=budget,
+                message_tone=message_tone,
+                user_name=user_name,
+            )
+
+        elif selected_intent == CallIntent.INQUIRY:
+            proposal = self.playbooks.run_inquiry(
+                transcript_text,
+                hourly_rate=hourly_rate,
+                currency=currency,
+                message_tone=message_tone,
+                user_name=user_name,
+            )
+
+        elif selected_intent == CallIntent.CHANGE_REQUEST:
+            proposal = self.playbooks.run_change_request(
+                transcript_text,
+                previous_brief_summary=history_summary,
+                hourly_rate=hourly_rate,
+                currency=currency,
+                budget=budget,
+                message_tone=message_tone,
+                user_name=user_name,
+            )
+
+        else:
+            proposal = self.playbooks.run_other(transcript_text)
+
+        # 6. Enforce Guardrail Sanitization
+        sanitized_proposal = self.validator.sanitize_proposal(proposal, transcript_text)
+        logs.append("Guardrail verification completed: all extracted items verified with timestamps.")
+
+        return OrchestrationResult(
+            router_result=router_result,
+            proposal=sanitized_proposal,
+            status="completed",
+            logs=logs,
+        )

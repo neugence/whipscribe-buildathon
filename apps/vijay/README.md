@@ -1,0 +1,186 @@
+# Freelancer Call Assistant — CallBrief
+
+**Track 4 — Invent a workflow** · WhipScribe Buildathon · Vijay Singh
+
+A freelancer uploads a client call recording, voice note, or WhatsApp chat export. An agent works out what kind of call it was, uses tools to produce the right output — brief, tasks, quote, reply message — and the freelancer reviews and edits everything before anything is saved or sent. Every item links to the exact moment in the recording it came from.
+
+---
+
+## The problem
+
+**The person:** A freelance web developer taking calls with small-business clients — discovery calls, service inquiries, change requests, status checks.
+
+**Their day today:**
+
+- Client calls happen over WhatsApp voice or regular calls.
+- Notes are written in a physical notebook during the call. WhatsApp chat is re-read after to find what the client actually asked for.
+- Requirements are figured out by memory and rereading. Brief and quote are written manually from scratch.
+- Gathering missing information, getting pricing right, following up before sending the quote — all done by hand, every time.
+- There is no single record of what was agreed.
+
+**The cost:**
+
+- Hours of admin per call — notes, brief, quote, follow-up message.
+- Requirements missed or misremembered.
+- Scope creep with no evidence to refer back to.
+- "You never said that" disputes at delivery — even sending a voice recording of the scope discussion didn't stop it.
+- Slow quote turnaround loses leads.
+
+**Why recordings are the way in:** the client's own words are the only source of truth that both sides agreed to at the time.
+
+**Why not one fixed template:** a discovery call needs a full plan; a quick inquiry needs a short reply and a lead note; a change request needs a comparison with what was already agreed. A tool that does the same thing for every call is wrong for most of them.
+
+---
+
+## What a real freelancer told me
+
+*I am the freelancer. These are my own answers, from working with clients for the past few years.*
+
+**How the workflow works today:**
+> "I contact clients through WhatsApp chat and voice calls — mostly WhatsApp chats. During the call I note points in a notebook. After the conversation I re-read the chat and find what the tasks are and what the client's requirement is, then I start working."
+
+**The most painful part between call and quote:**
+> - Turning messy call notes into a clear brief
+> - Figuring out exactly what the client wants
+> - Gathering missing information from the client
+> - Creating the proposal and quote manually
+> - Getting internal approval or pricing right
+> - Following up with the client before the quote is even sent
+
+**"You never said that" moments:**
+> "Yes, many times. After I deliver the project the client says 'this is what I also told you.' I send them the voice recording about scope — and we still get into a dispute."
+
+**What the tool should give after processing a call:**
+> "A brief summarising what the client wants, a list of tasks and action items, and a draft message I can send to the client."
+
+---
+
+## Workflow
+
+![Freelancer Call Assistant — Workflow](./workflow.png)
+
+```mermaid
+flowchart TD
+    A([🎙️ Upload Recording\nAudio / video + consent checkbox]) --> B
+
+    B[["🔵 WhipScribe API\nTranscription with speakers & timestamps\n— API call —"]]
+    B --> C
+
+    C[["🟠 Router Agent\nClassifies intent + confidence + one-line reason\n— LLM —"]]
+    C --> D{Confidence OK?}
+
+    D -- Yes --> E
+    D -- No --> F["🙋 Show top choices\nFreelancer picks intent"]
+    F --> E
+
+    E{Detected intent}
+
+    E -- Discovery --> P1["🟢 Discovery Playbook\nGoals · features · tasks\ntimeline · quote · message"]
+    E -- Inquiry --> P2["🔵 Inquiry Playbook\nSummary · price answer\nlead note · follow-up"]
+    E -- Change request --> P3["🟡 Change Request Playbook\nCompare with brief\nscope-creep flag · updated tasks"]
+    E -- Other / unclear --> P4["🔴 Other Fallback\nShort summary · action items\nAsk freelancer what to do"]
+
+    P1 & P2 & P3 & P4 --> T
+
+    T[["⚙️ Agent Tool Loop\nget_transcript · extract_requirements · create_tasks\nestimate_timeline_and_quote · draft_client_message · save_lead_note\n— capped tool calls, every item gets a timestamp —"]]
+    T --> R
+
+    R[["🧑‍💻 Review Screen\nProposal shown section by section\nEach item: timestamp link + Edit / Delete / Add / Regenerate\n— Human in the loop — nothing is final yet —"]]
+    R --> G
+
+    G([✅ Approved Output\nSaved under Client → Project\nExternal actions fire only after approval])
+```
+
+---
+
+## Architecture & Project Structure
+
+```text
+apps/vijay/
+├── backend/              # FastAPI Server + WhipScribe SDK + Database CRUD & Webhooks
+│   ├── whipscribe/      # Python SDK client for WhipScribe API & Agent Engine
+│   │   ├── agent/       # Intent router, guardrails & tool loop engine
+│   │   ├── db/          # PostgreSQL / SQLite models, CRUD & Clerk webhook sync
+│   │   ├── account.py   # Account & balance endpoints
+│   │   ├── clips.py     # Audio clips & transcription endpoints
+│   │   └── client.py    # Main WhipScribeClient entrypoint
+│   ├── main.py          # FastAPI application routes
+│   └── requirements.txt # Python dependencies
+├── ui/                  # Next.js 16 Web Application (App Router + Tailwind CSS + GSAP)
+│   ├── app/             # App Router (Landing, Workspace Dashboard, Settings)
+│   ├── components/      # UI components (Hero, Workspace, Estimates, Auth, Drawers)
+│   └── public/          # Branding assets, 3D banner backgrounds & favicons
+├── README.md            # Problem statement, workflow & vision
+└── scope.md             # Detailed project specifications
+```
+
+---
+
+## Live Deployments & Demo
+
+- **Frontend Web App**: [https://callbrief-whipscribe.vercel.app](https://callbrief-whipscribe.vercel.app)
+- **Backend API Server**: [https://whipscribe-buildathon-nine.vercel.app](https://whipscribe-buildathon-nine.vercel.app)
+- **2-Minute Demo Video**: [https://youtu.be/V8GwHaY_z94](https://youtu.be/V8GwHaY_z94)
+
+---
+
+## How to run
+
+### 1. Frontend Web App
+```bash
+cd apps/vijay/ui
+pnpm install
+pnpm dev
+```
+
+### 2. Backend API Server
+```bash
+cd apps/vijay/backend
+python -m venv venv
+.\venv\Scripts\activate   # On Windows
+pip install -r requirements.txt
+python -m uvicorn main:app --reload --port 8000
+```
+
+---
+
+## What works right now
+
+- [x] **WhipScribe API Client Module**: Python API client (`whipscribe` package) supporting file uploads, job polling, transcript retrieval, and balance checking.
+- [x] **LLM Agent Engine (Groq + Gemini)**: High-speed structured analysis supporting Groq (`qwen/qwen3.8-27b`) and Gemini API (`google-genai` SDK) for call briefs, task extraction, and proposals.
+- [x] **Next.js 16 Web Application**: Built using App Router, Tailwind CSS v4, Sora & Figtree typography, and custom CSS design tokens.
+- [x] **Refined Dashboard & Navigation**: Clean top navbar, collapsible call history drawer, and bottom sidebar profile card with drop-up menu (Settings, Log Out).
+- [x] **Interactive Review & Proposal Workspace**: Side-by-side transcript player with audio timestamp jumping, requirements editor, task lists, and WhatsApp client quote generator.
+- [x] **Modal Authentication System**: Unblocked public landing page with a custom single-form auth modal dialog supporting Google SSO and email/password credentials via Clerk.
+
+---
+
+## Dashboard & Settings Screenshots
+
+### 1. Main CallBrief Workspace Dashboard
+![Main CallBrief Workspace](./ui/public/assets/Dashboard-Workspace.png)
+
+### 2. Workspace & Billing Settings
+![Workspace & Quote Settings](./ui/public/assets/settings.png)
+
+### 3. Key Requirements & Intent Brief
+![Key Requirements & Brief](./ui/public/assets/brief.png)
+
+### 4. Action Items & Extracted Tasks
+![Extracted Tasks](./ui/public/assets/tasks.png)
+
+### 5. Project Estimate & WhatsApp Client Quote
+![Project Estimate & Quote](./ui/public/assets/quote.png)
+
+---
+
+## Vision
+
+A year from now, if this works:
+
+- **More call types:** status calls, feedback calls, payment follow-ups, onboarding calls.
+- **More tools:** Notion, Trello, Linear, calendar, invoicing, WhatsApp — each as one small file added to the tool registry.
+- **Learns your style:** keeps your past edits and uses them as examples, so outputs match your tone over time.
+- **Client approval page:** client confirms the brief with one click — both sides signed off, disputes resolved before they start.
+- **Scope-creep alerts** across the whole project history, not just one call.
+- **Teams:** agencies sharing client history across developers.
