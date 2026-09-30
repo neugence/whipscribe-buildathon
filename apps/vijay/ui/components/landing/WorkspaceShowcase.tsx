@@ -10,12 +10,18 @@ export function WorkspaceShowcase() {
   const transcriptRef = useRef<HTMLDivElement>(null);
   const briefRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   // Audio player state
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [activeTimestamp, setActiveTimestamp] = useState<string>("01:28");
+
+  // Hover preview state for progress bar
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverPos, setHoverPos] = useState<number>(0);
+  const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
 
   useEffect(() => {
     const { gsap } = getGsap();
@@ -79,12 +85,42 @@ export function WorkspaceShowcase() {
     }
   };
 
-  // Seek bar click handler
+  // Hover over scrub bar -> show preview tooltip
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressRef.current || !duration) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const mouseX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const pct = mouseX / rect.width;
+    setHoverTime(pct * duration);
+    setHoverPos(mouseX);
+
+    if (isScrubbing && audioRef.current) {
+      const newTime = pct * duration;
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoverTime(null);
+    setIsScrubbing(false);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsScrubbing(true);
+    handleScrub(e);
+  };
+
+  const handleMouseUp = () => {
+    setIsScrubbing(false);
+  };
+
+  // Seek bar click/drag handler
   const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    if (!audioRef.current || !duration || !progressRef.current) return;
+    const rect = progressRef.current.getBoundingClientRect();
+    const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const pct = clickX / rect.width;
     const newTime = pct * duration;
     audioRef.current.currentTime = newTime;
     setCurrentTime(newTime);
@@ -104,7 +140,7 @@ export function WorkspaceShowcase() {
         src="/assets/demo.mp3"
         preload="metadata"
         onTimeUpdate={() => {
-          if (audioRef.current) {
+          if (audioRef.current && !isScrubbing) {
             const cur = audioRef.current.currentTime;
             setCurrentTime(cur);
             // Auto-update active speech timestamp based on playback position
@@ -338,7 +374,7 @@ export function WorkspaceShowcase() {
             </div>
           </div>
 
-          {/* Bottom Player / Timeline Bar (Functional Audio Player) */}
+          {/* Bottom Player / Timeline Bar (Fully Interactive Audio Scrubber) */}
           <div className="h-12 px-6 bg-secondary/80 border-t border-border flex items-center justify-between text-xs font-mono">
             <div className="flex items-center gap-3">
               <button
@@ -353,15 +389,40 @@ export function WorkspaceShowcase() {
               </span>
             </div>
 
-            {/* Clickable Progress Scrub Bar */}
+            {/* Interactive Progress Scrub Bar with Hover Tooltip & Handle */}
             <div
+              ref={progressRef}
               onClick={handleScrub}
-              className="flex-1 max-w-md mx-6 h-2 bg-border rounded-full overflow-hidden cursor-pointer group py-0.5 relative"
-              title="Click to seek audio"
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              className="flex-1 max-w-md mx-6 h-4 flex items-center cursor-pointer group relative select-none"
+              title="Click or drag to seek audio"
             >
+              {/* Tooltip on Hover */}
+              {hoverTime !== null && (
+                <div
+                  className="absolute bottom-full mb-2 -translate-x-1/2 px-2 py-0.5 text-[10px] font-mono bg-foreground text-background rounded shadow-md pointer-events-none z-20 whitespace-nowrap"
+                  style={{ left: `${hoverPos}px` }}
+                >
+                  {formatTime(hoverTime)}
+                </div>
+              )}
+
+              {/* Background Track */}
+              <div className="w-full h-1.5 bg-border/80 group-hover:h-2 rounded-full overflow-hidden transition-all relative">
+                {/* Progress Fill */}
+                <div
+                  className="h-full bg-foreground rounded-full transition-all duration-75 relative"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+
+              {/* Scrubber Handle Thumb */}
               <div
-                className="h-full bg-foreground rounded-full transition-all duration-75"
-                style={{ width: `${progressPercent}%` }}
+                className="w-3 h-3 rounded-full bg-foreground shadow-md absolute top-1/2 -translate-y-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                style={{ left: `${progressPercent}%` }}
               />
             </div>
 
