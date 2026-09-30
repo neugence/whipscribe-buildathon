@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="masthead">
+  <div>
+    <p class="eyebrow">Track 4 workflow prototype</p>
+    <h1>Support QA Copilot</h1>
+    <p class="muted">Turn one owned recording into either a support QA scorecard or a general transcript intelligence report.</p>
+  </div>
+  <p class="muted">WhipScribe API in. Manager-ready report out.</p>
+</header>
+
+<section class="grid">
+  <form class="panel" action="/jobs" method="post" enctype="multipart/form-data">
+    <h2>Upload Call</h2>
+    <label for="workflow">Workflow</label>
+    <select id="workflow" name="workflow">
+      <option value="support_qa">Support QA Call</option>
+      <option value="generic_review">General Transcript Insights</option>
+    </select>
+    <label for="file">Support call recording</label>
+    <input id="file" name="file" type="file" accept=".mp3,.m4a,.wav,.mp4,.mov,.ogg,.webm,.flac" required>
+    <p class="muted">Use your own recording or a recording everyone agreed to use.</p>
+    <button type="submit">Upload and Transcribe</button>
+  </form>
+
+  <aside class="panel">
+    <h2>Rubric</h2>
+    <p class="muted">Greeting, issue confirmation, resolution explanation, timeline clarity, follow-up owner, and closing confirmation.</p>
+    <p class="warning">Secrets stay server-side.</p>
+    <p class="muted">No API key yet? Review the workflow with a clearly marked demo transcript.</p>
+    <div class="demo-actions">
+      <form action="/jobs/demo" method="post">
+        <input type="hidden" name="workflow" value="support_qa">
+        <button type="submit">Open Demo Transcript</button>
+      </form>
+      <form action="/jobs/demo" method="post">
+        <input type="hidden" name="workflow" value="generic_review">
+        <button type="submit">Open Insights Demo</button>
+      </form>
+    </div>
+  </aside>
+</section>
+{% endblock %}
