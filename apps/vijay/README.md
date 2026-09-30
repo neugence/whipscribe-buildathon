@@ -155,19 +155,21 @@ python -m uvicorn main:app --reload --port 8000
 
 ---
 
-## Dashboard Workspace Screenshots
+## Dashboard & Settings Screenshots
 
-| Key Requirements & Brief | Extracted Tasks | Estimate & Client Quote |
-| :---: | :---: | :---: |
-| ![Brief](./ui/public/assets/brief.png) | ![Tasks](./ui/public/assets/tasks.png) | ![Quote](./ui/public/assets/quote.png) |
+### 1. Main CallBrief Workspace Dashboard
+![Main CallBrief Workspace](./ui/public/assets/Dashboard-Workspace.png)
 
-### 1. Key Requirements & Intent Brief
+### 2. Workspace & Billing Settings
+![Workspace & Quote Settings](./ui/public/assets/settings.png)
+
+### 3. Key Requirements & Intent Brief
 ![Key Requirements & Brief](./ui/public/assets/brief.png)
 
-### 2. Action Items & Extracted Tasks
+### 4. Action Items & Extracted Tasks
 ![Extracted Tasks](./ui/public/assets/tasks.png)
 
-### 3. Project Estimate & WhatsApp Client Quote
+### 5. Project Estimate & WhatsApp Client Quote
 ![Project Estimate & Quote](./ui/public/assets/quote.png)
 
 ---
