@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, Clock, Edit3, Save, X, Plus, AlertCircle, Sparkles } from "lucide-react";
+import { CheckCircle2, Clock, Edit3, Save, X, Plus, AlertCircle, ClipboardList } from "lucide-react";
 import { ProposalRequirement, CallItem } from "@/lib/api/types";
 import { updateItem } from "@/lib/api";
 
@@ -96,7 +96,7 @@ export const Brief: React.FC<BriefProps> = ({
       <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-            <Sparkles className="w-4 h-4" />
+            <ClipboardList className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">

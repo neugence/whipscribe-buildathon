@@ -9,16 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from whipscribe.db import Base, engine, webhook_router
-from whipscribe.api.auth import get_current_user_id, verify_clerk_token
-from whipscribe.api.schemas import (
-    SettingsUpdateSchema,
-    ItemUpdateSchema,
-    ClientCreateSchema,
-    ProjectCreateSchema,
-    ProcessAgentRequestSchema,
-    ConfirmationCreateSchema,
-    ConfirmationUpdateSchema,
-)
+
 from whipscribe.api.routers.settings import router as settings_router
 from whipscribe.api.routers.submissions import router as submissions_router
 from whipscribe.api.routers.agent import router as agent_router

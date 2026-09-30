@@ -1,7 +1,8 @@
 "use me";
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   FileAudio,
   Search,
@@ -13,7 +14,13 @@ import {
   RefreshCw,
   X,
   ChevronRight,
+  ChevronUp,
+  LogOut,
+  Settings,
+  User as UserIcon,
 } from "lucide-react";
+import { useUser, useClerk, UserButton } from "@clerk/nextjs";
+import { useAuthModal } from "@/components/auth/AuthContext";
 import { SubmissionSummary } from "@/lib/api/types";
 import { deleteSubmission } from "@/lib/api";
 import { SkeletonLoader } from "./SkeletonLoader";
@@ -37,6 +44,23 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
 }) => {
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
+  const { openAuthModal } = useAuthModal();
+
+  // Close drop-up menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filtered = submissions.filter((sub) =>
     (sub.filename || sub.id).toLowerCase().includes(search.toLowerCase())
@@ -72,8 +96,12 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
     }
   };
 
+  // Derive user label: Full Name if present, otherwise Primary Email Address
+  const userLabel = user?.fullName || user?.primaryEmailAddress?.emailAddress || "Account";
+  const userSubLabel = user?.fullName ? user?.primaryEmailAddress?.emailAddress : null;
+
   return (
-    <div className="flex flex-col h-full min-h-0 bg-card rounded-xl border border-border/60 overflow-hidden shadow-sm">
+    <div className="flex flex-col h-full min-h-0 bg-card rounded-xl border border-border/60 overflow-hidden shadow-sm relative">
       {/* Drawer Header */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-border/60 bg-muted/20">
         <div className="flex items-center gap-2">
@@ -199,6 +227,89 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
               </div>
             );
           })
+        )}
+      </div>
+
+      {/* Drawer Bottom Footer: User Profile Card & Drop-up Menu */}
+      <div className="shrink-0 p-3 border-t border-border/60 bg-muted/20 relative" ref={profileMenuRef}>
+        {/* Animated Drop-up Menu */}
+        {showProfileMenu && (
+          <div className="absolute bottom-full left-3 right-3 mb-2 p-1.5 rounded-xl bg-popover/95 border border-border/80 shadow-xl backdrop-blur-md space-y-1 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="px-3 py-2 border-b border-border/40">
+              <p className="text-xs font-semibold text-foreground truncate">{userLabel}</p>
+              {userSubLabel && (
+                <p className="text-[10px] text-muted-foreground truncate">{userSubLabel}</p>
+              )}
+            </div>
+
+            <Link
+              href="/dashboard/settings"
+              onClick={() => setShowProfileMenu(false)}
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/60 rounded-lg transition-colors"
+            >
+              <Settings className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>Settings</span>
+            </Link>
+
+            <button
+              onClick={() => {
+                setShowProfileMenu(false);
+                signOut();
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 rounded-lg transition-colors text-left"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </button>
+          </div>
+        )}
+
+        {isLoaded && isSignedIn && user ? (
+          <div
+            onClick={() => setShowProfileMenu((prev) => !prev)}
+            className="flex items-center justify-between gap-2.5 p-1.5 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors group select-none"
+          >
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8 rounded-lg border border-border/60 pointer-events-none",
+                  },
+                }}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                  {userLabel}
+                </p>
+                {userSubLabel && (
+                  <p className="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
+                    {userSubLabel}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <ChevronUp
+              className={`w-4 h-4 text-muted-foreground group-hover:text-foreground transition-transform duration-200 ${
+                showProfileMenu ? "rotate-180 text-foreground" : ""
+              }`}
+            />
+          </div>
+        ) : isLoaded ? (
+          <button
+            onClick={() => openAuthModal("sign-in")}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <span>Sign In</span>
+          </button>
+        ) : (
+          <div className="w-full flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-muted animate-pulse shrink-0" />
+            <div className="flex-1 space-y-1">
+              <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+              <div className="h-2 w-16 bg-muted animate-pulse rounded" />
+            </div>
+          </div>
         )}
       </div>
     </div>

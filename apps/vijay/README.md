@@ -147,11 +147,11 @@ python -m uvicorn main:app --reload --port 8000
 ## What works right now
 
 - [x] **WhipScribe API Client Module**: Python API client (`whipscribe` package) supporting file uploads, job polling, transcript retrieval, and balance checking.
+- [x] **LLM Agent Engine (Groq + Gemini)**: High-speed structured analysis supporting Groq (`qwen/qwen3.8-27b`) and Gemini API (`google-genai` SDK) for call briefs, task extraction, and proposals.
 - [x] **Next.js 16 Web Application**: Built using App Router, Tailwind CSS v4, Sora & Figtree typography, and custom CSS design tokens.
-- [x] **Interactive Hero & Demo Showcase**: Side-by-side studio app window showing raw source transcripts synced live with generated scope briefs.
-- [x] **Adaptive Call Types & Workflow**: Features adaptive call classification, pinned scroll steps, and live product mock panels.
+- [x] **Refined Dashboard & Navigation**: Clean top navbar, collapsible call history drawer, and bottom sidebar profile card with drop-up menu (Settings, Log Out).
+- [x] **Interactive Review & Proposal Workspace**: Side-by-side transcript player with audio timestamp jumping, requirements editor, task lists, and WhatsApp client quote generator.
 - [x] **Modal Authentication System**: Unblocked public landing page with a custom single-form auth modal dialog supporting Google SSO and email/password credentials via Clerk.
-- [x] **Workspace Dashboard**: Protected workspace route (`/dashboard`) for managing incoming audio clips and reviewable briefs.
 
 ---
 

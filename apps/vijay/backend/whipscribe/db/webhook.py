@@ -4,7 +4,6 @@ Handles user.created, user.updated, and user.deleted events to sync users into P
 Exposes endpoint compatible with Svix CLI (`svix listen http://localhost:8000/api/webhooks/clerk`).
 """
 
-import os
 import logging
 from fastapi import APIRouter, Request, HTTPException, Depends, status
 from sqlalchemy.orm import Session
@@ -15,12 +14,11 @@ except ImportError:
     WebhookVerificationError = Exception
 from .database import get_db
 from .crud import upsert_user_from_clerk, delete_user_from_clerk
+from whipscribe.settings import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/webhooks", tags=["Webhooks"])
-
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET") or os.getenv("CLERK_WEBHOOK_SECRET")
 
 
 @router.post("/clerk")
@@ -47,13 +45,9 @@ async def clerk_webhook_handler(request: Request, db: Session = Depends(get_db))
         )
 
     # Verify signature if WEBHOOK_SECRET is set
-    is_dev_mode = (
-        os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
-        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "false").lower() in ("true", "1", "yes")
-    )
-
-    if not WEBHOOK_SECRET or WEBHOOK_SECRET == "whsec_sample_secret_key_for_clerk":
-        if not is_dev_mode:
+    webhook_secret = settings.effective_webhook_secret
+    if not webhook_secret or webhook_secret == "whsec_sample_secret_key_for_clerk":
+        if not settings.is_dev_mode:
             logger.error("Clerk Webhook rejected: WEBHOOK_SECRET is not configured in production environment.")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -70,7 +64,7 @@ async def clerk_webhook_handler(request: Request, db: Session = Depends(get_db))
         try:
             # Convert request.headers to dict mapping for Svix compatibility
             headers_dict = dict(headers)
-            wh = Webhook(WEBHOOK_SECRET)
+            wh = Webhook(webhook_secret)
             wh.verify(body, headers_dict)
         except WebhookVerificationError as e:
             logger.error(f"Clerk Webhook Verification Failed: {e}")

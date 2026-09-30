@@ -9,7 +9,6 @@ import {
   Copy,
   Check,
   Send,
-  Sparkles,
   Calculator,
   ChevronDown,
   ChevronUp,
@@ -169,7 +168,7 @@ export const Estimate: React.FC<EstimateProps> = ({
         <div className="rounded-xl border border-border/60 bg-background/50 overflow-hidden space-y-0">
           <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border/40">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <FileText className="w-3.5 h-3.5 text-amber-400" />
               <span className="text-xs font-semibold text-foreground">
                 Client-Ready Scope & Quote Draft
               </span>

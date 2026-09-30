@@ -9,10 +9,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
-  Sparkles,
   AlertCircle,
   RefreshCw,
   Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { FileUpload } from "@/components/dashboard/FileUpload";
 import { ProcessingState } from "@/components/dashboard/ProcessingState";
@@ -43,7 +43,7 @@ type ViewMode = "upload" | "processing" | "workspace";
 export default function DashboardPage() {
   const router = Router();
   const { isLoaded, isSignedIn } = useAuth();
-  
+
   // Dashboard view states
   const [viewMode, setViewMode] = useState<ViewMode>("upload");
   const [showDrawer, setShowDrawer] = useState<boolean>(true);
@@ -255,13 +255,21 @@ export default function DashboardPage() {
     setViewMode("upload");
   };
 
+  // Re-run agent analysis for a completed submission that is missing its brief/tasks
+  const handleRegenerate = () => {
+    if (!activeSubmissionId) return;
+    setStreamLogs([]);
+    setProcessingError(null);
+    setIsProcessing(true);
+    setViewMode("processing");
+  };
+
   return (
     <div className="flex-1 flex h-full min-h-0 overflow-hidden bg-background">
       {/* Sidebar Drawer: Call History */}
       <div
-        className={`transition-all duration-300 ease-in-out border-r border-border/60 bg-muted/10 ${
-          showDrawer ? "w-80" : "w-0"
-        } flex flex-col h-full min-h-0 overflow-hidden shrink-0`}
+        className={`transition-all duration-300 ease-in-out border-r border-border/60 bg-muted/10 ${showDrawer ? "w-80" : "w-0"
+          } flex flex-col h-full min-h-0 overflow-hidden shrink-0`}
       >
         <RecordingsList
           submissions={submissions}
@@ -295,22 +303,10 @@ export default function DashboardPage() {
 
               {viewMode === "workspace" && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  <Sparkles className="w-2.5 h-2.5" /> Ready
+                  <CheckCircle2 className="w-2.5 h-2.5" /> Ready
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {viewMode !== "upload" && (
-              <button
-                onClick={handleNewUploadClick}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Call</span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -370,6 +366,7 @@ export default function DashboardPage() {
                 onRequirementsChange={(newReqs) => setRequirements(newReqs)}
                 onTasksChange={(newTasks) => setTasks(newTasks)}
                 onSettingsRedirect={() => router.push("/dashboard/settings")}
+                onRegenerate={handleRegenerate}
               />
             )
           )}

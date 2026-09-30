@@ -1,14 +1,17 @@
 """
-Vertex AI & Google GenAI SDK Client Factory for WhipScribe Agent.
+LLM Client Factory — Supports both Groq and Gemini API keys.
 
-Supports Google Cloud Application Default Credentials (gcloud ADC) via Vertex AI,
-auto-discovering project via google.auth, direct API Key fallback, and robust error handling.
+Reads GROQ_API_KEY or GEMINI_API_KEY from backend/.env.
+If GROQ_API_KEY is present, uses Groq (default model: qwen/qwen3.8-27b).
+Otherwise uses Gemini API (google-genai SDK).
 """
 
-import os
 import logging
+import json
 from typing import Optional, Any, Dict
 from pydantic import BaseModel
+
+from whipscribe.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,75 +25,53 @@ except ImportError:
     types = None
 
 try:
-    import google.auth
-    HAS_GOOGLE_AUTH = True
+    from groq import Groq
+    HAS_GROQ = True
 except ImportError:
-    HAS_GOOGLE_AUTH = False
+    HAS_GROQ = False
+    Groq = None
 
 
 class VertexClientFactory:
-    """Factory for instantiating Google GenAI / Vertex AI clients with gcloud ADC support."""
+    """
+    LLM Client Factory supporting Groq and Gemini API key directly.
+    """
 
     def __init__(
         self,
-        project: Optional[str] = None,
-        location: Optional[str] = None,
         api_key: Optional[str] = None,
         model_name: Optional[str] = None,
+        project: Optional[str] = None,
+        location: Optional[str] = None,
     ):
-        discovered_project = (
-            project
-            or os.getenv("VERTEX_PROJECT")
-            or os.getenv("GCP_PROJECT")
-            or os.getenv("GOOGLE_CLOUD_PROJECT")
-        )
+        self.groq_api_key = settings.effective_groq_api_key
+        self.groq_model = settings.effective_groq_model
 
-        if not discovered_project and HAS_GOOGLE_AUTH:
-            try:
-                _, default_proj = google.auth.default()
-                if default_proj:
-                    discovered_project = default_proj
-                    logger.info(f"Auto-discovered GCP Project from gcloud credentials: '{discovered_project}'")
-            except Exception as e:
-                logger.debug(f"google.auth.default() discovery note: {e}")
+        self.gemini_api_key = api_key or settings.effective_gemini_api_key
+        self.gemini_model = model_name or settings.effective_vertex_model
 
-        self.project = discovered_project
-        self.location = location or os.getenv("VERTEX_LOCATION") or os.getenv("GCP_LOCATION") or "us-central1"
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        self.model_name = model_name or os.getenv("VERTEX_MODEL") or "gemini-2.5-flash"
-        self._client = None
+        self._genai_client: Optional[Any] = None
+        self._groq_client: Optional[Any] = None
 
-    def get_client(self) -> Any:
-        """Returns initialized GenAI client instance forcing Vertex AI with gcloud ADC."""
+    def get_groq_client(self) -> Any:
+        if not HAS_GROQ:
+            raise ImportError("groq package is not installed. Run: pip install groq")
+        if not self.groq_api_key:
+            raise RuntimeError("GROQ_API_KEY is not set in backend/.env")
+        if self._groq_client is None:
+            logger.info("Initialising Groq client.")
+            self._groq_client = Groq(api_key=self.groq_api_key)
+        return self._groq_client
+
+    def get_gemini_client(self) -> Any:
         if not HAS_GENAI:
-            raise ImportError(
-                "google-genai package is not installed. Run `pip install google-genai` to use Vertex AI Agent."
-            )
-
-        if self._client is not None:
-            return self._client
-
-        # 1. Direct API key if provided
-        if self.api_key:
-            logger.info("Initializing GenAI client using provided API key")
-            self._client = genai.Client(api_key=self.api_key)
-        # 2. Vertex AI mode using gcloud ADC
-        else:
-            logger.info(f"Initializing Vertex AI client (vertexai=True) for project '{self.project or 'default'}' in location '{self.location}'")
-            kwargs: Dict[str, Any] = {
-                "vertexai": True,
-                "location": self.location,
-            }
-            if self.project:
-                kwargs["project"] = self.project
-
-            try:
-                self._client = genai.Client(**kwargs)
-            except Exception as err:
-                logger.warning(f"Vertex AI initialization with project failed: {err}. Retrying with default ADC...")
-                self._client = genai.Client(vertexai=True)
-
-        return self._client
+            raise ImportError("google-genai is not installed. Run: pip install google-genai")
+        if not self.gemini_api_key:
+            raise RuntimeError("Gemini API key not configured in backend/.env")
+        if self._genai_client is None:
+            logger.info("Initialising Gemini API client.")
+            self._genai_client = genai.Client(api_key=self.gemini_api_key)
+        return self._genai_client
 
     def generate_structured(
         self,
@@ -99,46 +80,83 @@ class VertexClientFactory:
         system_instruction: Optional[str] = None,
         temperature: float = 0.2,
     ) -> BaseModel:
-        """Generates structured JSON response conforming to a Pydantic model schema."""
-        client = self.get_client()
+        """Generates a structured JSON response conforming to a Pydantic model using Groq or Gemini."""
+        # Primary: If Groq API key is present, use Groq
+        if self.groq_api_key:
+            try:
+                return self._generate_groq(prompt, response_schema, system_instruction, temperature)
+            except Exception as e:
+                logger.warning(f"Groq API call failed: {e}. Falling back to Gemini if available...")
+
+        # Fallback / Gemini
+        if self.gemini_api_key:
+            try:
+                return self._generate_gemini(prompt, response_schema, system_instruction, temperature)
+            except Exception as e:
+                # If Gemini fails and Groq wasn't tried yet, try Groq
+                if self.groq_api_key:
+                    logger.warning(f"Gemini API failed: {e}. Trying Groq...")
+                    return self._generate_groq(prompt, response_schema, system_instruction, temperature)
+                raise e
+
+        raise RuntimeError("No working LLM API key (GROQ_API_KEY or GEMINI_API_KEY) found in backend/.env")
+
+    def _generate_groq(
+        self,
+        prompt: str,
+        response_schema: type[BaseModel],
+        system_instruction: Optional[str] = None,
+        temperature: float = 0.2,
+    ) -> BaseModel:
+        client = self.get_groq_client()
+        schema_json = json.dumps(response_schema.model_json_schema(), indent=2)
+
+        sys_msg = (
+            (system_instruction or "You are a helpful AI assistant.")
+            + f"\n\nReturn ONLY a valid JSON object matching this schema:\n{schema_json}"
+        )
+
+        logger.info(f"Calling Groq API with model '{self.groq_model}'…")
+        response = client.chat.completions.create(
+            model=self.groq_model,
+            messages=[
+                {"role": "system", "content": sys_msg},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=temperature,
+            response_format={"type": "json_object"},
+        )
+
+        content = response.choices[0].message.content or "{}"
+        return response_schema.model_validate_json(content)
+
+    def _generate_gemini(
+        self,
+        prompt: str,
+        response_schema: type[BaseModel],
+        system_instruction: Optional[str] = None,
+        temperature: float = 0.2,
+    ) -> BaseModel:
+        client = self.get_gemini_client()
 
         config_args: Dict[str, Any] = {
             "temperature": temperature,
             "response_mime_type": "application/json",
             "response_schema": response_schema,
         }
-
         if system_instruction:
             config_args["system_instruction"] = system_instruction
 
         config = types.GenerateContentConfig(**config_args)
 
-        models_to_try = [self.model_name, "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
-        last_exception = None
-        response = None
+        logger.info(f"Calling Gemini API with model '{self.gemini_model}'…")
+        response = client.models.generate_content(
+            model=self.gemini_model,
+            contents=prompt,
+            config=config,
+        )
 
-        for m_name in models_to_try:
-            try:
-                logger.info(f"Attempting Vertex AI generation with model '{m_name}'...")
-                response = client.models.generate_content(
-                    model=m_name,
-                    contents=prompt,
-                    config=config,
-                )
-                if response:
-                    break
-            except Exception as e:
-                logger.warning(f"Model '{m_name}' generation attempt failed: {e}")
-                last_exception = e
-
-        if response is None:
-            if last_exception:
-                raise last_exception
-            raise RuntimeError("Failed to generate response from Vertex AI models.")
-
-        # Parse structured response into target Pydantic model
         if hasattr(response, "parsed") and response.parsed is not None:
             return response.parsed
 
-        # Raw text fallback parsing
         return response_schema.model_validate_json(response.text)

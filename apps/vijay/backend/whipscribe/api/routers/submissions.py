@@ -2,13 +2,11 @@
 User Submissions & Audio Upload Router.
 """
 
-import os
 import uuid
 import shutil
 import logging
 import tempfile
 from pathlib import Path
-from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
@@ -17,6 +15,7 @@ from whipscribe.db import get_db, crud, models
 from whipscribe.client import WhipScribeClient
 from whipscribe.types import TranscriptFormat, JobStatus
 from whipscribe.api.auth import get_current_user_id
+from whipscribe.settings import settings
 
 logger = logging.getLogger("callbrief-submissions")
 router = APIRouter(tags=["submissions"])
@@ -52,10 +51,7 @@ async def upload_audio_file(
 
     job_id = None
     whip_status = "transcribing"
-    is_dev_mode = (
-        os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
-        or os.getenv("ALLOW_UNAUTHENTICATED_DEV", "false").lower() in ("true", "1", "yes")
-    )
+    is_dev_mode = settings.is_dev_mode
 
     try:
         client = WhipScribeClient()
@@ -191,12 +187,12 @@ def get_submission_audio(
         raise HTTPException(status_code=404, detail="Submission not found or unauthorized")
 
     job_id = sub.transcript_job_id
-    backend_base = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
+    backend_base = settings.backend_public_url
 
     # Check if local audio file actually exists on disk before offering local fallback URL
     local_audio_url = None
     if sub.source_location and not sub.source_location.startswith("/tmp"):
-        raw_name = os.path.basename(sub.source_location)
+        raw_name = Path(sub.source_location).name
         if (UPLOAD_DIR / raw_name).exists():
             local_audio_url = f"{backend_base}/uploads/{raw_name}"
 
