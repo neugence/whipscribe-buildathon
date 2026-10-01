@@ -1,0 +1,62 @@
+<script lang="ts">
+  import { formatDuration, recorder } from "$lib/recorder.svelte";
+  import { whipscribe } from "$lib/whipscribe.svelte";
+
+  const status = $derived(recorder.status);
+</script>
+
+{#snippet meter(label: string, level: number, off: boolean)}
+  <div class="flex items-center gap-2">
+    <span class="w-7 text-xs text-zinc-600 dark:text-zinc-400">{label}</span>
+    <div class="h-1.5 w-20 overflow-hidden rounded-full bg-red-100 dark:bg-red-900/50">
+      {#if !off}
+        <div
+          class="h-full rounded-full bg-red-600 transition-[width] duration-150"
+          style:width={`${Math.min(1, Math.sqrt(level)) * 100}%`}
+        ></div>
+      {/if}
+    </div>
+  </div>
+{/snippet}
+
+{#if status}
+  {#if status.systemError}
+    <p class="border-t border-amber-200 bg-amber-50 px-6 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200" role="alert">
+      Recording your microphone only. {status.systemError}
+    </p>
+  {/if}
+  {#if recorder.silent}
+    <p class="border-t border-amber-200 bg-amber-50 px-6 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200" role="alert">
+      We can't hear your microphone. Check it isn't muted, and that WhipScribe Recorder is
+      allowed in System Settings → Privacy & Security → Microphone.
+    </p>
+  {/if}
+  <div
+    class="flex items-center gap-4 border-t border-red-200 bg-red-50 px-6 py-3 dark:border-red-900 dark:bg-red-950/40"
+    role="status"
+  >
+    <span
+      class={["size-2.5 shrink-0 rounded-full", status.paused ? "bg-zinc-400" : "animate-pulse bg-red-600"]}
+      aria-hidden="true"
+    ></span>
+    <div class="min-w-0 flex-1">
+      <p class="truncate text-sm font-medium">{status.title}</p>
+      <p class="text-xs text-zinc-600 tabular-nums dark:text-zinc-400">
+        {status.paused ? "Paused" : "Recording"} · {formatDuration(status.elapsedSecs)}
+      </p>
+    </div>
+    <div class="space-y-1" aria-hidden="true">
+      {@render meter("Mic", status.micLevel, false)}
+      {@render meter("Call", status.systemLevel, !!status.systemError)}
+    </div>
+    <button class="btn" onclick={() => recorder.setPaused(!status.paused)}>
+      {status.paused ? "Resume" : "Pause"}
+    </button>
+    <button class="btn-primary" onclick={() => whipscribe.stopAndTranscribe()}>Stop</button>
+  </div>
+{:else if recorder.error}
+  <p class="flex items-center justify-between gap-4 border-t border-red-200 bg-red-50 px-6 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200" role="alert">
+    Couldn't record: {recorder.error}
+    <button class="btn" onclick={() => (recorder.error = "")}>Dismiss</button>
+  </p>
+{/if}
