@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Transcript Reader, Next Pass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#1b2a20; --muted:#667369; --faint:#98a39b; --line:#e5eae2; --paper:#ffffff; --page:#eef1ec;
+  --green:#3d6b2a; --green-dk:#2f5520; --lime:#b3e42b; --lime-ink:#1f3a0c; --soft:#f2f7ec; --hl:#fbe9a6;
+  --warn:#8a5a10; --warn-soft:#fbf1dc; --red:#a13232;
+  --s1:#3d6b2a; --s2:#2e62a3; --s3:#9a4f12; --s4:#7a3f94;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:28px 72px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:clamp(26px,4.2vw,36px);font-weight:700;letter-spacing:-.015em}
+h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.intro{display:flex;flex-direction:column;gap:14px;max-width:68ch}
+.intro p{color:#3f4b43}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.metric{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.metric b{font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.metric span{font-size:13px;color:var(--muted)}
+.metric b s{color:var(--faint);font-weight:500;font-size:17px;margin-right:6px}
+
+/* comparison rows */
+.pair{display:flex;flex-direction:column;gap:18px}
+.pair-head{display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.pair-head .eyebrow b{color:var(--ink);font-weight:500}
+.cols{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:8px}
+.col .tag{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.col .tag.now{color:var(--red)} .col .tag.next{color:var(--green)}
+.shot{display:block;border-radius:22px;border:1px solid #d6dcd3;background:#fff;max-width:100%;height:auto}
+.why{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:12px;font-size:14.5px;padding-top:22px}
+.why h3{font-size:13px;font-family:var(--mono);font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.why ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.why .kept{color:var(--muted)}
+.new-badge{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--lime);color:var(--lime-ink);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:2px}
+
+/* ---------- phone prototype ---------- */
+.phone{position:relative;width:390px;height:844px;background:var(--paper);border-radius:22px;border:1px solid #d6dcd3;overflow:hidden;flex:none;font-size:16px;line-height:1.55;max-width:100%}
+.phone.p320{width:320px;height:550px}
+.ph-top{position:absolute;left:0;right:0;top:0;z-index:3;background:var(--paper)}
+.bar1{display:flex;align-items:center;gap:6px;padding:10px 8px 6px 6px;min-height:56px;background:linear-gradient(90deg,#f4f8ee,#ffffff 70%)}
+.icb{width:44px;height:44px;display:grid;place-items:center;border-radius:10px;color:var(--ink);flex:none}
+.icb svg{width:22px;height:22px}
+.icb.on{background:#eef2f4}
+.ttl{flex:1;min-width:0;display:flex;flex-direction:column}
+.ttl b{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl span{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;align-items:center;border-bottom:1px solid var(--line);padding-left:12px;height:46px;background:var(--paper)}
+.tab{padding:0 10px;height:46px;display:flex;align-items:center;font-size:15px;color:var(--muted);font-weight:500;position:relative;white-space:nowrap}
+.tab.on{color:var(--ink);font-weight:600}
+.tab.on:after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:3px;border-radius:2px;background:var(--green)}
+.tab.off{color:#c3cbc5}
+.tabs .sp{flex:1}
+.scroll{position:absolute;left:0;right:0;overflow:hidden;padding:6px 18px 0 12px}
+.seg{display:grid;grid-template-columns:42px 1fr;gap:6px;padding:9px 0}
+.seg .t{font-family:var(--mono);font-size:12px;color:var(--faint);padding-top:4px;font-variant-numeric:tabular-nums}
+.seg .x{text-align:left;hyphens:none}
+.seg.play .x{color:var(--ink)}
+.seg.play .t{color:var(--green);font-weight:500}
+.seg.sel .x mark{background:#cfe3fb;color:inherit}
+mark.hit{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
+.small .seg .x{font-size:15px}
+/* speakers */
+.turn{padding:10px 0 4px}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-left:48px}
+.who i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.who em{font-style:normal;font-family:var(--mono);font-weight:400;color:var(--faint);font-size:12px}
+.turn .seg{padding:3px 0}
+/* dock */
+.dock{position:absolute;left:0;right:0;bottom:0;z-index:3;background:var(--paper);border-top:1px solid var(--line)}
+.pv{display:flex;align-items:center;gap:10px;padding:0 12px;height:64px;background:var(--soft)}
+.pv p{flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--green-dk)}
+.pv p b{font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;border-radius:12px;font-weight:600;font-size:15px;white-space:nowrap;border:1px solid transparent}
+.btn.lime{background:var(--lime);color:var(--lime-ink);border-color:#9ccc1f}
+.btn.green{background:var(--green);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border-color:#d5dcd3}
+.btn.wide{width:100%}
+.player{padding:8px 16px 12px}
+.scrub{height:4px;border-radius:2px;background:#e5e9e1;position:relative;margin:6px 0 4px}
+.scrub i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--green)}
+.scrub b{position:absolute;top:-5px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--green);border:2px solid #fff;box-shadow:0 0 0 1px var(--green)}
+.times{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ctrl{display:grid;grid-template-columns:1fr auto auto auto 1fr;align-items:center;gap:22px;margin-top:2px}
+.ctrl .skip{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;border:1px solid #dfe4dc;font-size:12px;font-weight:600;color:#44504a}
+.ctrl .pl{width:54px;height:54px;border-radius:50%;background:var(--green);display:grid;place-items:center}
+.ctrl .pl:after{content:"";border-left:16px solid #fff;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+.ctrl .spd{justify-self:end;font-weight:700;font-size:14px;width:44px;height:44px;display:grid;place-items:center}
+/* sheets */
+.scrim{position:absolute;inset:0;background:rgba(20,30,22,.38);z-index:4}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;background:#fff;border-radius:20px 20px 0 0;padding:8px 18px 18px;box-shadow:0 -8px 30px rgba(0,0,0,.12)}
+.grab{width:40px;height:5px;border-radius:3px;background:#d7ddd4;margin:0 auto 10px}
+.sheet h4{margin:0 0 2px;font-size:19px;font-weight:700}
+.sheet .sub{font-size:13px;color:var(--muted);margin-bottom:12px}
+.grp{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.fmt{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fmt div{border:1px solid var(--line);border-radius:12px;padding:9px 12px;min-height:52px;display:flex;flex-direction:column;justify-content:center}
+.fmt div b{font-size:14.5px;font-weight:600}
+.fmt div span{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.row{display:flex;align-items:center;gap:12px;min-height:50px;border-bottom:1px solid var(--line);font-size:15.5px}
+.row:last-child{border-bottom:none}
+.row .r{margin-left:auto;color:var(--muted);font-size:14px}
+.row.danger{color:var(--red)}
+.tgl{width:44px;height:26px;border-radius:13px;background:var(--green);position:relative;margin-left:auto;flex:none}
+.tgl:after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff}
+.tgl.off{background:#cfd6cc}.tgl.off:after{right:auto;left:3px}
+.segc{margin-left:auto;display:flex;border:1px solid #d5dcd3;border-radius:10px;overflow:hidden}
+.segc span{width:44px;height:36px;display:grid;place-items:center;font-weight:600;color:#44504a}
+.segc span.on{background:var(--soft);color:var(--green-dk)}
+.check{display:flex;align-items:center;gap:10px;font-size:14.5px;margin-top:12px}
+.check i{width:22px;height:22px;border-radius:6px;border:2px solid #b9c3b6;flex:none}
+/* misc */
+.skel{height:12px;border-radius:6px;background:#edf0eb;margin:10px 0}
+.lockfade{position:relative}
+.card{border:1px solid #cfe6b3;background:linear-gradient(#f6fbef,#ffffff);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;margin:8px 0 0 0}
+.card h5{margin:0;font-size:17px;line-height:1.3}
+.card p{font-size:14px;color:#3f4b43;line-height:1.45}
+.card .fine{font-size:12.5px;color:var(--muted)}
+.gdot{width:18px;height:18px;border-radius:50%;background:conic-gradient(#ea4335 0 25%,#fbbc05 0 50%,#34a853 0 75%,#4285f4 0);flex:none}
+.link{color:var(--green);font-weight:600;font-size:14.5px;text-align:center;padding:8px}
+.selbar{display:flex;align-items:center;justify-content:space-around;padding:8px 6px;background:#233328;color:#fff}
+.selbar div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;min-width:64px;min-height:44px;justify-content:center}
+.selbar svg{width:20px;height:20px}
+.kbd{position:absolute;left:0;right:0;bottom:0;height:291px;background:#d3d8dd;z-index:4;display:grid;grid-template-rows:repeat(4,1fr);gap:9px;padding:10px 4px 36px}
+.kbd div{display:flex;gap:6px;justify-content:center}
+.kbd span{background:#fff;border-radius:6px;flex:0 1 32px;height:100%;box-shadow:0 1px 0 #9aa2a8}
+.kbd .wide{flex:0 1 190px}
+.srch{display:flex;align-items:center;gap:4px;height:46px;border-bottom:1px solid var(--line);padding:0 4px 0 6px;background:var(--paper)}
+.srch .f{flex:1;height:36px;border-radius:10px;background:#f1f3f0;display:flex;align-items:center;padding:0 10px;font-size:15px;gap:6px}
+.srch .f em{font-style:normal;color:var(--muted);font-family:var(--mono);font-size:12px;margin-left:auto}
+.state{position:absolute;left:0;right:0;padding:40px 26px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}
+.state .ico{width:52px;height:52px;border-radius:50%;background:var(--soft);display:grid;place-items:center;color:var(--green)}
+.state .ico svg{width:26px;height:26px}
+.state h5{margin:0;font-size:18px}
+.state p{font-size:14.5px;color:#4b5850;max-width:30ch}
+.state .code{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.steps{width:100%;display:flex;flex-direction:column;gap:0;text-align:left;margin-top:6px}
+.step{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;padding:8px 0}
+.step i{width:22px;height:22px;border-radius:50%;border:2px solid #cfd6cc;display:grid;place-items:center;font-style:normal;font-size:12px;color:#fff;margin-top:1px}
+.step.done i{background:var(--green);border-color:var(--green)}
+.step.now i{border-color:var(--green);box-shadow:inset 0 0 0 4px #fff;background:var(--green)}
+.step b{font-size:15px;font-weight:600;display:block}
+.step span{font-size:13px;color:var(--muted)}
+.divider{height:1px;background:var(--line);margin:4px 0}
+.answers{display:grid;gap:14px}
+.qa{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;max-width:80ch}
+.qa h3{font-size:16px}
+.qa p{color:#3f4b43;font-size:14.5px}
+.kept-list{max-width:72ch;display:flex;flex-direction:column;gap:6px;padding-left:18px;margin:0;font-size:14.5px}
+footer{font-size:13px;color:var(--muted);max-width:72ch}
+@media (max-width:760px){ .why{padding-top:0} }
+@media (max-width:430px){ body{padding-inline:12px} .phone{zoom:.9} }
+@media (max-width:360px){ .phone{zoom:.76} .phone.p320{zoom:.9} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="intro">
+  <span class="eyebrow">WhipScribe Buildathon · UI challenge 01 · 07Shivam08</span>
+  <h1>The transcript reader on a phone, next pass</h1>
+  <p>Every "current" screen below is WhipScribe's own screenshot from <code>challenges/01-mobile-transcript/after/</code>. Every "next" screen is live HTML at the same width, so it can be opened on a phone. The notes under each pair say what I measured on the current screen, what I changed, and what I kept.</p>
+  <p>The person on a phone came to <b>read</b>. In every current screen they are a signed-out visitor on a free preview, so the second job is <b>keeping</b> the transcript. Most of this pass gives space back to the text and gets the sign-up moment right. It removes more than it adds.</p>
+</header>
+
+<section class="metrics" aria-label="Measured on the current screens">
+  <div class="metric"><b><s>67%</s>80%</b><span>of a 390 x 844 screen showing transcript text (header + bottom stack: 276pt now, 166pt next)</span></div>
+  <div class="metric"><b><s>51%</s>71%</b><span>of a 320 x 550 screen showing transcript text (268pt of chrome now, 162pt next)</span></div>
+  <div class="metric"><b><s>9</s>5</b><span>items in the More menu for the owner; Reading settings folds into the same sheet</span></div>
+  <div class="metric"><b><s>2</s>1</b><span>taps from the end of the preview to "Continue with Google"</span></div>
+</section>
+
+<!-- 1. Reader 390 -->
+<section class="pair" id="reader">
+  <div class="pair-head"><span class="eyebrow">Screen 1 · <b>Reader at 390</b> · compares with 03-reader-390</span><h2>Give the screen back to the text</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/03-reader-390.png" width="390" height="844" alt="Current reader at 390 wide"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-reader"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>Header and tabs take 118pt. The preview bar and player take 158pt. That leaves 568 of 844pt (67%) for text.</li>
+        <li>The player shows a large green Play button and "00:00 / 00:00" while a third row says "Audio unavailable". It takes 102pt and cannot play anything.</li>
+        <li>The preview message is cut off: "Create a free account to read...". The part that sells (first transcript free, private, never used to train AI) only exists on desktop.</li>
+        <li>Text is justified with hyphenation ("seg-ment"). Desktop is left-aligned.</li>
+        <li>Lines break mid-sentence: 0:03 ends "have a hard", 0:07 starts "stop at the top of the hour."</li>
+        <li>The meta line ends in a stray separator: "1m 44s · EN ·".</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>One bottom bar instead of two. When audio is unavailable there is no player at all, only the preview line (64pt). With a one-row title (56pt) and the tab row (46pt), the text area is 678pt (80%).</li>
+        <li>Left-aligned text, no hyphenation.</li>
+        <li>A line never ends mid-sentence: consecutive segments are joined until the sentence ends, and the first segment's time is shown. Tapping still plays from that second.</li>
+        <li>Download moves up next to More; search stays next to the tabs.</li>
+      </ul>
+      <p class="kept"><b>Kept:</b> the three tabs, the timestamp gutter, the "Keep reading" wording and colour.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Reader 320 -->
+<section class="pair" id="r320">
+  <div class="pair-head"><span class="eyebrow">Screen 2 · <b>Reader at 320</b> · compares with 01-reader-320</span><h2>At 320, half the screen was chrome</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/01-reader-320.png" width="320" height="550" alt="Current reader at 320 wide"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone p320" id="p-320"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>Only 282 of 550pt shows text: five short lines. The preview bar alone reads "You're reading the free preview (first 48%)...." with four dots.</li>
+        <li>Justified text at this width opens wide gaps: "Thanks&nbsp;&nbsp;&nbsp;everyone&nbsp;&nbsp;&nbsp;for&nbsp;&nbsp;&nbsp;joining".</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>388 of 550pt (71%) is text. The preview line shortens to what fits and still says the one thing that matters: 48% free, keep reading.</li>
+        <li>"AI Chat" shortens to "Chat" (the live product already made this change) so all three tabs and search fit with 44pt targets.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Scrolled -->
+<section class="pair" id="scrolled">
+  <div class="pair-head"><span class="eyebrow">Screen 3 · <b>Scrolled</b> · compares with 04-scrolled</span><h2>What stays on screen should be what you use</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/04-scrolled.png" width="390" height="844" alt="Current reader scrolled"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-scrolled"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>When you scroll, the tabs and search scroll away, but the preview bar and a player that cannot play stay. To search again you scroll back to the top.</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>The title row scrolls away and the tab row stays pinned: 46pt with back, the three tabs and search. Tabs and search are one tap away at any point in a long transcript.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Preview boundary + sign up -->
+<section class="pair" id="boundary">
+  <div class="pair-head"><span class="eyebrow">Screen 4 · <b>Preview boundary</b> · compares with 05-preview-boundary and 11-keep-reading-signup</span><h2>Make the end of the preview the sign-up moment</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/05-preview-boundary.png" width="390" height="844" alt="Current preview boundary"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-boundary"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>The end note says "Sign up free to read, download and keep the rest" but has no button. Below it is about 230pt of empty space, and the bar underneath repeats the same message, cut off.</li>
+        <li>"Keep reading" opens a centred modal (11) that blurs the transcript, uses a purple accent the reader never used, shows "Forgot password?" on the Sign up tab, and sets the legal line in a code font.</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>The end note becomes the sign-up card, placed where the reader's eyes already are. It carries the desktop's full message and "Continue with Google": one tap instead of two.</li>
+        <li>While the card is on screen, the bottom bar hides, so the message is never shown twice.</li>
+        <li>"Use email instead" opens a bottom sheet in the reader's own green. No "Forgot password?" on sign up.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Search with keyboard -->
+<section class="pair" id="search">
+  <div class="pair-head"><span class="eyebrow">Screen 5 · <b>Search, keyboard up</b> · compares with 06-search</span><h2>Search takes over the top bar, and the bottom bar gets out of the way</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/06-search.png" width="390" height="844" alt="Current search"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-search"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>With the field open, the header (118pt), the field (58pt), the results strip (72pt) and the bottom stack (158pt) take 406pt. The screenshot has no keyboard; with a typical 291pt phone keyboard the text window would be about 147pt, three short lines.</li>
+        <li>The matching line appears twice: in the results strip and in the transcript under it.</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>The search field replaces the tab row (same 46pt), with the count and up/down next to it. No separate results strip: matches are highlighted in place and the arrows move between them.</li>
+        <li>The bottom bar hides while the keyboard is up. Text window with the same keyboard: 507pt.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Download -->
+<section class="pair" id="download">
+  <div class="pair-head"><span class="eyebrow">Screen 6 · <b>Download</b> · compares with 07-export-sheet</span><h2>Name formats by what people do with them</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/07-export-sheet.png" width="390" height="844" alt="Current download sheet"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-download"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>One full-width row per format, labelled only by file extension (".srt", ".vtt", ".md"). The sheet runs past the bottom of the screen, so the summary formats need a scroll.</li>
+        <li>Someone who is not technical has no way to tell .srt from .vtt.</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>Two-column tiles with a plain name and the extension underneath: Word, Text, Subtitles, Web subtitles. Everything fits on one screen.</li>
+        <li>"Include timestamps" sits under the formats it affects, not above everything.</li>
+      </ul>
+      <p class="kept"><b>Kept:</b> every format, translated subtitles and Save to Drive. Nothing is removed, only arranged.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7. More menu -->
+<section class="pair" id="more">
+  <div class="pair-head"><span class="eyebrow">Screen 7 · <b>More menu and reading settings</b> · compares with 08-more-menu and 09-reading-settings</span><h2>Nine items become five, and settings live in the same sheet</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/08-more-menu.png" width="390" height="844" alt="Current more menu"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-more"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>"Home" does what the back arrow does. "Timestamps: shown" duplicates the switch inside Reading settings. "Reading settings" opens a second sheet (09) with just two controls.</li>
+        <li>The same menu shows "Sign in" next to "Rename" and "Delete recording": a signed-out visitor is offered owner actions.</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>Owner sees: Copy transcript, Quiz me, Rename, File details, Delete recording. Reading settings (timestamps, speakers, text size) are live controls at the top of the same sheet.</li>
+        <li>A signed-out visitor sees Copy, Quiz me and "Sign in to rename or delete" instead of the owner actions.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Selection -->
+<section class="pair" id="select">
+  <div class="pair-head"><span class="eyebrow">Screen 8 · <b>After selecting a line</b> · compares with 10-text-selection</span><h2>Selection actions take over the bottom bar, not the text</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/10-text-selection.png" width="390" height="844" alt="Current text selection"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-select"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>The dark popover covers the next line (the 0:09 timestamp is hidden). It offers "Play from here" while the player says "Audio unavailable".</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>The actions replace the bottom bar while text is selected, so nothing is covered: Copy, Copy with time link, Ask AI about this, and Play only when there is audio.</li>
+        <li>"Ask AI about this" opens AI Chat with the quote already attached, which connects the reader to the chat tab instead of leaving them separate.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Speakers 320 -->
+<section class="pair" id="speakers">
+  <div class="pair-head"><span class="eyebrow">Screen 9 · <b>A meeting with four speakers at 320</b><span class="new-badge">NEW</span></span><h2>Speaker turns, not a name on every line</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag next">Next</span><div class="phone p320" id="p-speakers"></div></div>
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>At 320 there is no room for a name column. A name above each turn, with its own colour dot, costs one short line per turn instead of width on every line. The time stays in the gutter, so it is not shown twice.</li>
+        <li>Consecutive lines from the same person stay under one name. Timestamps inside a turn stay in the gutter.</li>
+        <li>Colour is never the only signal: the name is always written out. The "Speakers" switch in the More sheet turns this off.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 10. Processing -->
+<section class="pair" id="processing">
+  <div class="pair-head"><span class="eyebrow">Screen 10 · <b>Still processing</b><span class="new-badge">NEW</span></span><h2>Say what is happening, and that it is safe to leave</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-processing"></div></div>
+    <div class="why">
+      <h3>Why</h3>
+      <ul>
+        <li>The steps follow the job states the product already shows (the desktop sidebar in 14 labels files "QUEUED"). No percentage is shown, because I could not confirm the API returns one.</li>
+        <li>Only the Transcript tab is shown until there is something in it; Summary and Chat appear when they are ready, instead of opening empty.</li>
+        <li>"You can close this page" is true because transcription runs on the server; the file lands in the library either way.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 11. Errors -->
+<section class="pair" id="errors">
+  <div class="pair-head"><span class="eyebrow">Screen 11 · <b>Load failure and not on this account</b> · compares with 12 and 13</span><h2>Plain words, the right next step, and no controls that cannot work</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/12-load-failure.png" width="390" height="844" alt="Current load failure"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-error"></div></div>
+    <div class="col"><span class="tag now">Current</span><img class="shot" src="../after/13-not-on-this-account.png" width="390" height="844" alt="Current not on this account"></div>
+    <div class="col"><span class="tag next">Next</span><div class="phone" id="p-account"></div></div>
+    <div class="why">
+      <h3>Measured</h3>
+      <ul>
+        <li>12: "Couldn't load transcript (HTTP 503)." A status code is the system's word, not the reader's. Tabs, search and download stay active over nothing, and a lone "·" sits under the title.</li>
+        <li>13: the title never leaves "Loading...". The screen is named "Not on this account" but only says "Sign in", which is wrong for someone who is already signed in with another account. The link is default browser blue.</li>
+      </ul>
+      <h3>Changed</h3>
+      <ul>
+        <li>Load failure says what happened and that the recording is safe, with Try again. The code stays, small, for support.</li>
+        <li>Not on this account names the account you are in and offers the two real ways out: switch account, or go to your own library.</li>
+        <li>Tabs, search and download are hidden on both, because none of them can work.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="pair" id="desktop">
+  <div class="pair-head"><span class="eyebrow">Desktop · compares with 14-desktop-1280</span><h2>Desktop: keep it, with two fixes that carry over</h2></div>
+  <div class="cols">
+    <div class="col"><span class="tag now">Current and kept</span><img class="shot" src="../after/14-desktop-1280.png" width="640" height="450" alt="Current desktop reader" style="border-radius:10px"></div>
+    <div class="why">
+      <ul>
+        <li>Desktop already does what this pass brings to the phone: left-aligned text, the full preview message, and a real button in it. It stays as it is.</li>
+        <li>Two fixes carry over because they are about the transcript, not the screen size: joining lines that break mid-sentence, and hiding the player when audio is unavailable (desktop shows "Audio unavailable" under a live-looking Play button too).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="pair" id="answers">
+  <div class="pair-head"><span class="eyebrow">The questions in the challenge</span><h2>Answers</h2></div>
+  <div class="answers">
+    <div class="qa"><h3>What did a person on a phone come to do, and how many taps away is it?</h3><p>Read, and for a preview visitor, keep the transcript. Reading was zero taps but on half the screen at 320; now it is most of the screen. Keeping it was two taps from the end of the preview (Keep reading, then Continue with Google in a modal); now it is one, on a card right where the preview ends.</p></div>
+    <div class="qa"><h3>The Keep reading bar and the player take the bottom. Right trade? And with the keyboard up?</h3><p>Not both at once. There is one bottom bar: the preview line when there is no audio, a player when there is. It hides while the keyboard is up and while the sign-up card is on screen.</p></div>
+    <div class="qa"><h3>The More menu has nine items. Which belong there?</h3><p>Five for the owner: Copy transcript, Quiz me, Rename, File details, Delete. Home goes (the back arrow does it), Timestamps goes (it is in reading settings), Reading settings stops being a second sheet and sits at the top of the same one. Sign in replaces the owner actions for visitors.</p></div>
+    <div class="qa"><h3>Search, download, settings: should they feel like one?</h3><p>Download and settings, yes: both are the same bottom sheet. Search, no: you type and read at the same time, so it stays inline in the top bar and never covers the text.</p></div>
+    <div class="qa"><h3>What does the reader look like while processing?</h3><p>Screen 10: the job's steps, a skeleton where text will appear, and a clear "you can close this page". Summary and Chat tabs appear only when they have something to show.</p></div>
+    <div class="qa"><h3>Four speakers at 320?</h3><p>Screen 9: a name and colour dot above each turn, lines grouped under it, times in the gutter.</p></div>
+    <div class="qa"><h3>What should happen after selecting a line?</h3><p>Screen 8: Copy, Copy with time link, Ask AI about this, and Play only when there is audio, in the bottom bar.</p></div>
+    <div class="qa"><h3>The desktop page is unchanged. Should it be?</h3><p>Mostly yes. Two transcript-level fixes carry over: joined sentences and no dead player.</p></div>
+  </div>
+</section>
+
+<section class="pair">
+  <div class="pair-head"><span class="eyebrow">Kept on purpose</span><h2>What I did not change</h2></div>
+  <ul class="kept-list">
+    <li>The three tabs and their order. They are clear and short.</li>
+    <li>Inline search with a match count and up/down. It works; it only needed to stop stacking.</li>
+    <li>Bottom sheets for download and settings.</li>
+    <li>The timestamp gutter, tap a line to play, and "Keep reading" as the words on the button.</li>
+    <li>Google first on sign-up.</li>
+  </ul>
+  <footer>Measurements are taken from the 2x screenshots in <code>after/</code> (pixels divided by 2). The live reader on 30 September 2026 has since added an Intelligence tab and a Share/Copy row under the title; this pass is drawn against the challenge screens so each pair compares like with like. Nothing here depends on API behaviour I could not confirm.</footer>
+</section>
+
+</div>
+
+<script>
+const I={
+ back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+ more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+ dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+ search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+ up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+ down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
+ link:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/></svg>',
+ ai:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M9 10h6"/></svg>',
+ clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+ cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/><path d="M12 12v4M12 18h.01"/></svg>',
+ user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>'
+};
+const LINES=[
+ ['0:00','Thanks everyone for joining the quarterly planning review.'],
+ ['0:03','I want to move quickly today because we have a lot to cover and several people have a hard stop at the top of the hour.'],
+ ['0:09','First, the numbers.'],
+ ['0:10','Revenue came in 11% above forecast.'],
+ ['0:13','Most of that came from the enterprise segment, where three of the five deals we expected in the next quarter closed early.'],
+ ['0:20','The self-serve business was flat.'],
+ ['0:22','Trials were up, but conversion to paid slipped by about a point and a half.'],
+ ['0:26','And we think that is mostly the onboarding change we shipped in July.'],
+ ['0:29','Second, the mobile launch. We are moving it from October to the first week of November.'],
+ ['0:35','The accessibility audit found 11 issues, four of them blocking.']
+];
+const seg=(t,x,c='')=>`<div class="seg ${c}"><span class="t">${t}</span><span class="x">${x}</span></div>`;
+const segs=(a,opt={})=>a.map(([t,x],i)=>seg(t,opt.map?opt.map(x,i):x,opt.cls?opt.cls(i):'')).join('');
+const topbar=(o={})=>`<div class="ph-top">
+ ${o.noTitle?'':`<div class="bar1"><span class="icb" aria-label="Back">${I.back}</span><div class="ttl"><b>${o.title||'long.m4a'}</b>${o.meta===false?'':`<span>${o.meta||'1m 44s · English'}</span>`}</div>${o.noActions?'':`<span class="icb" aria-label="Download">${I.dl}</span>`}<span class="icb" aria-label="More">${I.more}</span></div>`}
+ ${o.tabs===false?'':o.search?o.search:`<div class="tabs">${o.lead||''}<span class="tab ${o.active==='s'?'on':''}">${'Transcript'}</span><span class="tab ${o.sumOff?'off':''}">Summary</span><span class="tab ${o.chatOff?'off':''}">${o.short?'Chat':'AI Chat'}</span><span class="sp"></span><span class="icb" aria-label="Search">${I.search}</span></div>`}
+</div>`;
+const tabsOn=h=>h.replace('class="tab ">Transcript','class="tab on">Transcript').replace('class="tab s">Transcript','class="tab on">Transcript');
+const preview=(txt)=>`<div class="dock"><div class="pv"><p>${txt}</p><span class="btn lime">Keep reading</span></div></div>`;
+const player=`<div class="dock"><div class="player"><div class="scrub"><i style="width:31%"></i><b style="left:31%"></b></div><div class="times"><span>0:32</span><span>1:44</span></div><div class="ctrl"><span></span><span class="skip">-5</span><span class="pl"></span><span class="skip">+5</span><span class="spd">1x</span></div></div></div>`;
+function put(id,h){document.getElementById(id).innerHTML=h}
+
+/* 1 reader 390: top = 56+46 = 102, dock 62 -> scroll area */
+put('p-reader', tabsOn(topbar({active:'x'})) +
+ `<div class="scroll" style="top:102px;bottom:64px">${segs(LINES)}</div>`+
+ preview('<b>48% free preview.</b> Your first transcript is free.'));
+
+/* 2 reader 320 */
+put('p-320', tabsOn(topbar({short:true})) +
+ `<div class="scroll small" style="top:102px;bottom:60px">${segs(LINES.slice(0,6))}</div>`+
+ `<div class="dock"><div class="pv" style="height:60px;padding:0 10px"><p><b>48% free preview.</b></p><span class="btn lime" style="height:44px;padding:0 14px">Keep reading</span></div></div>`);
+
+/* 3 scrolled: title collapses into tab row */
+put('p-scrolled', `<div class="ph-top"><div class="tabs" style="padding-left:2px"><span class="icb" aria-label="Back">${I.back}</span><span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">AI Chat</span><span class="sp"></span><span class="icb">${I.search}</span></div></div>`+
+ `<div class="scroll" style="top:46px;bottom:64px;padding-top:0">${segs(LINES.slice(1))}</div>`+
+ preview('<b>48% free preview.</b> Your first transcript is free.'));
+
+/* 4 boundary */
+put('p-boundary', `<div class="ph-top"><div class="tabs" style="padding-left:2px"><span class="icb">${I.back}</span><span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">AI Chat</span><span class="sp"></span><span class="icb">${I.search}</span></div></div>`+
+ `<div class="scroll" style="top:46px;bottom:0;padding-top:0">${segs(LINES.slice(5))}
+ <div style="padding:4px 0 0 48px"><div class="skel" style="width:92%"></div><div class="skel" style="width:70%;opacity:.6"></div></div>
+ <div class="card">
+  <h5>That's the free 48% of long.m4a</h5>
+  <p>Create a free account to read the rest, download it and keep it in your library. Your first transcript is free, and it is never used to train AI.</p>
+  <span class="btn ghost wide"><span class="gdot"></span>Continue with Google</span>
+  <span class="link">Use email instead</span>
+  <span class="fine">52% left to read</span>
+ </div></div>`);
+
+/* 5 search with keyboard */
+const hit=(s,w)=>s.replace(w,`<mark class="hit">${w}</mark>`);
+put('p-search', `<div class="ph-top"><div class="srch"><span class="icb">${I.back}</span><div class="f">onboarding<em>1 of 1</em></div><span class="icb">${I.up}</span><span class="icb">${I.down}</span></div></div>`+
+ `<div class="scroll" style="top:46px;bottom:291px;padding-top:0">${segs(LINES.slice(5,10),{map:(x)=>hit(x,'onboarding'),cls:i=>i===2?'play':''})}</div>`+
+ `<div class="kbd" aria-hidden="true"><div>${'<span></span>'.repeat(10)}</div><div>${'<span></span>'.repeat(9)}</div><div>${'<span></span>'.repeat(8)}</div><div><span></span><span class="wide"></span><span></span></div></div>`);
+
+/* 6 download */
+put('p-download', tabsOn(topbar()) + `<div class="scroll" style="top:102px;bottom:62px">${segs(LINES.slice(0,3))}</div>`+
+ `<div class="scrim"></div><div class="sheet"><div class="grab"></div><h4>Download</h4><div class="sub">long.m4a · 1m 44s</div>
+ <div class="grp">Transcript</div><div class="fmt"><div><b>Word</b><span>.docx</span></div><div><b>Text</b><span>.txt</span></div></div>
+ <div class="check"><i></i>Include timestamps in Word and Text</div>
+ <div class="grp">Subtitles</div><div class="fmt"><div><b>Subtitles</b><span>.srt</span></div><div><b>Web subtitles</b><span>.vtt</span></div></div>
+ <div class="row" style="border-bottom:1px solid var(--line)">Translate subtitles<span class="r">Choose language</span></div>
+ <div class="grp">Summary</div><div class="fmt" style="grid-template-columns:1fr 1fr 1fr"><div><b>Text</b><span>.txt</span></div><div><b>Markdown</b><span>.md</span></div><div><b>Data</b><span>.json</span></div></div>
+ <div class="row" style="margin-top:6px">Save to Google Drive<span class="r">.txt + .srt</span></div></div>`);
+
+/* 7 more */
+put('p-more', tabsOn(topbar()) + `<div class="scroll" style="top:102px;bottom:62px">${segs(LINES.slice(0,3))}</div>`+
+ `<div class="scrim"></div><div class="sheet"><div class="grab"></div>
+ <div class="grp" style="margin-top:4px">Reading</div>
+ <div class="row">Timestamps<span class="tgl"></span></div>
+ <div class="row">Speakers<span class="tgl"></span></div>
+ <div class="row">Text size<span class="segc"><span style="font-size:13px">A</span><span class="on" style="font-size:16px">A</span><span style="font-size:19px">A</span></span></div>
+ <div class="divider" style="margin:10px 0"></div>
+ <div class="row">Copy transcript</div>
+ <div class="row">Quiz me on this recording</div>
+ <div class="row">Rename</div>
+ <div class="row">File details</div>
+ <div class="row danger">Delete recording</div></div>`);
+
+/* 8 selection */
+put('p-select', tabsOn(topbar()) + `<div class="scroll" style="top:102px;bottom:66px">${segs(LINES,{map:(x,i)=>i===1?`${x.split('hard ')[0]}<mark>hard stop at the top of the hour.</mark>`:x,cls:i=>i===1?'sel':''})}</div>`+
+ `<div class="dock"><div class="selbar"><div>${I.copy}Copy</div><div>${I.link}Copy with time</div><div>${I.ai}Ask AI about this</div></div></div>`);
+
+/* 9 speakers at 320 */
+const turn=(c,name,t,lines)=>`<div class="turn"><div class="who"><i style="background:${c}"></i>${name}</div>${lines.map(([a,b])=>seg(a,b)).join('')}</div>`;
+put('p-speakers', `<div class="ph-top"><div class="bar1"><span class="icb">${I.back}</span><div class="ttl"><b>Weekly sync</b><span>24m 10s · English · 4 speakers</span></div><span class="icb">${I.more}</span></div><div class="tabs"><span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">Chat</span><span class="sp"></span><span class="icb">${I.search}</span></div></div>`+
+ `<div class="scroll small" style="top:102px;bottom:0">`+
+ turn('var(--s1)','Speaker 1','0:00',[['0:00','Let us start with the launch date.'],['0:04','Design is done. What is left?']])+
+ turn('var(--s2)','Speaker 2','0:09',[['0:09','Two bugs on Android, both in the player.']])+
+ turn('var(--s3)','Speaker 3','0:14',[['0:14','I can take one of them today.']])+
+ turn('var(--s4)','Speaker 4','0:18',[['0:18','Then Friday still works for me.']])+
+ turn('var(--s1)','Speaker 1','0:21',[['0:21','Good. Friday it is.'],['0:23','Next, the pricing page.']])+
+ turn('var(--s2)','Speaker 2','0:27',[['0:27','I have the new copy ready for review.']])+
+ `</div>`);
+
+/* 10 processing */
+put('p-processing', `<div class="ph-top"><div class="bar1"><span class="icb">${I.back}</span><div class="ttl"><b>interview-03.m4a</b><span>42m 18s · Transcribing</span></div><span class="icb">${I.more}</span></div><div class="tabs"><span class="tab on">Transcript</span></div></div>`+
+ `<div class="state" style="top:102px;padding-top:30px"><div class="ico">${I.clock}</div><h5>Transcribing your recording</h5><p>You can close this page. It will be in your library when it is done.</p>
+ <div class="steps"><div class="step done"><i>✓</i><div><b>Uploaded</b><span>42m 18s of audio</span></div></div><div class="step now"><i></i><div><b>Transcribing</b><span>Started 2 minutes ago</span></div></div><div class="step"><i></i><div><b>Summary and chat</b><span>Right after the transcript</span></div></div></div>
+ <div style="width:100%;margin-top:10px"><div class="skel" style="width:95%"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:88%"></div><div class="skel" style="width:60%"></div></div></div>`);
+
+/* 11a error */
+put('p-error', `<div class="ph-top"><div class="bar1"><span class="icb">${I.back}</span><div class="ttl"><b>long.m4a</b></div></div></div>`+
+ `<div class="state" style="top:56px;padding-top:120px"><div class="ico">${I.cloud}</div><h5>We couldn't load this transcript</h5><p>The service is busy right now. Your recording and transcript are safe.</p><span class="btn green">Try again</span><span class="code">Error 503</span></div>`);
+
+/* 11b account */
+put('p-account', `<div class="ph-top"><div class="bar1"><span class="icb">${I.back}</span><div class="ttl"><b>Transcript unavailable</b></div></div></div>`+
+ `<div class="state" style="top:56px;padding-top:120px"><div class="ico">${I.user}</div><h5>This transcript is on another account</h5><p>You're signed in as you@example.com. Switch to the account that owns it, or go back to your own library.</p><span class="btn green">Switch account</span><span class="btn ghost">Go to my library</span></div>`);
+</script>
+</body>
+</html>
