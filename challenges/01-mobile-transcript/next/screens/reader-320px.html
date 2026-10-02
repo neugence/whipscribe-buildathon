@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+  <meta content="mobile_stack" name="shell-type"/>
+  <title>WhipScribe — Transcript Reader (320px Narrow Viewport)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+  <style>
+    @layer base {
+      html, body { width: 100vw; margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#006b35',
+            'primary-container': '#008744',
+            'on-primary': '#ffffff',
+            'secondary': '#006d33',
+            'tertiary': '#406452',
+            'surface': '#fef9ef',
+            'surface-container-lowest': '#ffffff',
+            'surface-container-low': '#f8f3ea',
+            'surface-container': '#f3ede4',
+            'surface-container-high': '#ede8df',
+            'surface-container-highest': '#e7e2d9',
+            'on-surface': '#1d1c16',
+            'on-surface-variant': '#3e4a3f',
+            'outline': '#6e7a6e',
+            'outline-variant': '#bdcabc'
+          },
+          fontFamily: {
+            'body-md': ['Inter'],
+            'body-sm': ['Inter'],
+            'label-md': ['Inter'],
+            'headline-sm': ['Plus Jakarta Sans'],
+            'timecode-sm': ['JetBrains Mono']
+          },
+          spacing: {
+            'space-xs': '0.25rem',
+            'space-sm': '0.5rem',
+            'space-md': '1rem',
+            'margin': '1rem'
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen">
+  <header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <div class="h-28 flex flex-col justify-between px-margin">
+      <div class="flex items-center justify-between h-14">
+        <div class="flex items-center gap-space-xs">
+          <button aria-label="Go back" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface hover:bg-surface-container transition-colors" onclick="history.back()" type="button">
+            <span class="material-symbols-outlined text-[24px]">arrow_back_ios_new</span>
+          </button>
+          <div class="w-9 h-9 flex items-center justify-center rounded-lg text-primary bg-primary/10">
+            <span class="material-symbols-outlined text-[20px]">description</span>
+          </div>
+          <div class="flex flex-col ml-space-xs">
+            <div class="flex items-center gap-space-sm">
+              <h1 class="font-headline-sm text-on-surface truncate max-w-[150px]">Transcript</h1>
+              <span class="font-timecode-sm text-on-surface-variant bg-surface-container px-space-xs py-0.5 rounded">1m 44s • EN • 4 Spk</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-space-xs">
+          <button aria-label="Share document" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+            <span class="material-symbols-outlined text-[22px]">ios_share</span>
+          </button>
+          <button aria-label="More options" class="w-11 h-11 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+            <span class="material-symbols-outlined text-[22px]">more_vert</span>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-xs">
+            <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+          </div>
+        </div>
+      </div>
+      <nav class="flex items-center gap-space-md h-12 overflow-x-auto">
+        <a aria-current="page" class="h-full flex items-center px-space-sm font-label-md text-primary-container relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-primary-container whitespace-nowrap" href="#">Transcript</a>
+        <a class="h-full flex items-center px-space-sm font-label-md text-on-surface-variant hover:text-on-surface whitespace-nowrap" href="#">Summary</a>
+        <a class="h-full flex items-center px-space-sm font-label-md text-on-surface-variant hover:text-on-surface whitespace-nowrap" href="#">AI Chat</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex flex-col relative w-full pt-28 pb-safe bg-surface min-h-screen">
+    <div class="flex flex-col w-full max-w-full overflow-x-hidden">
+      <!-- Interactive Secondary Subheader Toolbar for Narrow Viewport -->
+      <section class="flex items-center justify-between px-space-sm py-space-xs bg-surface-container-low">
+        <div class="flex items-center gap-space-xs min-w-0">
+          <span class="material-symbols-outlined text-[18px] text-primary select-none">graphic_eq</span>
+          <span class="font-label-md text-on-surface truncate">Workspace Audio #4</span>
+        </div>
+        <div class="flex items-center gap-space-xs shrink-0">
+          <label class="flex items-center gap-1.5 cursor-pointer select-none py-1 px-2 rounded-lg bg-surface hover:bg-surface-container transition-colors min-h-[44px]">
+            <span class="font-timecode-sm text-on-surface-variant font-medium">Time</span>
+            <input checked="" class="sr-only peer" id="toggle-timestamps" type="checkbox"/>
+            <div class="w-7 h-4 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary relative"></div>
+          </label>
+        </div>
+      </section>
+
+      <!-- Speaker Filter Chips (Horizontal Scrollable, Touch Friendly) -->
+      <section class="py-space-xs px-space-sm bg-surface overflow-x-auto no-scrollbar">
+        <div aria-label="Filter by speaker" class="flex items-center gap-1.5 min-w-max" role="tablist">
+          <button class="speaker-chip active inline-flex items-center gap-1 min-h-[44px] px-3 rounded-full bg-primary text-on-primary font-label-md shadow-sm transition-transform active:scale-95" data-speaker="all" type="button">
+            <span class="material-symbols-outlined text-[16px]">groups</span>
+            <span>All 4</span>
+          </button>
+          <button class="speaker-chip inline-flex items-center gap-1 min-h-[44px] px-3 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md transition-colors active:scale-95" data-speaker="jordan" type="button">
+            <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+            <span>Jordan</span>
+            <span class="font-timecode-sm opacity-80">38%</span>
+          </button>
+          <button class="speaker-chip inline-flex items-center gap-1 min-h-[44px] px-3 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md transition-colors active:scale-95" data-speaker="sara" type="button">
+            <span class="w-2 h-2 rounded-full bg-secondary"></span>
+            <span>Sara</span>
+            <span class="font-timecode-sm opacity-80">26%</span>
+          </button>
+          <button class="speaker-chip inline-flex items-center gap-1 min-h-[44px] px-3 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md transition-colors active:scale-95" data-speaker="mina" type="button">
+            <span class="w-2 h-2 rounded-full bg-tertiary"></span>
+            <span>Mina</span>
+            <span class="font-timecode-sm opacity-80">24%</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Editorial Note / Micro Banner -->
+      <div class="px-space-sm pt-space-xs pb-space-xs">
+        <div class="flex items-center justify-between bg-surface-container-high px-space-sm py-1.5 rounded-lg shadow-sm">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="material-symbols-outlined text-[16px] text-primary shrink-0">verified</span>
+            <p class="font-body-sm text-on-surface truncate">High accuracy AI transcription</p>
+          </div>
+          <span class="font-timecode-sm text-on-surface-variant shrink-0 font-medium">99.4%</span>
+        </div>
+      </div>
+
+      <!-- Transcript Timeline Stream (Strict 40px left-gutter layout) -->
+      <div class="flex flex-col px-space-sm pt-space-xs pb-36 space-y-space-md" id="transcript-stream">
+        <!-- Turn 1: Jordan Hayes -->
+        <article class="flex items-start gap-2 group transcript-turn" data-speaker="jordan">
+          <div class="w-10 shrink-0 flex flex-col items-center pt-0.5 timestamp-gutter select-none">
+            <span class="font-timecode-sm text-on-surface-variant font-medium text-center">00:12</span>
+            <div class="w-7 h-7 rounded-full bg-primary-container text-on-primary text-[12px] flex items-center justify-center mt-1 shadow-sm font-semibold">JH</div>
+          </div>
+          <div class="flex-1 min-w-0 bg-surface-container-lowest p-space-sm rounded-xl shadow-sm transition-colors group-hover:bg-surface-container-low">
+            <div class="flex items-baseline justify-between mb-1 gap-1">
+              <h2 class="font-label-md text-on-surface font-semibold truncate">Jordan Hayes</h2>
+              <span class="font-body-sm text-[11px] text-on-surface-variant shrink-0">VP Sales</span>
+            </div>
+            <p class="font-body-md text-on-surface leading-relaxed break-words">
+              Let's look right at the top line. Enterprise renewals finished exceptionally solid, outpacing our initial pipeline forecast by nearly double digits despite the lengthened procurement cycles.
+            </p>
+          </div>
+        </article>
+
+        <!-- Turn 2: Sara Lin -->
+        <article class="flex items-start gap-2 group transcript-turn" data-speaker="sara">
+          <div class="w-10 shrink-0 flex flex-col items-center pt-0.5 timestamp-gutter select-none">
+            <span class="font-timecode-sm text-primary font-semibold text-center">00:24</span>
+            <div class="w-7 h-7 rounded-full bg-secondary text-on-primary text-[12px] flex items-center justify-center mt-1 shadow-sm font-semibold">SL</div>
+          </div>
+          <div class="flex-1 min-w-0 bg-surface-container-lowest p-space-sm rounded-xl shadow-sm transition-colors group-hover:bg-surface-container-low">
+            <div class="flex items-baseline justify-between mb-1 gap-1">
+              <h2 class="font-label-md text-on-surface font-semibold truncate">Sara Lin</h2>
+              <span class="font-body-sm text-[11px] text-on-surface-variant shrink-0">CFO</span>
+            </div>
+            <p class="font-body-md text-on-surface leading-relaxed break-words">
+              To anchor Jordan's figures: <mark style="background:#CFF7DF; color:#005027; font-weight:600; padding:1px 4px; border-radius:4px;">Revenue came in 11% above target this quarter</mark>, landing comfortably at $14.2 million. Gross margin discipline maintained a 78% ratio.
+            </p>
+          </div>
+        </article>
+
+        <!-- Turn 3: Mina Vance -->
+        <article class="flex items-start gap-2 group transcript-turn" data-speaker="mina">
+          <div class="w-10 shrink-0 flex flex-col items-center pt-0.5 timestamp-gutter select-none">
+            <span class="font-timecode-sm text-on-surface-variant font-medium text-center">00:36</span>
+            <div class="w-7 h-7 rounded-full bg-tertiary text-on-primary text-[12px] flex items-center justify-center mt-1 shadow-sm font-semibold">MV</div>
+          </div>
+          <div class="flex-1 min-w-0 bg-surface-container-lowest p-space-sm rounded-xl shadow-sm transition-colors group-hover:bg-surface-container-low">
+            <div class="flex items-baseline justify-between mb-1 gap-1">
+              <h2 class="font-label-md text-on-surface font-semibold truncate">Mina Vance</h2>
+              <span class="font-body-sm text-[11px] text-on-surface-variant shrink-0">Product Lead</span>
+            </div>
+            <p class="font-body-md text-on-surface leading-relaxed break-words">
+              On the product side, our AI Summarization workflow experienced a <mark style="background:#CFF7DF; color:#005027; font-weight:600; padding:1px 4px; border-radius:4px;">3.2x bump in daily active adoption</mark>, confirming that teams prioritize automatic action item extraction immediately post-call.
+            </p>
+          </div>
+        </article>
+
+        <!-- Turn 4: Jordan Hayes -->
+        <article class="flex items-start gap-2 group transcript-turn" data-speaker="jordan">
+          <div class="w-10 shrink-0 flex flex-col items-center pt-0.5 timestamp-gutter select-none">
+            <span class="font-timecode-sm text-on-surface-variant font-medium text-center">00:50</span>
+            <div class="w-7 h-7 rounded-full bg-primary-container text-on-primary text-[12px] flex items-center justify-center mt-1 shadow-sm font-semibold">JH</div>
+          </div>
+          <div class="flex-1 min-w-0 bg-surface-container-lowest p-space-sm rounded-xl shadow-sm transition-colors group-hover:bg-surface-container-low">
+            <div class="flex items-baseline justify-between mb-1 gap-1">
+              <h2 class="font-label-md text-on-surface font-semibold truncate">Jordan Hayes</h2>
+              <span class="font-body-sm text-[11px] text-on-surface-variant shrink-0">VP Sales</span>
+            </div>
+            <p class="font-body-md text-on-surface leading-relaxed break-words">
+              Agreed. Moving into next month, our enterprise sales reps are bundling the real-time collaboration suite with every tier upgrade.
+            </p>
+          </div>
+        </article>
+      </div>
+
+      <!-- Consolidated Bottom Audio Dock (320px width) -->
+      <aside class="fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex flex-col w-full pb-safe">
+        <div class="relative w-full pt-2 px-space-sm pb-1 flex flex-col">
+          <div class="flex items-center justify-between text-on-surface-variant font-timecode-sm mb-1 px-0.5">
+            <span class="text-primary font-medium" id="audio-current-time">00:50</span>
+            <span id="audio-total-time">01:44</span>
+          </div>
+          <div aria-label="Playback progress" aria-valuemax="100" aria-valuemin="0" aria-valuenow="48" class="relative w-full h-2.5 flex items-center cursor-pointer group" id="scrubber-track" role="slider">
+            <div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+              <div class="h-full bg-primary rounded-full transition-all duration-150" style="width: 48%;"></div>
+            </div>
+            <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md pointer-events-none flex items-center justify-center transition-transform group-hover:scale-110" style="left: calc(48% - 8px);">
+              <div class="w-2 h-2 rounded-full bg-primary"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full px-space-sm py-0.5 flex items-center justify-between bg-surface-container-high">
+          <span class="font-label-md text-[11px] text-on-surface truncate flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+            Preview (48%)
+          </span>
+          <button class="font-label-md text-[11px] text-primary hover:text-secondary font-semibold inline-flex items-center gap-0.5 min-h-[32px] px-1 select-none" type="button">
+            Unlock full audio →
+          </button>
+        </div>
+
+        <!-- 5 Consolidated Essential 44px Buttons -->
+        <div class="w-full px-1 py-1.5 flex items-center justify-between">
+          <button aria-label="Rewind 10 seconds" class="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+            <span class="material-symbols-outlined text-[24px]">replay_10</span>
+          </button>
+          <button aria-label="Play or pause recording" class="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center text-on-primary shadow-[0_4px_12px_rgba(0,135,68,0.35)] active:scale-95 transition-transform" id="play-pause-btn" style="background: linear-gradient(135deg, #00D46A 0%, #008744 100%);" type="button">
+            <span class="material-symbols-outlined text-[26px] translate-x-[1px]" id="play-icon">play_arrow</span>
+          </button>
+          <button aria-label="Forward 10 seconds" class="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+            <span class="material-symbols-outlined text-[24px]">forward_10</span>
+          </button>
+          <button aria-label="Search transcript" class="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+            <span class="material-symbols-outlined text-[22px]">search</span>
+          </button>
+          <button aria-label="More playback options" class="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container active:scale-95 transition-all" type="button">
+            <span class="material-symbols-outlined text-[22px]">more_vert</span>
+          </button>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      (function() {
+        const chips = document.querySelectorAll('.speaker-chip');
+        const turns = document.querySelectorAll('.transcript-turn');
+        chips.forEach(chip => {
+          chip.addEventListener('click', () => {
+            chips.forEach(c => {
+              c.classList.remove('bg-primary', 'text-on-primary', 'active');
+              c.classList.add('bg-surface-container', 'text-on-surface-variant');
+            });
+            chip.classList.add('bg-primary', 'text-on-primary', 'active');
+            chip.classList.remove('bg-surface-container', 'text-on-surface-variant');
+            const selected = chip.getAttribute('data-speaker');
+            turns.forEach(turn => {
+              turn.style.display = (selected === 'all' || turn.getAttribute('data-speaker') === selected) ? 'flex' : 'none';
+            });
+          });
+        });
+
+        const toggleTimestamp = document.getElementById('toggle-timestamps');
+        const gutters = document.querySelectorAll('.timestamp-gutter');
+        if (toggleTimestamp) {
+          toggleTimestamp.addEventListener('change', (e) => {
+            gutters.forEach(gutter => {
+              gutter.style.visibility = e.target.checked ? 'visible' : 'hidden';
+            });
+          });
+        }
+
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        let isPlaying = false;
+        if (playPauseBtn && playIcon) {
+          playPauseBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            playIcon.textContent = isPlaying ? 'pause' : 'play_arrow';
+          });
+        }
+      })();
+    </script>
+  </main>
+</body>
+</html>
