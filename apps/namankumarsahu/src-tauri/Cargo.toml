@@ -1,0 +1,33 @@
+[package]
+name = "whipscribe-recorder"
+version = "0.2.0"
+description = "Windows-first desktop meeting recorder for WhipScribe Buildathon Track 2"
+authors = ["Naman Sahu"]
+edition = "2021"
+
+[lib]
+name = "whipscribe_recorder_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "rustls-tls"] }
+tokio = { version = "1", features = ["time", "fs", "net", "io-util", "rt-multi-thread", "macros"] }
+cpal = "0.15"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+uuid = { version = "1", features = ["v4"] }
+sha2 = "0.10"
+rand = "0.8"
+base64 = "0.22"
+urlencoding = "2"
+dotenvy = "0.15"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
