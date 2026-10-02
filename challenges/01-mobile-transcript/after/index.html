@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>WhipScribe Mobile Transcript — Next Pass</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app" aria-label="Mobile transcript reader prototype">
+
+  <header id="topHeader" class="top-header">
+    <button class="icon-btn" aria-label="Back">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </button>
+    <div class="file-meta">
+      <b id="recName">Product launch sync</b>
+      <small><span id="recDur">1m 44s</span> <i>·</i> EN <i>·</i> Saved</small>
+    </div>
+    <button class="icon-btn more-trigger" aria-label="Recording options" onclick="togglePanel('menuPanel')">
+      <svg viewBox="0 0 24 24" aria-hidden="true" class="dots"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+    </button>
+  </header>
+
+  <nav id="tabs" class="tabs" aria-label="Transcript navigation">
+    <button class="tab active">Transcript</button>
+    <button class="tab">Summary</button>
+    <button class="tab">AI Chat</button>
+    <button class="nav-icon" aria-label="Search transcript" onclick="toggleSearch()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+    </button>
+    <button class="nav-icon" aria-label="Download transcript" onclick="togglePanel('downloadPanel')">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v13M7 11l5 5 5-5M5 20h14"/></svg>
+    </button>
+  </nav>
+
+  <section id="search" class="search hidden" aria-label="Search transcript">
+    <div class="search-input-row">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+      <input id="searchInput" type="search" aria-label="Search transcript" value="onboarding" autocomplete="off" oninput="runSearch(true)" onkeydown="if(event.key==='Enter'){stepSearch(event.shiftKey?-1:1);event.preventDefault()}">
+    </div>
+    <div class="search-controls">
+      <span class="search-count" id="searchCount" aria-live="polite">0 of 0</span>
+      <button aria-label="Previous result" onclick="stepSearch(-1)">↑</button>
+      <button aria-label="Next result" onclick="stepSearch(1)">↓</button>
+      <button aria-label="Close search" onclick="toggleSearch()">×</button>
+    </div>
+    <div class="search-hit hidden" id="searchHit"></div>
+  </section>
+
+  <section class="reader" id="reader" oncontextmenu="return true">
+    <div class="reader-intro">
+      <span class="live-dot"></span>
+      <span>Transcript</span>
+      <span class="reader-count" id="readerCount">1:44</span>
+    </div>
+
+    <div class="line"><time>0:00</time><p>Thanks everyone for joining the product launch sync.</p></div>
+    <div class="line"><time>0:03</time><p>I want to focus on the launch plan, the remaining blockers, and what each team owns next.</p></div>
+    <div class="line"><time>0:09</time><p>First, the launch status.</p></div>
+    <div class="line"><time>0:10</time><p>The beta group is now at 84% of the target cohort.</p></div>
+    <div class="line"><time>0:13</time><p>Most feedback is positive, but onboarding still needs one more pass before release.</p></div>
+    <div class="line"><time>0:20</time><p>Support has also flagged two recurring setup issues.</p></div>
+    <div class="line"><time>0:22</time><p>We should resolve both before the wider rollout next month.</p></div>
+    <div class="line"><time>0:26</time><p>The new onboarding flow is still the main area we want to validate.</p></div>
+    <div class="line"><time>0:29</time><p>Second, the mobile launch. We are targeting the first week of November.</p></div>
+    <div class="line"><time>0:35</time><p>The accessibility audit found six issues, with two still blocking.</p></div>
+
+    <div class="boundary">
+      <div>
+        <strong>Free preview · 48% read</strong>
+        <span>Create an account to keep reading.</span>
+      </div>
+      <button onclick="togglePanel('signupPanel')">Keep reading <span aria-hidden="true">→</span></button>
+    </div>
+
+    <section class="meeting" aria-label="Four speaker 320px example">
+      <div class="section-kicker">
+        <span>FOUR-SPEAKER CHECK</span>
+        <small>320px</small>
+      </div>
+
+      <div class="speaker">
+        <div class="speaker-id"><b>Maya</b><time>0:42</time></div>
+        <p>Let's move the launch discussion to next week.</p>
+      </div>
+      <div class="speaker">
+        <div class="speaker-id"><b>Arjun</b><time>0:46</time></div>
+        <p>I agree. The dependency isn't ready yet.</p>
+      </div>
+      <div class="speaker">
+        <div class="speaker-id"><b>Priya</b><time>0:50</time></div>
+        <p>I'll check with the API team this afternoon.</p>
+      </div>
+      <div class="speaker">
+        <div class="speaker-id"><b>Rahul</b><time>0:54</time></div>
+        <p>Great. I'll update the timeline.</p>
+      </div>
+    </section>
+
+    <section class="processing-status" aria-label="Transcript processing status">
+      <div class="processing-top">
+        <div class="processing-title">
+          <span class="loading-ring" aria-hidden="true"></span>
+          <div><span class="status-eyebrow">PROCESSING</span>
+          <strong>Transcript is still processing</strong></div>
+        </div>
+        <strong class="processing-percent">62%</strong>
+      </div>
+      <p>New transcript content will continue appearing as it is processed.</p>
+      <div class="processing-bar"><span></span></div>
+      <div class="processing-bottom">
+        <small><span class="pulse-dot"></span> Updated just now</small>
+        <small>Available transcript remains readable</small>
+      </div>
+    </section>
+  </section>
+
+  <footer id="player" class="player" aria-label="Audio player">
+    <div class="progress"><span></span></div>
+    <div class="controls">
+      <span class="player-time">00:31 / 01:44</span>
+      <div class="transport">
+        <button class="skip back" aria-label="Back 5 seconds" onclick="skipBy(-5)">
+          <svg viewBox="0 0 28 28" aria-hidden="true"><g transform="matrix(-1 0 0 1 28 0)"><path d="M19.1 8.9A8 8 0 1 1 12.9 7.1"/><path d="M12.6 4.2 15.6 7.1 12.6 10"/></g><text x="14" y="18.3">5</text></svg>
+        </button>
+        <button id="playBtn" class="play" aria-label="Play or pause" onclick="togglePlay()">▶</button>
+        <button class="skip fwd" aria-label="Forward 5 seconds" onclick="skipBy(5)">
+          <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M19.1 8.9A8 8 0 1 1 12.9 7.1"/><path d="M12.6 4.2 15.6 7.1 12.6 10"/><text x="14" y="18.3">5</text></svg>
+        </button>
+      </div>
+      <div class="speed-wrap">
+        <button id="speedBtn" class="speed" aria-haspopup="menu" aria-expanded="false" aria-label="Playback speed" onclick="toggleSpeed(event)">1×</button>
+        <div id="speedMenu" class="speed-menu hidden" role="menu" aria-label="Playback speed">
+          <button role="menuitemradio" aria-checked="true" onclick="setSpeed(1)">1×</button>
+          <button role="menuitemradio" aria-checked="false" onclick="setSpeed(1.5)">1.5×</button>
+          <button role="menuitemradio" aria-checked="false" onclick="setSpeed(2)">2×</button>
+          <button role="menuitemradio" aria-checked="false" onclick="setSpeed(2.5)">2.5×</button>
+          <button role="menuitemradio" aria-checked="false" onclick="setSpeed(3)">3×</button>
+        </div>
+      </div>
+    </div>
+    <small class="audio-warning">Audio unavailable · transcript remains readable</small>
+  </footer>
+
+  <!-- Conditional flows: opened only from their real controls. -->
+  <section id="downloadPanel" class="overlay hidden" onclick="closeOnBackdrop(event,'downloadPanel')">
+    <div class="sheet export-sheet" role="dialog" aria-label="Download">
+      <span class="grab"></span>
+      <div class="sheet-heading">
+        <div><h2>Download</h2><p>long.m4a</p></div>
+        <button class="sheet-close" aria-label="Close" onclick="togglePanel('downloadPanel')">×</button>
+      </div>
+      <label class="check-row"><input type="checkbox"><span>Include timestamps</span></label>
+      <p class="export-hint">for .txt and .docx; subtitles always carry timing</p>
+      <div class="export-group">
+        <span class="group-label">TRANSCRIPT</span>
+        <button class="export-option"><strong>.txt</strong><b>›</b></button>
+        <button class="export-option"><strong>.docx</strong><b>›</b></button>
+        <button class="export-option"><strong>.srt</strong><b>›</b></button>
+        <button class="export-option"><strong>.vtt</strong><b>›</b></button>
+      </div>
+      <div class="export-group">
+        <span class="group-label">TRANSLATED SUBTITLES</span>
+        <div class="translate-row">
+          <select aria-label="Translation language"><option>Choose language…</option><option>Spanish</option><option>French</option><option>German</option><option>Hindi</option><option>Japanese</option></select>
+          <button class="export-option"><strong>Translate → .srt</strong></button>
+        </div>
+      </div>
+      <div class="export-group">
+        <span class="group-label">GOOGLE DRIVE</span>
+        <button class="export-option"><strong>Save to Drive (.txt + .srt)</strong></button>
+      </div>
+      <div class="export-group">
+        <span class="group-label">SUMMARY</span>
+        <button class="export-option"><strong>.txt</strong><b>›</b></button>
+        <button class="export-option"><strong>.md</strong><b>›</b></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="menuPanel" class="overlay hidden" onclick="closeOnBackdrop(event,'menuPanel')">
+    <div class="sheet menu-sheet" role="dialog" aria-label="Recording options">
+      <span class="grab"></span>
+      <div class="sheet-heading compact">
+        <div><span class="sheet-kicker rec-kicker" id="menuKicker">Product launch sync</span><h2>Recording options</h2></div>
+        <button class="sheet-close" aria-label="Close" onclick="togglePanel('menuPanel')">×</button>
+      </div>
+      <div class="menu-stack">
+        <button class="menu-item" onclick="swapPanel('menuPanel','settingsPanel')"><span><strong>Reading settings</strong><small>Change how the transcript is displayed</small></span><b>›</b></button>
+        <button class="menu-item" onclick="copyTranscript()"><span><strong>Copy transcript</strong><small>Copy the full readable transcript</small></span><b>›</b></button>
+        <button class="menu-item" onclick="openQuiz()"><span><strong>Quiz me</strong><small>Practice from this recording</small></span><b>›</b></button>
+        <button class="menu-item" onclick="openRename()"><span><strong>Rename</strong><small>Change the recording name</small></span><b>›</b></button>
+        <button class="menu-item" onclick="openDetails()"><span><strong>File details</strong><small>Duration, language and file info</small></span><b>›</b></button>
+        <button class="menu-item danger-item" onclick="swapPanel('menuPanel','deletePanel')"><span><strong>Delete recording</strong><small>Remove this recording and transcript</small></span><b>›</b></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="renamePanel" class="overlay hidden" onclick="closeOnBackdrop(event,'renamePanel')">
+    <div class="sheet" role="dialog" aria-label="Rename recording">
+      <span class="grab"></span>
+      <div class="sheet-heading compact"><div><h2>Rename recording</h2><p>Choose a name you will recognise later.</p></div><button class="sheet-close" aria-label="Close" onclick="togglePanel('renamePanel')">×</button></div>
+      <input id="renameInput" class="text-field" maxlength="60" aria-label="Recording name" onkeydown="if(event.key==='Enter')saveRename()">
+      <div class="sheet-actions"><button class="secondary" onclick="togglePanel('renamePanel')">Cancel</button><button class="primary" onclick="saveRename()">Save</button></div>
+    </div>
+  </section>
+
+  <section id="detailsPanel" class="overlay hidden" onclick="closeOnBackdrop(event,'detailsPanel')">
+    <div class="sheet" role="dialog" aria-label="File details">
+      <span class="grab"></span>
+      <div class="sheet-heading compact"><div><h2>File details</h2><p>About this recording.</p></div><button class="sheet-close" aria-label="Close" onclick="togglePanel('detailsPanel')">×</button></div>
+      <dl class="detail-list" id="detailList"></dl>
+    </div>
+  </section>
+
+  <section id="quizPanel" class="overlay hidden" onclick="closeOnBackdrop(event,'quizPanel')">
+    <div class="sheet" role="dialog" aria-label="Quiz me">
+      <span class="grab"></span>
+      <div class="sheet-heading compact"><div><span class="sheet-kicker" id="quizStep">QUESTION 1 OF 3</span><h2>Quiz me</h2></div><button class="sheet-close" aria-label="Close" onclick="togglePanel('quizPanel')">×</button></div>
+      <div id="quizBody"></div>
+    </div>
+  </section>
+
+  <section id="deletePanel" class="overlay hidden" onclick="closeOnBackdrop(event,'deletePanel')">
+    <div class="sheet" role="alertdialog" aria-label="Delete recording">
+      <span class="grab"></span>
+      <div class="sheet-heading compact"><div><h2>Delete this recording?</h2><p id="deleteMsg">This removes the recording and its transcript. It can't be undone.</p></div></div>
+      <div class="sheet-actions"><button class="secondary" onclick="togglePanel('deletePanel')">Cancel</button><button class="primary danger-btn" onclick="confirmDelete()">Delete</button></div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <section id="settingsPanel" class="overlay hidden" onclick="closeOnBackdrop(event,'settingsPanel')">
+    <div class="sheet settings-sheet" role="dialog" aria-label="Reading settings">
+      <span class="grab"></span>
+      <div class="sheet-heading compact">
+        <div><h2>Reading settings</h2><p>Choose what stays visible while you read.</p></div>
+        <button class="sheet-close" aria-label="Close" onclick="togglePanel('settingsPanel')">×</button>
+      </div>
+      <div class="settings-list">
+        <label class="setting-row"><span><strong>Show timestamps</strong><small>Keep timing beside each line</small></span><input type="checkbox" checked></label>
+        <label class="setting-row"><span><strong>Show speakers</strong><small>Identify who is speaking</small></span><input type="checkbox" checked></label>
+        <label class="setting-row"><span><strong>Compact player</strong><small>Give more room to the transcript</small></span><input type="checkbox" checked></label>
+      </div>
+      <div class="text-size">
+        <span><strong>Text size</strong><small>Adjust reading comfort</small></span>
+        <div class="size-buttons"><button>A</button><button class="selected">A</button><button>A</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="signupPanel" class="overlay signup-overlay hidden" onclick="closeOnBackdrop(event,'signupPanel')">
+    <div class="dialog auth" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="close" aria-label="Close" onclick="togglePanel('signupPanel')">×</button>
+      <div class="segmented"><b>Sign in</b><b class="active">Sign up</b></div>
+      <h2 id="authTitle">Create your free account</h2>
+      <p class="muted">Your first transcript is free. No credit card.</p>
+      <button class="google" type="button"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.2 5.5-4.7 7.2l7.5 5.8c4.4-4.1 7-10.1 7-17.5z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg><span>Continue with Google</span></button>
+      <div class="or"><span>OR WITH EMAIL</span></div>
+      <label class="field-label" for="authEmail">EMAIL</label>
+      <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      <label class="field-label" for="authPw">PASSWORD</label>
+      <input id="authPw" type="password" placeholder="At least 8 characters" autocomplete="new-password">
+      <a class="forgot" href="#" onclick="return false">Forgot password?</a>
+      <button class="primary" type="button">Create account</button>
+      <p class="legal">By continuing you agree to our <a href="#" onclick="return false">terms</a> and <a href="#" onclick="return false">privacy policy</a>.</p>
+    </div>
+  </section>
+
+  <section id="failurePanel" class="overlay hidden" onclick="closeOnBackdrop(event,'failurePanel')">
+    <div class="state-page" role="dialog"><h2>Couldn't load transcript</h2><p>Something went wrong while loading this recording.</p><button class="primary">Try again</button></div>
+  </section>
+
+  <section id="accountPanel" class="overlay hidden" onclick="closeOnBackdrop(event,'accountPanel')">
+    <div class="state-page" role="dialog"><h2>This transcript isn't on your account</h2><p>Sign in with the account that owns this recording, or return to your files.</p><button class="primary">Sign in</button><button class="secondary">Back to files</button></div>
+  </section>
+</main>
+
+<script>
+const header = document.getElementById('topHeader');
+let lastY = window.scrollY, ticking = false;
+
+function setHeaderVisible(visible) {
+  header.classList.toggle('hidden-header', !visible);
+  document.body.classList.toggle('hdr-on', visible && window.scrollY > 8);
+}
+setHeaderVisible(true);
+
+window.addEventListener('scroll', () => {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    const y = window.scrollY, delta = y - lastY;
+    if (y <= 8) setHeaderVisible(true);
+    else if (delta > 5) setHeaderVisible(false);
+    else if (delta < -5) setHeaderVisible(true);
+    lastY = y;
+    ticking = false;
+  });
+}, {passive:true});
+
+const audioEl = document.querySelector('audio');
+const player = document.getElementById('player');
+const playBtn = document.getElementById('playBtn');
+let pos = 31, dur = 104, rate = 1;
+
+function setAudioAvailable(on) {
+  player.classList.toggle('has-audio', on);
+  document.body.classList.toggle('audio-on', on);
+}
+
+if (audioEl) {
+  audioEl.addEventListener('loadedmetadata', () => {
+    dur = audioEl.duration || 0;
+    setAudioAvailable(true);
+    updateTime();
+  });
+  audioEl.addEventListener('timeupdate', updateTime);
+  audioEl.addEventListener('play', () => playBtn.textContent = '❚❚');
+  audioEl.addEventListener('pause', () => playBtn.textContent = '▶');
+  audioEl.addEventListener('error', () => setAudioAvailable(false));
+} else if (new URLSearchParams(location.search).get('audio') === '1') {
+  setAudioAvailable(true);
+}
+
+const fmt = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(Math.floor(s%60)).padStart(2,'0');
+
+function updateTime() {
+  if (audioEl) { pos = audioEl.currentTime || 0; dur = audioEl.duration || dur; }
+  document.querySelector('.player-time').textContent = fmt(pos) + ' / ' + fmt(dur);
+  document.querySelector('.progress span').style.width = (dur ? Math.min(100, pos / dur * 100) : 0) + '%';
+}
+updateTime();
+
+function skipBy(d) {
+  if (audioEl) audioEl.currentTime = Math.max(0, Math.min(audioEl.duration || 0, audioEl.currentTime + d));
+  else pos = Math.max(0, Math.min(dur, pos + d));
+  updateTime();
+}
+
+function togglePlay() {
+  if (audioEl) {
+    if (audioEl.paused) audioEl.play(); else audioEl.pause();
+  } else {
+    setAudioAvailable(false);
+  }
+}
+
+const speedMenu = document.getElementById('speedMenu');
+const speedBtn = document.getElementById('speedBtn');
+
+function toggleSpeed(e) {
+  e.stopPropagation();
+  const open = speedMenu.classList.toggle('hidden') === false;
+  speedBtn.setAttribute('aria-expanded', open);
+}
+function closeSpeed() {
+  speedMenu.classList.add('hidden');
+  speedBtn.setAttribute('aria-expanded','false');
+}
+function setSpeed(r) {
+  rate = r;
+  if (audioEl) audioEl.playbackRate = r;
+  speedBtn.textContent = r + '×';
+  speedMenu.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', String(parseFloat(b.textContent) === r)));
+  closeSpeed();
+}
+document.addEventListener('click', e => { if (!e.target.closest('.speed-wrap')) closeSpeed(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSpeed(); closeSheets(); } });
+
+// ---- Recording info: one source of truth
+const REC = { name: 'Product launch sync', file: 'long.m4a', dur: 104, lang: 'English (EN)' };
+const humanDur = s => (Math.floor(s/60) ? Math.floor(s/60) + 'm ' : '') + (s % 60) + 's';
+function applyRec() {
+  document.getElementById('recName').textContent = REC.name;
+  document.getElementById('menuKicker').textContent = REC.name;
+  document.getElementById('recDur').textContent = humanDur(REC.dur);
+  document.getElementById('readerCount').textContent = Math.floor(REC.dur/60) + ':' + String(REC.dur % 60).padStart(2,'0');
+  dur = REC.dur; updateTime();
+}
+applyRec();
+
+// ---- Search: live count, highlights, prev/next
+const searchEl = document.getElementById('search'), searchInput = document.getElementById('searchInput');
+const searchCount = document.getElementById('searchCount'), searchHit = document.getElementById('searchHit');
+let hits = [], hitIdx = 0;
+const blocks = () => [...document.querySelectorAll('.line, .speaker')].map(el => {
+  const p = el.querySelector('p'); if (!p.dataset.orig) p.dataset.orig = p.textContent;
+  return { p, time: (el.querySelector('time') || {}).textContent || '' };
+});
+function clearMarks() { blocks().forEach(b => { b.p.textContent = b.p.dataset.orig; }); hits = []; }
+function runSearch(reset) {
+  clearMarks();
+  const q = searchInput.value.trim().toLowerCase();
+  if (q) blocks().forEach(b => {
+    const text = b.p.dataset.orig, low = text.toLowerCase(); let at = 0, from = 0;
+    if (low.indexOf(q) === -1) return;
+    const frag = document.createDocumentFragment();
+    while ((from = low.indexOf(q, at)) !== -1) {
+      frag.append(text.slice(at, from));
+      const m = document.createElement('mark'); m.textContent = text.slice(from, from + q.length); frag.append(m);
+      hits.push({ mark: m, block: b }); at = from + q.length;
+    }
+    frag.append(text.slice(at)); b.p.textContent = ''; b.p.append(frag);
+  });
+  if (reset || hitIdx >= hits.length) hitIdx = 0;
+  showHit(false);
+}
+function showHit(scroll) {
+  hits.forEach((h, i) => h.mark.classList.toggle('current', i === hitIdx));
+  const n = hits.length, q = searchInput.value.trim();
+  searchCount.textContent = (n ? hitIdx + 1 : 0) + ' of ' + n;
+  searchEl.querySelectorAll('.search-controls button').forEach((b, i) => { if (i < 2) b.disabled = n < 2; });
+  searchHit.classList.toggle('hidden', !q);
+  searchHit.replaceChildren();
+  if (!q) return;
+  if (!n) { searchHit.classList.add('empty'); searchHit.textContent = 'No matches for “' + q + '”'; return; }
+  searchHit.classList.remove('empty');
+  const t = document.createElement('time'), s = document.createElement('span');
+  t.textContent = hits[hitIdx].block.time; s.append(...[...hits[hitIdx].block.p.childNodes].map(n => n.cloneNode(true)));
+  searchHit.append(t, s);
+  if (scroll) hits[hitIdx].mark.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+function stepSearch(d) { if (!hits.length) return; hitIdx = (hitIdx + d + hits.length) % hits.length; showHit(true); }
+function toggleSearch() {
+  const opening = searchEl.classList.toggle('hidden') === false;
+  if (opening) { runSearch(true); searchInput.focus(); } else clearMarks();
+}
+
+// ---- Toast + panel helpers
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function swapPanel(from, to) { document.getElementById(from).classList.add('hidden'); document.getElementById(to).classList.remove('hidden'); }
+
+// ---- Recording options
+function transcriptText() {
+  return blocks().map(b => '[' + b.time + '] ' + b.p.dataset.orig).join('\n');
+}
+async function copyTranscript() {
+  document.getElementById('menuPanel').classList.add('hidden');
+  const text = transcriptText();
+  try { await navigator.clipboard.writeText(text); toast('Transcript copied'); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.append(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (_) {}
+    ta.remove(); toast(ok ? 'Transcript copied' : 'Couldn’t copy — select the text instead');
+  }
+}
+function openRename() {
+  const f = document.getElementById('renameInput'); f.value = REC.name;
+  swapPanel('menuPanel', 'renamePanel'); f.focus(); f.select();
+}
+function saveRename() {
+  const v = document.getElementById('renameInput').value.trim();
+  if (!v) { toast('Name can’t be empty'); return; }
+  REC.name = v; applyRec(); document.getElementById('renamePanel').classList.add('hidden'); toast('Recording renamed');
+}
+function openDetails() {
+  const rows = [['Name', REC.name], ['File', REC.file], ['Duration', humanDur(REC.dur)], ['Language', REC.lang], ['Status', 'Saved']];
+  const dl = document.getElementById('detailList'); dl.replaceChildren();
+  rows.forEach(([k, v]) => { const d1 = document.createElement('dt'), d2 = document.createElement('dd'); d1.textContent = k; d2.textContent = v; dl.append(d1, d2); });
+  swapPanel('menuPanel', 'detailsPanel');
+}
+function confirmDelete() {
+  document.getElementById('deletePanel').classList.add('hidden'); toast('Recording deleted (demo)');
+}
+
+// ---- Quiz (built from this transcript)
+const QUIZ = [
+  { q: 'How much of the target cohort is the beta group at?', o: ['64%', '74%', '84%', '94%'], a: 2, why: 'At 0:10: "The beta group is now at 84% of the target cohort."' },
+  { q: 'When is the mobile launch targeted?', o: ['First week of October', 'First week of November', 'Mid December', 'Next quarter'], a: 1, why: 'At 0:29: targeting the first week of November.' },
+  { q: 'How many accessibility issues are still blocking?', o: ['One', 'Two', 'Four', 'Six'], a: 1, why: 'At 0:35: six issues found, with two still blocking.' }
+];
+let qi = 0, qScore = 0;
+function openQuiz() { qi = 0; qScore = 0; renderQuiz(); swapPanel('menuPanel', 'quizPanel'); }
+function renderQuiz() {
+  const body = document.getElementById('quizBody'), step = document.getElementById('quizStep');
+  if (qi >= QUIZ.length) {
+    step.textContent = 'RESULT';
+    body.innerHTML = '<div class="quiz-result"><strong>' + qScore + ' of ' + QUIZ.length + '</strong><span>' + (qScore === QUIZ.length ? 'Perfect — you know this recording.' : 'Nice try. Review the transcript and go again.') + '</span></div><div class="sheet-actions"><button class="secondary" onclick="openQuiz2()">Try again</button><button class="primary" onclick="togglePanel(\'quizPanel\')">Done</button></div>';
+    return;
+  }
+  const Q = QUIZ[qi]; step.textContent = 'QUESTION ' + (qi + 1) + ' OF ' + QUIZ.length;
+  body.innerHTML = '<p class="quiz-q">' + Q.q + '</p><div class="quiz-opts">' + Q.o.map((t, i) => '<button class="quiz-opt" onclick="answerQuiz(' + i + ')">' + t + '</button>').join('') + '</div><p class="quiz-why hidden" id="quizWhy"></p><div class="sheet-actions hidden" id="quizNext"><button class="primary" onclick="qi++;renderQuiz()">' + (qi === QUIZ.length - 1 ? 'See result' : 'Next question') + '</button></div>';
+}
+function openQuiz2() { qi = 0; qScore = 0; renderQuiz(); }
+function answerQuiz(i) {
+  const Q = QUIZ[qi], opts = document.querySelectorAll('.quiz-opt');
+  opts.forEach((b, k) => { b.disabled = true; if (k === Q.a) b.classList.add('correct'); else if (k === i) b.classList.add('wrong'); });
+  if (i === Q.a) qScore++;
+  const why = document.getElementById('quizWhy'); why.textContent = (i === Q.a ? 'Correct. ' : 'Not quite. ') + Q.why; why.classList.remove('hidden');
+  document.getElementById('quizNext').classList.remove('hidden');
+}
+
+function togglePanel(id) {
+  document.getElementById(id).classList.toggle('hidden');
+}
+function closeOnBackdrop(e,id) {
+  if (e.target.id === id) togglePanel(id);
+}
+function closeSheets() {
+  document.querySelectorAll('.overlay').forEach(x => x.classList.add('hidden'));
+}
+</script>
+</body>
+</html>
