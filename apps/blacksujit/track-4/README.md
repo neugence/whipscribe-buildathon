@@ -1,0 +1,222 @@
+# CallCoach-AI x WhipScribe
+
+**Three jobs, one pipeline: coach the call while it happens, read the pattern across calls, and answer any question about what was said - with the quotes to prove it.**
+
+[Live App](https://callcoachai.sujit.top/) · [Demo Video](https://videotourl.com/videos/1790703784383-893d45c0-0e34-4ade-84b1-0c732fbc65c0.webm)
+
+---
+
+## Spotter, Radar, and Griot
+
+| Pillar | What it is | Where it lives |
+|--------|-----------|----------------|
+| **Spotter** | Real-time coaching during the call - compliance flags, hedged numbers, and commitments captured the second they are said | `POST /api/spotter`, `src/realtime/analyzer.py` |
+| **Radar** | Cross-call deal intelligence - velocity, momentum, recurring issue clusters, action-item lifecycle, speaker risk | `/trends`, `/coach`, `/speakers`, `src/core/compare.py` |
+| **Griot** | The grounded companion - a floating chat that answers from your real call library with call + speaker + second citations | `POST /api/ask`, `src/core/companion.py` |
+
+**Why this stands out in Track 4:** every other entry stops at one call. One recording in, one summary, one issue, one proposal out. CallCoach-AI is the only entry that coaches *during* the call (Spotter), reads the pattern *across* calls (Radar), and lets you interrogate the whole library (Griot).
+
+**Grounded, not generated:** Griot answers only from stored evaluations and cites `[Call @ m:ss - Speaker]`; if the evidence does not cover the question, it says so. There is no canned Q&A - the old placeholder assistant page was deleted. Try it live: the chat bubble on every page at [callcoachai.sujit.top](https://callcoachai.sujit.top/).
+
+**No empty dashboard:** the repo ships `seed_evaluations.db`, a real snapshot of eight scored calls (produced through the same pipeline with real WhipScribe transcripts). The app restores it when the working database is empty, so every page has real data on first load. Rebuild it any time with `python scripts/seed_db.py`.
+
+**One-click delivery:** the Connect Center connects Slack, Notion, and HubSpot - each connection is verified on the spot with a real message or page, then every new scorecard is delivered automatically: score, quotes with timestamps, commitments, and the report link. OAuth when configured, one paste otherwise. Every attempt is logged, and any report can be re-sent with one button.
+
+**Try it in one click:** the hero has a "run a real 26-second sample call" button. It submits bundled audio through the live WhipScribe API and scores it with the four agents like any other call.
+
+---
+
+## Everything inside (13 capabilities)
+
+### 1. Spotter - Real-Time Coaching During Calls
+
+Live coaching prompts during calls:
+- Real-time sentiment analysis
+- Live compliance risk detection
+- Instant action item extraction
+- Live coaching prompts
+  
+
+### 2. Post-Call Analysis
+Four-agent LLM scoring:
+- Compliance, Tension, Clarity, Action Items
+- Evidence-backed quotes with timestamps
+- Primary risk identification
+
+### 3. Radar - Cross-Call Intelligence
+Trend analysis across multiple meetings:
+- Deal velocity metrics
+- Recurring issue clustering
+- Action item lifecycle tracking
+- Speaker-level risk scoring
+
+### 4. HubSpot CRM delivery
+Real tasks in your own HubSpot portal, created automatically for every scored call - score, what to
+fix, commitments, and the report link. Connect once with a private-app token; the Connect Center
+verifies it against the live API before saving. Salesforce was dropped on purpose: its REST tokens
+expire every two hours, so a one-click connection could not stay connected.
+
+### 5. Follow-Up Emails
+Automated email generation:
+- Action item summaries
+- Compliance risk reports
+- Scheduled follow-ups
+
+### 6. Team Benchmarking
+Compare reps against each other:
+- Team-wide score aggregation
+- Rep rankings
+- Top performer identification
+- Coaching needs assessment
+
+### 7. Custom Rubrics
+Define your own scoring criteria:
+- Custom category weights
+- Multiple rubric support
+- Weighted score calculation
+
+### 8. Sentiment Analysis
+Track sentiment trends:
+- Sentiment by call
+- Sentiment by speaker
+- Pattern identification
+
+### 9. Coaching Plans
+Personalized coaching plans:
+- Action items for each weakness
+- Timeline with goals
+- Success metrics
+
+### 10. Multi-Language Support
+Analyze calls in 12 languages:
+- English, Spanish, French, German, Italian, Portuguese, Dutch, Japanese, Korean, Chinese, Hindi, Arabic
+
+### 11. Griot - Grounded Companion (the floating chat)
+Conversational coaching over your stored evaluations, served by `POST /api/ask`:
+- "What did we commit to across calls?"
+- "Where do we keep losing points?"
+- "How did my last call score?"
+- Every answer cites the call, the speaker, and the exact second; if the evidence does not cover it, Griot says so instead of inventing
+- No LLM key configured? It degrades to a data-derived summary over the same stored rows (never fabricated quotes)
+
+### 12. Export
+Multiple formats:
+- Markdown, JSON, Slack, Notion, CSV
+
+### 13. MCP Integration
+WhipScribe MCP server:
+- List recordings
+- Search transcripts
+- Manage folders
+
+---
+
+## Quick Start
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run comprehensive demo
+python comprehensive_demo.py
+
+# Run test suite
+python test_complete.py
+
+# Start real-time coaching server
+python -m src.realtime.server
+
+# Start HTTP server
+python -m src.realtime.server --http
+```
+
+---
+
+## Architecture
+
+CallCoach-AI is two processes that share one pipeline: a **Next.js dashboard**
+(the UI) and a **Flask API** (everything else). The API ingests audio through
+WhipScribe, scores it with four LLM agents, stores the result in SQLite, and
+exposes three products over the same data - Spotter, Radar, and Griot.
+
+
+![Arcitecture](./assets/mermaid-diagram%20(2).png)
+
+**The flow for one recording:** upload (or paste a link) → WhipScribe
+transcribes → the four agents score it → the result is stored with its action
+items and WhipScribe's own summary/quotes → the scorecard is auto-delivered to
+every connected tool. Spotter works before any of that, on live utterances;
+Radar and Griot read the stored library afterward.
+
+---
+
+## Test Results
+
+```
+106 assertions passed, 0 failed
+(test_complete.py: 59 · test_comprehensive.py: 47)
+
+Features tested:
+- Real-Time Coaching
+- Post-Call Analysis
+- Cross-Call Intelligence
+- CRM Integration
+- Follow-Up Emails
+- Team Benchmarking
+- Custom Rubrics
+- Sentiment Analysis
+- Coaching Plans
+- Multi-Language Support
+- AI Coaching Assistant
+- Export Functionality
+- MCP Integration
+- Conversation Dynamics
+- Commitment Ledger
+```
+
+---
+
+## Conclusion
+
+CallCoach-AI is the only platform that provides **real-time coaching during calls** (not just post-call), one-click delivery into Slack, Notion and HubSpot with proof of delivery, automated follow-up emails, team benchmarking, and custom scoring rubrics.
+
+These features make CallCoach-AI the most comprehensive call coaching platform available.
+
+<!-- ## API Reference
+
+### Real-Time Coaching
+```python
+from src.realtime.analyzer import RealtimeAnalyzer
+analyzer = RealtimeAnalyzer()
+result = analyzer.add_segment(segment)
+```
+
+### CRM Integration
+```python
+from src.api.crm import create_crm_integration
+crm = create_crm_integration("salesforce", api_key="key", instance_url="url")
+```
+
+### Follow-Up Emails
+```python
+from src.api.followup import FollowUpEmailGenerator
+generator = FollowUpEmailGenerator()
+email = generator.generate_followup_email(evaluation, transcript, "user@example.com")
+```
+
+### Team Benchmarking
+```python
+from src.core.benchmark import TeamBenchmark
+benchmark = TeamBenchmark()
+benchmark.add_rep_data("Sarah", evaluations)
+``` -->
+<!-- 
+### Custom Rubrics
+```python
+from src.core.rubric import RubricManager
+manager = RubricManager()
+rubric = manager.create_rubric("Custom", {"compliance": 0.3, "clarity": 0.3, "action_items": 0.4})
+``` -->
+
+---
+
