@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f8f2">
+    <title>WhipScribe Mobile Transcript Reader - Next Pass</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="page-hero">
+      <p class="eyebrow">UI challenge 01</p>
+      <h1>Mobile transcript reader, next pass</h1>
+      <p class="lede">
+        A quieter reader that keeps the transcript primary, turns bottom controls
+        into one compact dock, and makes every panel feel like the same system.
+      </p>
+      <div class="principles" aria-label="Design principles">
+        <span>Reader first</span>
+        <span>One bottom system</span>
+        <span>Progressive actions</span>
+        <span>Designed states</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="rationale" aria-labelledby="rationale-title">
+        <div>
+          <p class="eyebrow">What changed</p>
+          <h2 id="rationale-title">Remove weight from the reader, not capability from the product.</h2>
+        </div>
+        <div class="rationale-grid">
+          <article>
+            <h3>Bottom controls are now a dock</h3>
+            <p>The preview prompt, audio progress, play controls, and error message are grouped into one compact surface so transcript text is not trapped behind stacked bars.</p>
+          </article>
+          <article>
+            <h3>Panels share one pattern</h3>
+            <p>Search, export, settings, and more use consistent sheets, headers, touch targets, and close behavior instead of each feeling like a separate idea.</p>
+          </article>
+          <article>
+            <h3>Phone-specific decisions</h3>
+            <p>More menu items are grouped by intent, text selection gets contextual actions, and a missing processing state is added for uploads that are not ready yet.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="comparison-intro">
+        <p class="eyebrow">Before and after</p>
+        <h2>Current design on the left. Proposed next pass on the right.</h2>
+      </section>
+
+      <section id="comparison-grid" class="comparison-grid" aria-live="polite"></section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
