@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CandidateSync — Interview Scorecard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-subtle: #f1f5f9;
+      --surface-hover: #f8fafc;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --text-subtle: #94a3b8;
+      --accent: #2563eb;
+      --accent-tint: #eff6ff;
+      --success: #059669;
+      --success-tint: #ecfdf5;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 36px 48px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    /* Minimalist Top Nav */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .nav-divider {
+      color: var(--border-strong);
+      font-weight: 300;
+    }
+
+    .candidate-tagline {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.8rem;
+    }
+
+    .api-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--success);
+      font-weight: 600;
+      font-size: 0.78rem;
+      background: var(--success-tint);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #d1fae5;
+    }
+
+    .api-badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .btn-quiet {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      color: var(--text-secondary);
+      padding: 5px 12px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-quiet:hover {
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+      background: var(--surface-subtle);
+    }
+
+    /* Main Grid */
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafafa;
+    }
+
+    .panel-heading {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .panel-meta {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Audio Player Bar */
+    .audio-player-bar {
+      padding: 14px 22px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .play-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--text-primary);
+      color: #ffffff;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .play-btn:hover {
+      opacity: 0.9;
+    }
+
+    .player-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .player-filename {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-time {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .progress-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 6px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0%;
+      background: var(--text-primary);
+      border-radius: 2px;
+      transition: width 0.2s ease;
+    }
+
+    /* Transcript Stream */
+    .transcript-scroll {
+      max-height: 580px;
+      overflow-y: auto;
+      padding: 18px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: var(--surface);
+    }
+
+    .transcript-scroll::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .transcript-scroll::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    .turn {
+      padding: 12px 14px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .turn:hover {
+      background: var(--surface-subtle);
+    }
+
+    .turn.active-target {
+      background: var(--accent-tint);
+      border-color: #bfdbfe;
+    }
+
+    .turn-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      font-size: 0.75rem;
+    }
+
+    .speaker-name {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .speaker-name.candidate {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .turn-time {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+    }
+
+    .turn-dialogue {
+      font-size: 0.85rem;
+      color: #334155;
+      line-height: 1.55;
+    }
+
+    /* Scorecard Panel */
+    .scorecard-content {
+      padding: 24px;
+    }
+
+    .candidate-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 22px;
+    }
+
+    .cand-title-group h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .cand-meta-line {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .verdict-column {
+      text-align: right;
+    }
+
+    .verdict-state {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--success);
+      margin-bottom: 1px;
+    }
+
+    .verdict-number {
+      font-family: var(--font-mono);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .verdict-number span {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    /* Competency Rows: Clean Document / Table Style */
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .competency-table {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .rubric-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .rubric-row:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .rubric-row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .rubric-name {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .rubric-rating {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .rubric-quote {
+      font-size: 0.82rem;
+      color: #334155;
+      background: #f8fafc;
+      border-left: 3px solid var(--accent);
+      padding: 8px 12px;
+      border-radius: 0 4px 4px 0;
+      margin-bottom: 8px;
+      line-height: 1.45;
+    }
+
+    .jump-link {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: color 0.15s ease;
+    }
+
+    .jump-link:hover {
+      color: #1d4ed8;
+    }
+
+    /* Observations Grid */
+    .observations-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 680px) {
+      .observations-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .obs-card {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+
+    .obs-card h4 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .obs-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .obs-card li {
+      font-size: 0.8rem;
+      color: #334155;
+      line-height: 1.45;
+      position: relative;
+      padding-left: 12px;
+    }
+
+    .obs-card li::before {
+      content: '–';
+      position: absolute;
+      left: 0;
+      color: var(--text-muted);
+    }
+
+    /* Footer: Airtable & JSON links */
+    .scorecard-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .foot-link {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .foot-link:hover {
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Minimalist Light Header -->
+    <header>
+      <div class="nav-left">
+        <span class="app-title">CandidateSync</span>
+        <span class="nav-divider">/</span>
+        <span class="candidate-tagline">Alex Rivera (Senior Backend Screening)</span>
+      </div>
+      <div class="nav-right">
+        <span class="api-badge">WhipScribe API Verified</span>
+        <button class="btn-quiet" onclick="refreshAnalysis()">Re-run extraction</button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <div class="layout-grid">
+      
+      <!-- Left Column: Interview Recording & Transcript -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">Interview Recording</span>
+          <span class="panel-meta">2 speakers diarized</span>
+        </div>
+
+        <!-- Audio Player Strip -->
+        <div class="audio-player-bar">
+          <button class="play-btn" id="playBtn" onclick="togglePlayback()">▶</button>
+          <div class="player-details">
+            <div class="player-filename">alex_rivera_screening.wav</div>
+            <div class="player-time" id="timerDisplay">00:00 / 23:24</div>
+            <div class="progress-track" onclick="seekProgress(event)">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dialogue Turns -->
+        <div class="transcript-scroll" id="transcriptScroll">
+          <div class="turn" id="turn-0">
+            <div class="turn-top">
+              <span class="speaker-name">Priya (Recruiter)</span>
+              <span class="turn-time">00:04</span>
+            </div>
+            <div class="turn-dialogue">
+              Thanks for taking the time, Alex! Let's start with your recent backend work at your current startup. Walk me through the architecture of your distributed worker queue.
+            </div>
+          </div>
+
+          <div class="turn" id="turn-1">
+            <div class="turn-top">
+              <span class="speaker-name candidate">Alex Rivera (Candidate)</span>
+              <span class="turn-time">00:12</span>
+            </div>
+            <div class="turn-dialogue">
+              Sure. We were hitting throughput limits when traffic spiked to 12k requests per second. I re-architected our Redis queue into partition-aware Go worker pools with Postgres optimistic locking to handle concurrency safely.
+            </div>
+          </div>
+
+          <div class="turn" id="turn-2">
+            <div class="turn-top">
+              <span class="speaker-name">Priya (Recruiter)</span>
+              <span class="turn-time">00:38</span>
+            </div>
+            <div class="turn-dialogue">
+              How did you deal with database index bloat and query contention during high write spikes?
+            </div>
+          </div>
+
+          <div class="turn" id="turn-3">
+            <div class="turn-top">
+              <span class="speaker-name candidate">Alex Rivera (Candidate)</span>
+              <span class="turn-time">00:45</span>
+            </div>
+            <div class="turn-dialogue">
+              We isolated write-heavy telemetry from transactional rows into BRIN-indexed tables, which cut our index memory footprint by nearly 65%. I walked the team through the query optimization trade-offs before rolling out.
+            </div>
+          </div>
+
+          <div class="turn" id="turn-4">
+            <div class="turn-top">
+              <span class="speaker-name">Priya (Recruiter)</span>
+              <span class="turn-time">01:10</span>
+            </div>
+            <div class="turn-dialogue">
+              How do you communicate those architectural trade-offs to product managers who just want features shipped faster?
+            </div>
+          </div>
+
+          <div class="turn" id="turn-5">
+            <div class="turn-top">
+              <span class="speaker-name candidate">Alex Rivera (Candidate)</span>
+              <span class="turn-time">01:15</span>
+            </div>
+            <div class="turn-dialogue">
+              I translate database contention into user latency impact and AWS infrastructure cost savings. When they see latency drops from 400ms to 45ms, the business case is clear.
+            </div>
+          </div>
+
+          <div class="turn" id="turn-6">
+            <div class="turn-top">
+              <span class="speaker-name candidate">Alex Rivera (Candidate)</span>
+              <span class="turn-time">02:04</span>
+            </div>
+            <div class="turn-dialogue">
+              During our database failover incident, our team did a blameless post-mortem. I made sure to give credit to our junior on-call engineer who caught the replica lag early.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Evidence-Backed Candidate Scorecard -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-heading">Candidate Scorecard</span>
+          <span class="panel-meta">Decision Support Draft</span>
+        </div>
+
+        <div class="scorecard-content">
+          <!-- Candidate Header -->
+          <div class="candidate-header-row">
+            <div class="cand-title-group">
+              <h2>Alex Rivera</h2>
+              <div class="cand-meta-line">
+                <span>Senior Backend Engineer</span>
+                <span>•</span>
+                <span>ID: CAND-758638</span>
+                <span>•</span>
+                <span>Screening Interview</span>
+              </div>
+            </div>
+            <div class="verdict-column">
+              <div class="verdict-state">Advance to Round 2</div>
+              <div class="verdict-number">4.5 <span>/ 5.0</span></div>
+            </div>
+          </div>
+
+          <!-- Competencies: Clean Table Layout -->
+          <div class="section-label">Rubric & Verbatim Evidence</div>
+          <div class="competency-table">
+
+            <!-- Technical Depth -->
+            <div class="rubric-row">
+              <div class="rubric-row-header">
+                <span class="rubric-name">Technical Depth</span>
+                <span class="rubric-rating">4.5 / 5.0</span>
+              </div>
+              <div class="rubric-quote">
+                "Re-architected Redis queue into partition-aware Go worker pools with Postgres optimistic locking."
+              </div>
+              <button class="jump-link" onclick="jumpToTurn('turn-1', '00:12')">
+                → Jump to evidence [00:12]
+              </button>
+            </div>
+
+            <!-- System Design -->
+            <div class="rubric-row">
+              <div class="rubric-row-header">
+                <span class="rubric-name">System Design & Scalability</span>
+                <span class="rubric-rating">4.0 / 5.0</span>
+              </div>
+              <div class="rubric-quote">
+                "Isolated write-heavy telemetry into BRIN-indexed tables, cutting index footprint by 65%."
+              </div>
+              <button class="jump-link" onclick="jumpToTurn('turn-3', '00:45')">
+                → Jump to evidence [00:45]
+              </button>
+            </div>
+
+            <!-- Communication -->
+            <div class="rubric-row">
+              <div class="rubric-row-header">
+                <span class="rubric-name">Communication & Clarity</span>
+                <span class="rubric-rating">5.0 / 5.0</span>
+              </div>
+              <div class="rubric-quote">
+                "Translates database contention into user latency impact and AWS infrastructure cost savings."
+              </div>
+              <button class="jump-link" onclick="jumpToTurn('turn-5', '01:15')">
+                → Jump to evidence [01:15]
+              </button>
+            </div>
+
+            <!-- Culture -->
+            <div class="rubric-row">
+              <div class="rubric-row-header">
+                <span class="rubric-name">Culture & Collaboration</span>
+                <span class="rubric-rating">4.5 / 5.0</span>
+              </div>
+              <div class="rubric-quote">
+                "Gave credit to junior on-call engineer for catching replica lag in incident post-mortem."
+              </div>
+              <button class="jump-link" onclick="jumpToTurn('turn-6', '02:04')">
+                → Jump to evidence [02:04]
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Observations Grid -->
+          <div class="observations-layout">
+            <div class="obs-card">
+              <h4>Demonstrated Strengths</h4>
+              <ul>
+                <li>Hands-on production experience with distributed queues and Postgres index optimization.</li>
+                <li>Articulates architectural trade-offs in terms of user latency and AWS infrastructure cost.</li>
+                <li>Blameless post-mortem mindset; actively shares credit with junior teammates.</li>
+              </ul>
+            </div>
+
+            <div class="obs-card">
+              <h4>Focus for Round 2</h4>
+              <ul>
+                <li>Limited hands-on Kubernetes operator experience (primarily used managed AWS services).</li>
+                <li>Technical panel should verify concurrent race condition handling under high load.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Scorecard Footer -->
+          <div class="scorecard-foot">
+            <span>Airtable candidate base synced • Record #rec7f91a</span>
+            <button class="foot-link" onclick="window.open('scorecard.json', '_blank')">View raw JSON</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let isPlaying = false;
+    const playBtn = document.getElementById('playBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const progressFill = document.getElementById('progressFill');
+
+    function togglePlayback() {
+      isPlaying = !isPlaying;
+      playBtn.textContent = isPlaying ? '⏸' : '▶';
+    }
+
+    function jumpToTurn(turnId, timestamp) {
+      isPlaying = true;
+      playBtn.textContent = '⏸';
+      timerDisplay.textContent = `${timestamp} / 23:24`;
+      
+      const timeParts = timestamp.split(':');
+      const seconds = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+      const totalSeconds = 23 * 60 + 24;
+      const pct = Math.min(100, Math.round((seconds / totalSeconds) * 100 * 4));
+      progressFill.style.width = pct + '%';
+
+      const el = document.getElementById(turnId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.querySelectorAll('.turn').forEach(t => t.classList.remove('active-target'));
+        el.classList.add('active-target');
+        setTimeout(() => el.classList.remove('active-target'), 2500);
+      }
+    }
+
+    function seekProgress(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+      progressFill.style.width = pct + '%';
+    }
+
+    function refreshAnalysis() {
+      const btn = document.querySelector('.btn-quiet');
+      btn.textContent = 'Extracting…';
+      setTimeout(() => {
+        btn.textContent = 'Extraction complete';
+        setTimeout(() => btn.textContent = 'Re-run extraction', 1800);
+      }, 700);
+    }
+  </script>
+</body>
+</html>
