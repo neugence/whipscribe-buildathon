@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DecisionTrace — evidence-backed organizational memory built on WhipScribe.">
+  <title>DecisionTrace — Organizational Memory</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#">
+      <span class="brand-mark">D</span>
+      <span><strong>DecisionTrace</strong><small>Organizational memory</small></span>
+    </a>
+    <div class="top-actions">
+      <span id="modeBadge" class="mode-badge">DEMO MODE</span>
+      <button id="refreshButton" class="ghost-btn">Refresh</button>
+      <button id="resetDemo" class="ghost-btn">Reset demo</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">TRACK 4 · WHIPSCRIBE WORKFLOW</p>
+        <h1>Remember the decision,<br>not just the meeting.</h1>
+        <p class="hero-copy">DecisionTrace turns conversations into a persistent evidence layer for <strong>decisions, reasoning, assumptions, disagreements and promises</strong>, then shows what changed later and why.</p>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-label">EVIDENCE LOOP</div>
+        <div class="flow-line"><span>Recording</span><b>→</b><span>Evidence</span><b>→</b><span>Memory</span><b>→</b><span>Drift</span></div>
+        <p>Live API calls stay server-side. Short-lived playback URLs are fetched only when evidence is opened.</p>
+      </div>
+    </section>
+
+    <section id="ingestPanel" class="upload-panel">
+      <div class="panel-intro">
+        <p class="eyebrow">INGEST</p>
+        <h2>Turn one meeting into organizational memory</h2>
+        <p>Uploads and URL submissions now return a workflow ID so the browser does not wait on a long transcription request.</p>
+      </div>
+      <div class="ingest-tabs" role="tablist" aria-label="Ingest options">
+        <button class="tab active" data-tab="file" role="tab" aria-selected="true">Upload file</button>
+        <button class="tab" data-tab="url" role="tab" aria-selected="false">Public URL</button>
+      </div>
+      <form id="uploadForm" class="upload-form" data-panel="file">
+        <label class="file-picker"><input id="fileInput" type="file" accept="audio/*,video/*" required><span id="fileName">Choose audio or video</span></label>
+        <button class="primary-btn" type="submit">Start transcription</button>
+      </form>
+      <form id="urlForm" class="url-form" data-panel="url" hidden>
+        <input id="urlInput" type="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="url" required>
+        <button class="primary-btn" type="submit">Start URL transcription</button>
+      </form>
+      <div id="uploadStatus" class="status-card" hidden></div>
+    </section>
+
+    <section class="metric-grid" aria-label="Memory metrics">
+      <article class="metric-card"><span>Meetings</span><strong id="metricMeetings">—</strong><small>in memory</small></article>
+      <article class="metric-card decision"><span>Decisions</span><strong id="metricDecisions">—</strong><small>with evidence</small></article>
+      <article class="metric-card drift"><span>Decision drift</span><strong id="metricDrift">—</strong><small>changes detected</small></article>
+      <article class="metric-card promise"><span>Open promises</span><strong id="metricPromises">—</strong><small>still unresolved</small></article>
+    </section>
+
+    <section class="ops-grid">
+      <article class="ops-card"><div class="ops-head"><div><p class="eyebrow">PROVIDER</p><h2>WhipScribe account</h2></div><button id="providerRefresh" class="tiny-btn">Check</button></div><div id="providerStatus" class="provider-state">Loading provider state…</div></article>
+      <article class="ops-card"><div class="ops-head"><div><p class="eyebrow">WORKFLOWS</p><h2>Recent jobs</h2></div><button id="jobsRefresh" class="tiny-btn">Refresh</button></div><div id="workflowList" class="workflow-list"></div></article>
+    </section>
+
+    <section class="content-grid">
+      <div class="main-column">
+        <div class="section-head"><div><p class="eyebrow">DECISION MEMORY</p><h2>What changed?</h2></div><div class="search-wrap"><input id="searchInput" type="search" placeholder="Search your meeting memory…"><button id="searchButton" class="ghost-btn">Search</button></div></div>
+        <div id="driftList" class="drift-list"></div>
+        <div id="searchResults" class="search-results" hidden></div>
+
+        <div class="section-head compact"><div><p class="eyebrow">PROMISE LEDGER</p><h2>Who owes what?</h2></div></div>
+        <div id="promiseList" class="promise-list"></div>
+
+        <div class="section-head compact"><div><p class="eyebrow">MEETING MEMORY</p><h2>Recent conversations</h2></div></div>
+        <div id="meetingList" class="meeting-list"></div>
+      </div>
+      <aside class="side-column">
+        <div class="side-card"><p class="eyebrow">EVIDENCE FIRST</p><h3>Important claims stay connected to their source.</h3><p>DecisionTrace keeps meeting, speaker and timestamp references alongside derived memory.</p></div>
+        <div class="side-card"><p class="eyebrow">PRODUCTION-LIKE</p><h3>Long work runs as a workflow.</h3><p>Uploads return immediately, retry transient provider failures, persist progress, and clean up temporary files.</p></div>
+        <div class="side-card"><p class="eyebrow">CLIP DISCOVERY</p><h3>Find high-signal moments.</h3><p>When a live job is available, DecisionTrace can ask WhipScribe for hooks, questions and other clip candidates.</p><a href="https://whipscribe.com/docs" target="_blank" rel="noreferrer">Read API docs →</a></div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
