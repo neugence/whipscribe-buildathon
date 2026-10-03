@@ -1,4 +1,4 @@
-# WhipScribe Buildathon
+# WhipScribe Buildathon 
 
 **A hiring challenge, open now.** Show us what you have built, find what is
 wrong with a live product, build something on it if you want — and the best
