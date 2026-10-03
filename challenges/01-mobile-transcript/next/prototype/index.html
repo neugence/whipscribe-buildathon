@@ -1,0 +1,1823 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transcript reader — prototype (Track 1 / Challenge 01, step 1)</title>
+
+<style>
+/* ============================================================
+   1. DESIGN TOKENS
+   Sampled from challenges/01-mobile-transcript/after/*.png so the
+   prototype keeps WhipScribe's visual language instead of inventing one.
+   ============================================================ */
+:root{
+  --bg:#FDFEFC;
+  --ink:#202927;
+  --ink-2:#58625E;
+  --muted:#9CA3A3;
+  --line:#BCC0B5;
+  --header-bg:#F7FAF0;
+  --lime:#ABE629;
+  --green:#496C23;
+  --green-2:#61883C;
+  --green-3:#244F31;
+  --slate:#66758C;
+  --keepbar:#F2FBEF;
+
+  /* Audit value (evidence/02…metrics.json): #audio-bar is 103px tall and
+     fixed to the bottom. Everything in the #201 fix is measured from it. */
+  --player-h:103px;
+
+  --gutter:14px;      /* transcript left inset */
+  --ts-col:46px;      /* timestamp gutter column */
+  --seg-fs:17px;      /* transcript text — driven by Text size setting */
+  --title-fs:24px;
+  --tabs-fs:14px;   /* 320-first: measured source tab labels are ~13px */
+  --sheet-radius:20px;
+  --backdrop:rgba(32,41,39,.42);
+
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+
+/* ============================================================
+   2. RESET + BASE
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{margin:0;background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:3px solid var(--green-2);outline-offset:2px;border-radius:4px}
+[hidden]{display:none !important}
+
+/* ============================================================
+   3. APP SHELL — header, tab row, scrolling body
+   Header and tabs live INSIDE the scroller, so they scroll away,
+   which is what the current design does (after/04-scrolled.png).
+   ============================================================ */
+.app{
+  height:100vh;
+  height:100dvh;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg);
+  position:relative;
+}
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+.hdr{background:var(--header-bg);padding-bottom:8px}
+.hdr-row1{display:flex;align-items:center;gap:6px;height:56px;padding:0 6px}
+.hdr-back{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}
+.hdr-title{font-size:var(--title-fs);font-weight:700;letter-spacing:-.01em;margin:0}
+.hdr-spacer{flex:1}
+.hdr-more{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}
+.hdr-more:active{background:rgba(32,41,39,.07)}
+/* Meta row is indented to line up under the title (as in the current shots). */
+.hdr-meta{padding-left:65px;font-size:14px;color:var(--ink-2);line-height:1.3}
+
+/* 320-first: 3 labels + two 44px hit targets must fit 320px without
+   horizontal overflow (measured: gap 12 / padding 10 / 14px labels
+   leaves ~7px slack; 16px labels overflowed by 53px once the icons
+   stopped shrinking). The zero-width spacer would cost two gaps, so
+   the search trigger is pushed right by margin-left:auto instead. */
+.tabs{display:flex;align-items:center;gap:12px;height:52px;padding:0 10px;
+      background:var(--bg);border-bottom:1px solid var(--line)}
+.tab{position:relative;height:52px;display:flex;align-items:center;
+     font-size:var(--tabs-fs);color:var(--ink-2)}
+.tab[aria-selected="true"]{color:var(--ink);font-weight:700}
+.tab[aria-selected="true"]::after{
+  content:"";position:absolute;left:-2px;right:-2px;bottom:-1px;height:3px;
+  background:var(--green);border-radius:2px}
+.tabs .spacer{display:none}   /* replaced by margin-left:auto below */
+#btn-search{margin-left:auto} /* pins the icon pair to the right, costs one gap not two */
+.tab-icon{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:10px;color:var(--ink)}
+
+/* ============================================================
+   4. TRANSCRIPT SEGMENTS
+   Gutter timestamp (italic slate mono) + justified body, as in
+   after/01-reader-320.png. Text starts at 16 + 46 = 62px.
+   ============================================================ */
+.transcript{padding:18px 0 24px;font-size:var(--seg-fs)}
+.seg{display:grid;grid-template-columns:var(--ts-col) minmax(0,1fr);
+     padding:0 var(--gutter) 0 16px;margin-bottom:15px}
+.ts{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-style:italic;font-size:14px;line-height:1.6;color:var(--slate);
+    padding-top:2px;white-space:nowrap}
+.txt{margin:0;line-height:1.62;text-align:justify;text-justify:inter-word;hyphens:auto}
+/* Show timestamps = off */
+.transcript.no-ts .seg{grid-template-columns:minmax(0,1fr)}
+.transcript.no-ts .ts{display:none}
+
+/* ============================================================
+   5. BOTTOM STACK — keep-reading bar + player (both fixed, never move)
+   ============================================================ */
+.keepbar{display:flex;align-items:center;gap:10px;padding:11px 14px;
+         background:var(--keepbar);border-top:1px solid #E1EED6}
+.keepbar p{margin:0;font-size:15px;line-height:1.35;font-weight:700;color:var(--green-3)}
+.keepbtn{margin-left:auto;flex:none;background:var(--lime);color:var(--green-3);
+         font-weight:700;font-size:16px;border-radius:12px;padding:13px 16px;
+         min-height:48px;white-space:nowrap}
+
+.player{
+  height:var(--player-h);            /* audit: 103px */
+  flex:none;
+  background:var(--bg);
+  border-top:1px solid var(--line);
+  padding:12px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;z-index:2;
+}
+.seek{height:6px;background:#E7EAE5;border-radius:3px;position:relative;flex:none}
+.seek .knob{position:absolute;top:-4px;left:0;width:14px;height:14px;border-radius:50%;
+            background:var(--green-2);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.transport{display:flex;align-items:center;justify-content:space-between;flex:1}
+.time{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-style:italic;font-size:14px;color:var(--slate)}
+.pbtn{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;color:var(--green)}
+.play{width:56px;height:56px;background:var(--green);color:var(--lime);border-radius:50%;
+      display:grid;place-items:center;font-size:20px}
+.rate{font-weight:700;font-size:17px;padding:10px 6px;color:var(--ink)}
+
+/* ============================================================
+   6. OVERLAYS — backdrop + sheet
+   #201 fix: both stop at the player. The player is never dimmed,
+   never covered, and the sheet cannot end below player top.
+   ============================================================ */
+.backdrop{position:fixed;left:0;right:0;top:0;bottom:var(--player-h);
+          background:var(--backdrop);z-index:30}
+.sheet{
+  position:fixed;left:0;right:0;bottom:var(--player-h);   /* #201: above the player */
+  z-index:40;
+  max-height:calc(100dvh - var(--player-h));              /* cannot reach behind it */
+  background:#fff;
+  border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow:0 -10px 34px rgba(32,41,39,.20);
+  display:flex;flex-direction:column;overflow:hidden;     /* #204: never scrolls sideways */
+}
+.sheet-grab{width:100%;min-height:34px;display:grid;place-items:center;flex:none}
+.sheet-grab span{width:44px;height:5px;border-radius:3px;background:#D6DBD8;display:block}
+.sheet-scroll{overflow-y:auto;overscroll-behavior:contain;padding:2px 20px 18px}
+.eyebrow{margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.14em;
+         text-transform:uppercase;color:var(--ink-2)}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:12px;
+      min-height:56px;padding:8px 0;border-bottom:1px solid #EDEFEC}
+.srow:last-of-type{border-bottom:0}
+.srow .lbl{font-size:18px;cursor:pointer}
+.hint{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
+
+/* Controls: native, styled close to after/09-reading-settings.png.
+   The select is 40px tall (source: 28px) for touch comfort — reported. */
+.opt-ts{width:26px;height:26px;accent-color:var(--green-2);flex:none;cursor:pointer}
+.opt-spk{width:26px;height:26px;accent-color:var(--green-2);flex:none;cursor:pointer}
+.opt-size{min-height:40px;min-width:104px;font-size:16px;padding:6px 10px;
+          border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+
+/* ============================================================
+   7. STATE SCREENS
+   Search (state 4) is section 10, download (state 5) section 11,
+   More menu (state 6) section 12, File details (state 7) section 13,
+   Text selection (state 8) section 14, Processing (state 9)
+   section 15, four-speaker meeting (state 10) section 16,
+   keyboard-open (state 11) section 17.
+   ============================================================ */
+
+/* ============================================================
+   8. A11Y
+   ============================================================ */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;
+         clip-path:inset(50%);white-space:nowrap;border:0}
+#hud{position:fixed;left:6px;top:6px;z-index:90;background:rgba(32,41,39,.92);
+     color:#D8F58A;font:11px/1.5 ui-monospace,Menlo,Consolas,monospace;
+     padding:8px 10px;border-radius:8px;max-width:calc(100vw - 12px);
+     pointer-events:none;white-space:pre-wrap}
+
+/* ============================================================
+   9. RESPONSIVE — required targets: 320 (base), 375, 390, 1280.
+   No 414 / 1024 breakpoint: fluid CSS covers the widths in between.
+   ============================================================ */
+@media (min-width:375px){
+  /* widths >= 375 keep the Step-1 tab-row look (17px labels, gap 16) */
+  :root{--gutter:18px;--ts-col:50px;--tabs-fs:17px}
+  .tabs{gap:16px;padding:0 14px}
+}
+@media (min-width:390px){
+  :root{--gutter:20px;--ts-col:52px}
+  .tabs{gap:20px;padding:0 18px}
+}
+@media (min-width:768px){
+  /* PLACEHOLDER ONLY — keeps the phone shell sane between 390 and 1280.
+     Real desktop parity is state 12 and is deliberately not implemented. */
+  .app{max-width:430px;margin-inline:auto;border-inline:1px solid var(--line)}
+  .backdrop,.sheet,.sheet-dl,.sheet-menu,.sheet-fd{max-width:430px;margin-inline:auto}
+}
+@media (min-width:1280px){
+  /* Required target 4: renders, no horizontal overflow. Design TBD (state 12). */
+  .app{max-width:460px}
+  .backdrop,.sheet,.sheet-dl,.sheet-menu,.sheet-fd{max-width:460px}
+}
+
+/* ============================================================
+   10. SEARCH  (state 4)
+   Source: after/06-search.png, audit measurements round5 W1 /
+   round7 X1 — bar 58px open / 0 closed, input 42px tall at x=42,
+   placeholder "Search this transcript…".
+   Layout is fluid: the input absorbs whatever the controls leave.
+   The 257px (empty) / 153px (query) figures from the audit are
+   REFERENCE values at 320px, never hard-coded.
+   ============================================================ */
+.search-bar{display:flex;align-items:center;height:58px;padding-right:4px;
+            background:var(--bg);border-bottom:1px solid var(--line)}
+.search-ico{width:42px;flex:none;display:grid;place-items:center;color:var(--ink-2)}
+.search-input{flex:1 1 auto;min-width:0;height:42px;padding:0 8px;
+              border:1px solid var(--line);border-radius:10px;background:#fff;
+              font:inherit;font-size:16px;color:var(--ink);
+              appearance:none;-webkit-appearance:none}
+.search-input::placeholder{color:var(--muted);opacity:1}
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration{display:none;-webkit-appearance:none}
+.search-count{flex:none;padding:0 4px;font-size:14px;color:var(--ink-2);
+              font-variant-numeric:tabular-nums;white-space:nowrap}
+/* 44px hit areas; the glyphs inside stay source-sized (~18px). */
+.hit{width:44px;height:44px;flex:none;display:grid;place-items:center;
+     border-radius:10px;color:var(--ink)}
+.hit:active{background:rgba(32,41,39,.08)}
+
+.search-results{display:flex;flex-direction:column;gap:8px;
+                padding:10px 12px 4px;max-height:42dvh;
+                overflow-y:auto;overscroll-behavior:contain}
+.tsr{display:block;width:100%;text-align:left;font-size:15px;line-height:1.5;
+     color:var(--ink);background:#F7FEE7;border:0;
+     border-left:4px solid #A3DC2D;border-radius:10px;padding:9px 12px}
+.tsr[aria-current="true"]{box-shadow:0 0 0 2px var(--green-2)}
+.tsr-t{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+       font-style:italic;font-size:14px;color:#415C36;margin-right:8px}
+
+.search-empty{padding:12px 16px;font-size:15px;line-height:1.5;color:var(--ink-2);
+              border-bottom:1px solid var(--line);background:var(--bg)}
+
+mark{background:#FDE68A;color:inherit;border-radius:3px;padding:0 1px}
+
+/* Segment holding the current hit — prototype choice: the source marks
+   the card with aria-current but its transcript-side treatment is not
+   measurable from the screenshots, so the prototype shows it plainly. */
+.seg.is-current{background:#F7FEE7}
+
+/* [hidden] must beat the display rules above (flex/grid) */
+.search-bar[hidden],.search-results[hidden],.search-empty[hidden],
+.hit[hidden],.search-count[hidden]{display:none}
+
+/* ============================================================
+   11. DOWNLOAD SHEET  (state 5 — issues #203 / #204)
+   Source: after/07-export-sheet.png (390×844), next/screenshots/03+04
+   (320), scratch E3a/E3b/C-export-*. Measured (CSS px):
+   sheet top = 15dvh (87 @568, 109 @720, 127 @844), bottom = 0
+   (covers the player), radius 20 top, grab pill ~T+9,
+   heading "Download" T+35, subtitle T+70, checkbox row T+109,
+   helper T+137, sections T+171 / T+398 / T+505 / T+605 / T+786,
+   Close text ~T+923; content ≈980px → scrolls inside the panel.
+   Format rows: source boxes 40px tall, gap 7 (text pitch 47).
+   #204 fix: the source grid takes min-content (314px) into a 280px
+   box — 19 elements past the right edge, 14px forced side-scroll.
+   Here every track is minmax(0,1fr)/min-width:0 — nothing can grow
+   past the content box and the panel never scrolls sideways.
+   ============================================================ */
+.backdrop.is-full{bottom:0}   /* download dim covers header, tabs AND player */
+.sheet-dl{
+  position:fixed;left:0;right:0;top:15dvh;bottom:0;   /* source: bottom 85% of the viewport */
+  z-index:40;
+  background:#fff;
+  border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow:0 -10px 34px rgba(32,41,39,.20);
+  display:flex;flex-direction:column;overflow:hidden;  /* #204: never scrolls sideways */
+}
+.dl-grab{width:100%;min-height:24px;display:grid;place-items:center;flex:none}
+.dl-grab span{width:44px;height:5px;border-radius:3px;background:#D6DBD8;display:block}
+.dl-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+           overscroll-behavior:contain;padding:0 20px 18px}   /* 20px = source content box 280 @320 */
+.dl-h{margin:6px 0 0;font-size:18px;line-height:1.3;font-weight:700;letter-spacing:-.01em}
+.dl-sub{margin:9px 0 0;font-size:14px;line-height:1.35;color:var(--ink-2)}
+.dl-ts-row{display:flex;align-items:center;gap:8px;min-height:44px;margin-top:10px;
+           font-size:16px;cursor:pointer}
+.dl-ts{width:24px;height:24px;accent-color:var(--green-2);flex:none;cursor:pointer}  /* source 14px; touch size reported */
+.dl-hint{margin:0;font-size:12px;line-height:1.45;color:var(--ink-2)}
+.dl-sec{margin:16px 0 0;font-size:10px;font-weight:700;letter-spacing:.14em;
+        text-transform:uppercase;color:var(--ink-2)}
+.dl-rule{border:0;border-top:1px solid var(--line);margin:6px 0 11px}
+/* Source section gaps are not uniform (measured: 15 after a format
+   grid, 40 after the language row, 27 after Save to Drive, 16 after
+   Summary) — these two overrides put every section title back on its
+   measured y. */
+.dl-row + .dl-sec{margin-top:29px}
+.dl-grid-drive + .dl-sec{margin-top:26px}
+/* One fluid column: the source is single-column at every width too —
+   it just computes the track from min-content and overflows. */
+.dl-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:3px}
+.dl-fmt{width:100%;min-width:0;min-height:44px;padding:0 14px;text-align:left;
+        /* text x = 20 + 1 + 14 = 35, as measured on the source shots */
+        background:#fff;border:1px solid var(--line);border-radius:10px;
+        font-size:16px;color:var(--ink)}
+.dl-fmt:active{background:#F3F6EF}
+.dl-row{display:flex;gap:8px;min-width:0}   /* select + Translate stay side-by-side at 320 */
+.dl-lang{flex:1 1 auto;min-width:0;min-height:44px;padding:0 8px;font:inherit;
+         font-size:15px;color:var(--ink);background:#fff;
+         border:1px solid var(--line);border-radius:10px}
+#dl-go{flex:none;min-height:44px;padding:0 12px;font-size:15px;color:var(--ink);
+       background:#fff;border:1px solid var(--line);border-radius:10px}
+#dl-go:active{background:#F3F6EF}
+/* Close: plain right-aligned text button (measured: no border, no fill) */
+.dl-actions{display:flex;justify-content:flex-end;margin-top:14px}
+.dl-close{min-height:44px;padding:0 10px;font-size:16px;font-weight:600;color:var(--ink);
+          border-radius:10px}
+.dl-close:active{background:rgba(32,41,39,.07)}
+/* [hidden] must beat the flex/grid rules above */
+.sheet-dl[hidden]{display:none}
+
+/* ============================================================
+   12. MORE MENU  (state 6)
+   Source: after/08-more-menu.png (390x844 @2x) + live round23
+   (320x568, menu rect [0,194,320,374]). Measured (CSS px):
+   radius 20 top + shadow above, grab pill 40x5 #E2E8F0 at T+12,
+   first item text ~T+43, item pitch 48, text x=24, 9 items,
+   no dimming above the menu.
+   Decision 2 (approved): the menu sits ABOVE the player
+   (bottom = player top). The source lets it slide UNDER the
+   player (live issue #149) — deliberately not reproduced.
+   ============================================================ */
+.backdrop.is-quiet{background:transparent}   /* menu: click-catcher only, no dimming */
+.sheet-menu{
+  position:fixed;left:0;right:0;bottom:var(--player-h);   /* above the player, Decision 2 */
+  z-index:40;
+  max-height:calc(100dvh - var(--player-h));              /* player never covered */
+  background:#fff;
+  border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow:0 -10px 34px rgba(32,41,39,.20);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.menu-grab{width:100%;min-height:28px;display:grid;place-items:center;flex:none}
+.menu-grab span{width:40px;height:5px;border-radius:3px;background:#E2E8F0;display:block}
+.menu-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+           padding:0 0 4px}   /* content 28+9*48+4 = 464 <= 465 at 320x568: fits, scrolls below */
+.menu-item{display:flex;align-items:center;width:100%;min-height:48px;
+           padding:0 24px;text-align:left;font-size:15px;color:var(--ink)}   /* text x = 24 */
+.menu-item:active{background:#F3F6EF}
+.sheet-menu[hidden]{display:none}
+
+/* ============================================================
+   13. FILE DETAILS  (state 7 — issue #203)
+   Source: next/screenshots/05-file-details-320x568.png + round9.
+   Measured (CSS px): full-viewport dim, sheet bottom:0 covering
+   the player (like Download, E5), radius 20 top, pill 40x5
+   #E2E8F0 at T+12, h2 "File details" ~T+35, label col x=21,
+   value col x=96, row pitch ~30, ID wraps at 320, right-aligned
+   Close text.
+   #203: the source container reports role/aria-modal/aria-label
+   all null — this prototype gives it a real dialog contract.
+   Title = "long.m4a" (one line) vs the source's two-line demo
+   title: rows below Title shift up by ~one line; flagged in the
+   step-6 report, never faked with extra spacing.
+   ============================================================ */
+.sheet-fd{
+  position:fixed;left:0;right:0;bottom:0;
+  z-index:40;
+  max-height:100dvh;
+  background:#fff;
+  border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow:0 -10px 34px rgba(32,41,39,.20);
+  display:flex;flex-direction:column;overflow:hidden;   /* never scrolls sideways */
+}
+.fd-grab{width:100%;min-height:28px;display:grid;place-items:center;flex:none}
+.fd-grab span{width:40px;height:5px;border-radius:3px;background:#E2E8F0;display:block}
+.fd-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+           overscroll-behavior:contain;padding:0 20px 18px}   /* label col x = 20 */
+.fd-h{margin:6px 0 0;font-size:18px;line-height:1.3;font-weight:700;letter-spacing:-.01em}
+.fd-rows{margin:23px 0 0}
+.fd-row{display:grid;grid-template-columns:76px minmax(0,1fr);   /* value col x = 96 */
+        margin:0 0 9px;font-size:14px;line-height:1.5}
+.fd-lbl{margin:0;color:var(--ink-2)}
+.fd-val{margin:0;color:var(--ink);overflow-wrap:anywhere}   /* ID wraps at 320 */
+.fd-actions{display:flex;justify-content:flex-end;margin-top:6px}
+.fd-close{min-height:44px;padding:0 10px;font-size:16px;font-weight:600;color:var(--ink);
+          border-radius:10px}
+.fd-close:active{background:rgba(32,41,39,.07)}
+.sheet-fd[hidden]{display:none}
+
+/* ============================================================
+   14. TEXT SELECTION  (state 8)
+   Source: after/10-text-selection.png (390x844 @2x), measured
+   (CSS px): bar 254x44 at [24,273], horizontally centred on the
+   selection, gap 8 below it, bg #243625, radius ~10, soft shadow
+   below, white 11px/400 labels, copy glyph + play triangle,
+   no divider between the two actions. Highlight #CFE3FF with
+   ink text (pixel-sampled from the screenshot).
+   The bar is transient UI, not a view: no URL state, z below
+   the backdrop so an open panel always wins.
+   ============================================================ */
+#transcript ::selection{background:#CFE3FF;color:var(--ink)}
+.sel-bar{
+  position:fixed;left:0;top:0;z-index:25;   /* above content + player, below backdrop(30)/sheets(40) */
+  display:flex;align-items:center;gap:24px;  /* measured: 23.5 between the two actions */
+  min-width:254px;                           /* measured box; content left-packed (right slack 29) */
+  height:44px;padding:0 16px;                /* measured: left ink at +15.5 */
+  background:#243625;                         /* sampled rgb(36,54,37) */
+  border-radius:10px;                         /* corner profile flush at ~9-11 */
+  box-shadow:0 4px 14px rgba(32,41,39,.20);   /* edge alpha ~.15 below, ~.02 above */
+  font-size:11px;font-weight:400;color:#fff;  /* cap 8.0 / x-height 6.0 / stem 1.0 */
+}
+.sel-bar[hidden]{display:none}
+.sel-act{display:flex;align-items:center;gap:8px;   /* measured: icon-to-label 8 / 10.5 */
+  height:44px;padding:0;margin:0;
+  background:none;border:0;color:inherit;font:inherit;cursor:pointer;white-space:nowrap}
+.sel-act svg{display:block;flex:none}
+.sel-act:active{opacity:.75}
+.sel-act:focus-visible{outline:2px solid #fff;outline-offset:-4px}
+
+/* ============================================================
+   15. PROCESSING  (state 9)
+   No source screen exists — challenge README: "There is no screen
+   for that above. Design it." Layout follows the site's own
+   not-ready pattern (after/12-load-failure.png): message centred
+   below the tabs, top-anchored (~65px). STATIC state (approved
+   decision A): no timers, no percent, no ETA, no polling, no
+   notifications, no "transcript ready" behaviour. The progress
+   bar is an indeterminate CSS loop only.
+   ============================================================ */
+.proc{padding:64px 20px 40px;text-align:center}
+.proc-track{width:180px;height:6px;margin:0 auto 18px;
+  border-radius:99px;background:#E1EED6;overflow:hidden}
+.proc-fill{display:block;width:45%;height:100%;border-radius:99px;
+  background:var(--lime);
+  animation:proc-slide 1.3s ease-in-out infinite}
+@keyframes proc-slide{
+  0%{transform:translateX(-110%)}
+  100%{transform:translateX(330%)}
+}
+@media (prefers-reduced-motion:reduce){
+  .proc-fill{animation:none;transform:translateX(75%)}
+}
+.proc-title{margin:0 0 6px;font-size:17px;line-height:1.35;font-weight:700;color:var(--ink)}
+.proc-sub{margin:0;font-size:15px;line-height:1.45;color:var(--ink-2)}
+/* dimmed affordances — only set by setProc(); [disabled] also
+   removes them from the tab order (FOCUSABLE already skips them) */
+.tab:disabled,.tab-icon:disabled{opacity:.4;cursor:default}
+.menu-item:disabled{opacity:.45;cursor:default}
+
+/* ============================================================
+   16. FOUR-SPEAKER MEETING  (state 10, ?spk=4)
+   No source screen exists — challenge README: "the screens above
+   show a single-speaker file. Show a meeting with four speakers
+   at 320 px." Design decisions (flagged in the plan): the speaker
+   label is its OWN LINE at the top of the turn, in the text
+   column, so the 320px text width and the timestamp gutter are
+   untouched; labels render only when the speaker changes; uniform
+   13px/700 green-3 styling (no per-speaker colours or avatars).
+   .turn wraps label+txt so the approved .seg grid, search paint
+   and selection paths never see a structural change.
+   ============================================================ */
+.turn{display:block}
+.spk{display:block;margin:0 0 3px;font-size:13px;font-weight:700;
+  line-height:1.3;color:var(--green-3)}
+.transcript.no-spk .spk{display:none}
+
+/* ============================================================
+   17. KEYBOARD-OPEN  (state 11, ?kb=1)
+   PROTOTYPE-ONLY SIMULATION — no source screenshot exists
+   (README: "what happens when the keyboard is up?"). The keyboard
+   itself is never drawn: JS detects occlusion through the
+   layout/visual viewport APIs and the harness reproduces it by
+   resizing the viewport (216px keyboard -> 352px effective area at
+   320x568). No fake keyboard or key grid, no real iOS/Android
+   keyboard and no screen reader was tested. While typing, the
+   keep-reading bar and the player yield to the keyboard (hidden),
+   and the shell shrinks to the visible area so scroll-to-end
+   stops at the keyboard top. Chrome hiding is media-gated below
+   768px: the desktop shell is untouched (desktop parity is a
+   separate track).
+   ============================================================ */
+.app.kb-open{height:calc(100dvh - var(--kb-h,0px))}
+@media (max-width:767px){
+  .app.kb-open .keepbar,
+  .app.kb-open .player{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ========== APP SHELL ========== -->
+<div class="app" id="app">
+
+  <div class="scroll" id="scroll">
+
+    <!-- Header row 1 -->
+    <header class="hdr">
+      <div class="hdr-row1">
+        <button type="button" class="hdr-back" aria-label="Back to library">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <h1 class="hdr-title">long.m4a</h1>
+        <span class="hdr-spacer"></span>
+        <!-- STEP 6: ⋯ discloses the More menu (state 6); Reading settings
+             lives inside it now. Disclosure semantics (aria-expanded +
+             aria-controls, plain buttons, no role="menu") — approved. -->
+        <button type="button" class="hdr-more" id="btn-more"
+                aria-label="Recording actions" aria-expanded="false" aria-controls="sheet-more">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Carried over verbatim from the current design, trailing "·" included
+           (the dangling separator was audited and deliberately dropped as
+           minor cosmetic — see next/README.md). -->
+      <div class="hdr-meta">1m 44s &nbsp;·&nbsp; EN &nbsp;·</div>
+    </header>
+
+    <!-- Tab row -->
+    <nav class="tabs" role="tablist" aria-label="Recording sections">
+      <button type="button" class="tab" role="tab" aria-selected="true">Transcript</button>
+      <button type="button" class="tab" role="tab" aria-selected="false">Summary</button>
+      <button type="button" class="tab" role="tab" aria-selected="false">AI Chat</button>
+      <span class="spacer"></span>
+      <!-- Search trigger (state 4). 44x44 hit area, 22px glyph. -->
+      <button type="button" class="tab-icon" id="btn-search"
+              aria-label="Search transcript" title="Search" aria-expanded="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- Download trigger (state 5, issues #203/#204). 44x44 hit area, 22px glyph. -->
+      <button type="button" class="tab-icon" id="btn-download"
+              aria-label="Download transcript" title="Download">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- ===== STATE 4: SEARCH =====================================
+         In flow directly under the tabs (audit: bar y=171, first
+         segment text y=241 at 320). It scrolls away with the header,
+         exactly like the header and tabs do.
+         Count / prev / next / clear only render once there is a
+         query, which is what the measured empty bar shows. -->
+    <div class="search-bar" id="search-bar" hidden>
+      <span class="search-ico" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <input class="search-input" id="tsearch" type="search"
+             placeholder="Search this transcript…"
+             aria-label="Search the words in this transcript"
+             autocomplete="off" spellcheck="false">
+      <span class="search-count" id="search-count" aria-live="polite" hidden></span>
+      <button type="button" class="hit" id="btn-prev" aria-label="Previous match" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 19V6M6 12l6-6 6 6" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button type="button" class="hit" id="btn-next" aria-label="Next match" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 5v13M6 12l6 6 6-6" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button type="button" class="hit" id="btn-clear" aria-label="Clear search" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Result cards: one per matching segment, source structure
+         (timestamp + excerpt with <mark>), plain <button>, aria-current
+         on the active one — not role="option". -->
+    <div class="search-results" id="search-results" hidden></div>
+    <p class="search-empty" id="search-empty" hidden></p>
+
+    <!-- Transcript (mock data copied from the current demo screenshots,
+         with a short mock continuation so the scroller has real content) -->
+    <main class="transcript" id="transcript">
+      <div class="seg"><span class="ts">0:00</span><p class="txt">Thanks everyone for joining the quarterly planning review.</p></div>
+      <div class="seg"><span class="ts">0:03</span><p class="txt">I want to move quickly today because we have a lot to cover and several people have a hard stop at the top of the hour.</p></div>
+      <div class="seg"><span class="ts">0:09</span><p class="txt">First, the numbers.</p></div>
+      <div class="seg"><span class="ts">0:10</span><p class="txt">Revenue came in 11% above forecast.</p></div>
+      <div class="seg"><span class="ts">0:13</span><p class="txt">Most of that came from the enterprise segment, where three of the five deals we expected in the next quarter closed early.</p></div>
+      <div class="seg"><span class="ts">0:20</span><p class="txt">The self-serve business was flat.</p></div>
+      <div class="seg"><span class="ts">0:22</span><p class="txt">Trials were up, but conversion to paid slipped by about a point and a half.</p></div>
+      <div class="seg"><span class="ts">0:26</span><p class="txt">And we think that is mostly the onboarding change we shipped in July.</p></div>
+      <!-- Mock continuation (prototype data, not from the demo file) -->
+      <div class="seg"><span class="ts">0:31</span><p class="txt">Support tickets about first-run setup dropped by a third after the new checklist went out.</p></div>
+      <div class="seg"><span class="ts">0:36</span><p class="txt">Net revenue retention held at 108 percent, which is exactly where we planned it for the quarter.</p></div>
+      <div class="seg"><span class="ts">0:42</span><p class="txt">On hiring, two of the four open roles are at final stage and the rest start next week.</p></div>
+      <div class="seg"><span class="ts">0:49</span><p class="txt">That is the numbers. I want to leave fifteen minutes for questions before we move to roadmap.</p></div>
+    </main>
+
+    <!-- ===== STATE 9: PROCESSING ==============================
+         Body mode, entered ONLY by URL (?proc=1) — no in-UI entry,
+         so every approved state stays byte-identical at ?view=.
+         The card sits OUTSIDE #transcript: segments stay hidden,
+         so text selection can never arm the state-8 bar here. -->
+    <div class="proc" id="proc" hidden role="status" aria-live="polite">
+      <div class="proc-track" aria-hidden="true"><span class="proc-fill"></span></div>
+      <h2 class="proc-title">Transcript is still processing</h2>
+      <p class="proc-sub">We'll show it here as soon as it's ready.</p>
+    </div>
+
+  </div>
+
+  <!-- Keep-reading bar (free preview) -->
+  <div class="keepbar">
+    <p>You're reading the free preview (first 48%).</p>
+    <button type="button" class="keepbtn">Keep reading&nbsp;→</button>
+  </div>
+
+  <!-- Persistent player — audit says 103px; it is preserved untouched. -->
+  <div class="player" id="player">
+    <div class="seek"><span class="knob"></span></div>
+    <div class="transport">
+      <span class="time">00:00 / 00:00</span>
+      <button type="button" class="pbtn" aria-label="Back 15 seconds">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M11 6V3L6 7l5 4V8a6 6 0 11-6 6" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <!-- Visual only: no audio in this prototype, nothing is played. -->
+      <button type="button" class="play" id="btn-play" aria-label="Play" aria-pressed="false">
+        <span id="play-icon" aria-hidden="true">▶</span>
+      </button>
+      <button type="button" class="pbtn" aria-label="Forward 15 seconds">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M13 6V3l5 4-5 4V8a6 6 0 106 6" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button type="button" class="rate" aria-label="Playback speed, 1 times">1×</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== STATE 8: TEXT SELECTION (after/10-text-selection.png) ======
+     Floating action bar for a transcript selection: copy the text or seek
+     the visual player to that moment. Two plain buttons (no dialog role —
+     it is transient, not a panel), hidden until a selection exists, never
+     part of the URL. -->
+<div class="sel-bar" id="sel-bar" hidden>
+  <button type="button" class="sel-act" id="sel-copy">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span>Copy selection</span>
+  </button>
+  <button type="button" class="sel-act" id="sel-play">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M7 4.5v15l13-7.5z"/>
+    </svg>
+    <span>Play from here</span>
+  </button>
+</div>
+
+<!-- ========== #201 READING SETTINGS ========== -->
+<!-- Backdrop stops at the player: the player stays visible and usable. -->
+<div class="backdrop" id="backdrop" hidden></div>
+
+<section class="sheet" id="sheet-settings" role="dialog" aria-modal="true"
+         aria-labelledby="settings-title" hidden>
+  <button type="button" class="sheet-grab" id="sheet-grab" aria-label="Close reading settings">
+    <span aria-hidden="true"></span>
+  </button>
+  <div class="sheet-scroll" id="sheet-scroll">
+    <p class="eyebrow" id="settings-title">Reading view</p>
+
+    <div class="srow">
+      <label class="lbl" for="opt-ts">Show timestamps</label>
+      <input class="opt-ts" type="checkbox" id="opt-ts" checked data-autofocus>
+    </div>
+
+    <!-- State 10: exposed ONLY under ?spk=4 (single-speaker files have
+         no labels). Order per the challenge caption: timestamps,
+         speakers, text size. Hidden at the default URL, so the
+         approved two-row sheet geometry (#201) is untouched. -->
+    <div class="srow" id="row-spk" hidden>
+      <label class="lbl" for="opt-spk">Show speaker labels</label>
+      <input class="opt-spk" type="checkbox" id="opt-spk" checked>
+    </div>
+
+    <div class="srow">
+      <label class="lbl" for="opt-size">Text size</label>
+      <select class="opt-size" id="opt-size">
+        <option value="small" selected>Small</option>
+        <option value="medium">Medium</option>
+        <option value="large">Large</option>
+      </select>
+    </div>
+
+    <p class="hint">These settings only change this view. Copies and downloads are unaffected.</p>
+  </div>
+</section>
+
+<!-- ========== STATE 5: DOWNLOAD SHEET (issues #203 / #204) ==========
+     Structure and copy follow the measured source sheet
+     (after/07-export-sheet.png, scratch E3a/E3b):
+     heading + file name, timestamps checkbox + helper, then
+     TRANSCRIPT / TRANSLATED SUBTITLES / GOOGLE DRIVE / SUMMARY / ALL
+     and a right-aligned Close.
+     #203: real dialog semantics + modal focus handling (the source's
+     container reports role/aria-modal/aria-label all null).
+     Format/Translate/Drive buttons are NOT wired to any backend in
+     this prototype — they keep their visible focus/press states only. -->
+<section class="sheet-dl" id="sheet-download" role="dialog" aria-modal="true"
+         aria-labelledby="dl-title" hidden>
+  <button type="button" class="dl-grab" id="dl-grab" aria-label="Close download sheet">
+    <span aria-hidden="true"></span>
+  </button>
+  <div class="dl-scroll" id="dl-scroll">
+    <h2 class="dl-h" id="dl-title">Download</h2>
+    <p class="dl-sub">long.m4a</p>
+
+    <label class="dl-ts-row" for="dl-ts">
+      <input class="dl-ts" type="checkbox" id="dl-ts" checked data-autofocus>
+      <span>Include timestamps</span>
+    </label>
+    <p class="dl-hint">for .txt and .docx; subtitles always carry timing</p>
+
+    <h3 class="dl-sec">Transcript</h3>
+    <hr class="dl-rule">
+    <div class="dl-grid">
+      <button type="button" class="dl-fmt">.txt</button>
+      <button type="button" class="dl-fmt">.docx</button>
+      <button type="button" class="dl-fmt">.srt</button>
+      <button type="button" class="dl-fmt">.vtt</button>
+    </div>
+
+    <h3 class="dl-sec">Translated subtitles</h3>
+    <hr class="dl-rule">
+    <div class="dl-row">
+      <select class="dl-lang" id="dl-lang" aria-label="Translate subtitles into">
+        <option value="" selected>Choose language…</option>
+        <option>Arabic</option><option>Bengali</option>
+        <option>Chinese (Simplified)</option><option>Chinese (Traditional)</option>
+        <option>Czech</option><option>Danish</option><option>Dutch</option>
+        <option>English</option><option>Filipino</option><option>Finnish</option>
+        <option>French</option><option>German</option><option>Greek</option>
+        <option>Hebrew</option><option>Hindi</option><option>Hungarian</option>
+        <option>Indonesian</option><option>Italian</option><option>Japanese</option>
+        <option>Korean</option><option>Malay</option><option>Norwegian</option>
+        <option>Persian</option><option>Polish</option>
+      </select>
+      <button type="button" id="dl-go">Translate → .srt</button>
+    </div>
+
+    <h3 class="dl-sec">Google Drive</h3>
+    <hr class="dl-rule">
+    <div class="dl-grid dl-grid-drive">
+      <button type="button" class="dl-fmt">Save to Drive (.txt + .srt)</button>
+    </div>
+
+    <h3 class="dl-sec">Summary</h3>
+    <hr class="dl-rule">
+    <div class="dl-grid">
+      <button type="button" class="dl-fmt">.txt</button>
+      <button type="button" class="dl-fmt">.md</button>
+      <button type="button" class="dl-fmt">.json</button>
+    </div>
+
+    <h3 class="dl-sec">All</h3>
+    <hr class="dl-rule">
+    <div class="dl-grid">
+      <button type="button" class="dl-fmt">.txt</button>
+      <button type="button" class="dl-fmt">.json</button>
+    </div>
+
+    <div class="dl-actions">
+      <button type="button" class="dl-close" id="dl-close">Close</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========== STATE 6: MORE MENU (step 6) ==========
+     Item list and order follow the measured live menu (after/08, 9
+     items). Disclosure pattern per the approved plan: ⋯ carries
+     aria-expanded/aria-controls, the panel is a labelled group of
+     plain buttons — NO role="menu"/menuitem (the source's own
+     semantics were not reproducible; the divergence is reported).
+     Only Reading settings, Timestamps and File details are wired.
+     Home / Copy transcript / Quiz / Sign in / Rename / Delete
+     recording keep their press state only — no fake navigation,
+     no clipboard copy, no delete (Decision A). -->
+<div class="sheet-menu" id="sheet-more" role="group" aria-label="Recording actions" hidden>
+  <button type="button" class="menu-grab" id="menu-grab" aria-label="Close menu">
+    <span aria-hidden="true"></span>
+  </button>
+  <div class="menu-list" id="menu-list">
+    <button type="button" class="menu-item" id="mi-home" data-autofocus>Home</button>
+    <button type="button" class="menu-item" id="mi-copy">Copy transcript</button>
+    <button type="button" class="menu-item" id="mi-settings">Reading settings</button>
+    <button type="button" class="menu-item" id="mi-ts">Timestamps: shown</button>
+    <button type="button" class="menu-item" id="mi-quiz">Quiz me on this recording</button>
+    <button type="button" class="menu-item" id="mi-signin">Sign in</button>
+    <button type="button" class="menu-item" id="mi-rename">Rename</button>
+    <button type="button" class="menu-item" id="mi-details">File details</button>
+    <button type="button" class="menu-item" id="mi-delete">Delete recording</button>
+  </div>
+</div>
+
+<!-- ========== STATE 7: FILE DETAILS (step 6 — issue #203) ==========
+     Copy and structure follow next/screenshots/05-file-details-320x568.png:
+     pill, "File details", Title / Language / ID rows, right-aligned Close,
+     full-viewport dim, sheet covering the player (same E5 single-state
+     behaviour as Download: opening this closes whatever else was open).
+     #203: real dialog contract (the source reports role, aria-modal and
+     aria-label all null). ID is the demo recording's captured UUID. -->
+<section class="sheet-fd" id="sheet-details" role="dialog" aria-modal="true"
+         aria-labelledby="fd-title" hidden>
+  <button type="button" class="fd-grab" id="fd-grab" aria-label="Close file details">
+    <span aria-hidden="true"></span>
+  </button>
+  <div class="fd-scroll" id="fd-scroll">
+    <h2 class="fd-h" id="fd-title">File details</h2>
+    <dl class="fd-rows">
+      <div class="fd-row"><dt class="fd-lbl">Title</dt><dd class="fd-val">long.m4a</dd></div>
+      <div class="fd-row"><dt class="fd-lbl">Language</dt><dd class="fd-val">EN</dd></div>
+      <div class="fd-row"><dt class="fd-lbl">ID</dt>
+        <dd class="fd-val">e0394eda-e7cd-43ce-a253-48c3f207d3b2</dd></div>
+    </dl>
+    <div class="fd-actions">
+      <button type="button" class="fd-close" id="fd-close" data-autofocus>Close</button>
+    </div>
+  </div>
+</section>
+
+<!-- ?debug=1 → geometry readout, so a reviewer can verify the #201 numbers
+     instead of taking the code's word for it. -->
+<div id="hud" hidden></div>
+
+<script>
+/* ============================================================
+   1. MOCK DATA / SETTINGS
+   ============================================================ */
+const TEXT_SIZE = { small:'17px', medium:'19.5px', large:'23px' };  /* Small matches the current screenshots */
+const VIEWS = new Set(['reader','settings','search','download','more','details']);  /* one active state at a time */
+
+const app       = document.getElementById('app');
+const player    = document.getElementById('player');
+const sheet     = document.getElementById('sheet-settings');
+const backdrop  = document.getElementById('backdrop');
+const scroll    = document.getElementById('scroll');
+const transcript= document.getElementById('transcript');
+const optTs     = document.getElementById('opt-ts');
+const optSize   = document.getElementById('opt-size');
+const btnMore   = document.getElementById('btn-more');
+const hud       = document.getElementById('hud');
+
+/* Search (state 4) */
+const searchBar = document.getElementById('search-bar');
+const searchIn  = document.getElementById('tsearch');
+const searchCnt = document.getElementById('search-count');
+const searchRes = document.getElementById('search-results');
+const searchEmp = document.getElementById('search-empty');
+const btnSearch = document.getElementById('btn-search');
+const btnPrev   = document.getElementById('btn-prev');
+const btnNext   = document.getElementById('btn-next');
+const btnClear  = document.getElementById('btn-clear');
+
+/* Download (state 5) */
+const dlSheet   = document.getElementById('sheet-download');
+const dlScroll  = document.getElementById('dl-scroll');
+const btnDownload = document.getElementById('btn-download');
+
+/* More menu (state 6) */
+const moreMenu  = document.getElementById('sheet-more');
+const miTs      = document.getElementById('mi-ts');
+
+/* File details (state 7) */
+const detailsSheet = document.getElementById('sheet-details');
+
+/* Text selection (state 8) — transient bar, not a view */
+const selBar   = document.getElementById('sel-bar');
+const keepbar  = document.querySelector('.keepbar');
+
+/* Processing (state 9) — body mode, ?proc=1 (orthogonal to ?view=) */
+const procEl   = document.getElementById('proc');
+const procTabs = document.querySelectorAll('.tabs .tab');   /* [1] Summary, [2] AI Chat */
+const miCopy   = document.getElementById('mi-copy');
+
+/* Four-speaker meeting (state 10) — body mode, ?spk=4 */
+const optSpk   = document.getElementById('opt-spk');
+const rowSpk   = document.getElementById('row-spk');
+const hdrTitleEl = document.querySelector('.hdr-title');
+const hdrMetaEl  = document.querySelector('.hdr-meta');
+const fdTitleVal  = document.querySelector('#sheet-details .fd-row .fd-val');  /* first row = Title */
+
+/* ============================================================
+   2. STATE ROUTER — one param, ?view= (+ &q= for search)
+   ============================================================ */
+const readView = () => {
+  const v = new URLSearchParams(location.search).get('view');
+  return VIEWS.has(v) ? v : 'reader';
+};
+const readQ = () => new URLSearchParams(location.search).get('q') || '';
+function urlFor(view, q){
+  const p = new URLSearchParams(location.search);
+  if (view === 'reader') p.delete('view'); else p.set('view', view);
+  /* the query belongs to the search state only */
+  if (view === 'search' && q) p.set('q', q); else p.delete('q');
+  const s = p.toString();
+  return location.pathname + (s ? '?' + s : '');
+}
+
+/* ---- Processing (state 9) ----
+   ?proc=1 is deliberately NOT a ?view= state: `view` is one-at-a-time
+   (panels take it over), while the processing BODY must survive
+   settings/menu/details opening and closing. urlFor() rebuilds the
+   query from location.search, so every panel URL keeps proc=1 and
+   every history step returns to it. Static state — no timers,
+   percent, ETA, polling or "ready" swap (approved decision A). */
+const readProc = () => new URLSearchParams(location.search).get('proc') === '1';
+function setProc(on){
+  transcript.hidden = on;                 /* segments gone -> selection impossible */
+  procEl.hidden = !on;
+  keepbar.hidden = on;                    /* no preview exists yet (evidence: 12-load-failure) */
+  btnSearch.disabled = on;                /* nothing to search / export yet */
+  btnDownload.disabled = on;
+  procTabs[1].disabled = on;              /* Summary / AI Chat content does not exist yet */
+  procTabs[2].disabled = on;
+  miCopy.disabled = on;                   /* would copy hidden text */
+}
+
+/* ---- Four-speaker meeting (state 10) ----
+   ?spk=4 is a body mode like ?proc=1: view-URLs keep it (urlFor
+   rebuilds from location.search), so settings/search/details layer
+   over the meeting without losing it. PROTOTYPE-ONLY: no source
+   screenshot exists — the dataset, the label rendering and the
+   title/duration swap are designed here (standup.m4a / 12m 40s,
+   four voices Priya, Marcus, Elena, Tom; turns end ~5:44 ≈ the
+   first 48% preview). The File details ID keeps the real captured
+   demo uuid (evidence-backed; not invented). */
+const readSpk = () => new URLSearchParams(location.search).get('spk') === '4';
+const MEETING_META = { title: 'standup.m4a',
+                       metaHtml: '12m 40s &nbsp;·&nbsp; EN &nbsp;·' };
+/* [timestamp, speaker, utterance] — labels render on speaker change only */
+const MEETING = [
+  ['0:04','Priya','Morning everyone — this is standup, let\u2019s keep it to ten minutes. Anything blocking you today?'],
+  ['0:18','Marcus','Nothing blocking. I finished the login refactor; it ships behind the flag tonight.'],
+  ['0:31','Marcus','Review is up — Elena, I tagged you on the auth screens.'],
+  ['0:41','Elena','I\u2019ll look after lunch. One question — do we still need the legacy password field?'],
+  ['0:55','Marcus','Not after the flag flips. I\u2019ll delete it in the cleanup PR.'],
+  ['1:07','Priya','Good. Elena, design status?'],
+  ['1:14','Elena','Onboarding illustrations are done. The empty states are next, should land tomorrow.'],
+  ['1:29','Tom','QA-wise, the checkout bug from Friday is still open — it reproduces on Android only.'],
+  ['1:44','Priya','File it against the mobile board with the video, we\u2019ll triage after this.'],
+  ['1:56','Tom','Already did. Also the nightly run passed for the third day in a row.'],
+  ['2:10','Marcus','Nice. That gives me confidence to enable the flag at fifty percent.'],
+  ['2:24','Priya','Do it after today\u2019s cut. Elena, anything from research?'],
+  ['2:35','Elena','Six interviews done. People drop at the second signup step — the copy confuses them.'],
+  ['2:51','Priya','Can you rewrite that step today? We\u2019ll A/B it next sprint.'],
+  ['3:02','Elena','Yes, I\u2019ll have variants ready by four.'],
+  ['3:12','Tom','One more from me — device lab has two new handsets arriving Thursday.'],
+  ['3:27','Marcus','Then I\u2019ll extend the smoke suite to cover them.'],
+  ['3:41','Priya','Last call — anything else?'],
+  ['3:52','Marcus','No. Elena?'],
+  ['4:03','Elena','All good from design.'],
+  ['4:12','Priya','Great — notes go in the channel, thanks everyone.'],
+  ['4:26','Tom','I\u2019ll post the lab inventory once the boxes arrive.'],
+  ['4:39','Marcus','And I\u2019ll link the flag dashboard in the same thread.'],
+  ['4:55','Elena','I\u2019ll add the illustration files too.'],
+  ['5:08','Priya','Last thing — roadmap review moved to Thursday at three.'],
+  ['5:21','Marcus','Works.'],
+  ['5:32','Tom','Works for me.'],
+  ['5:44','Elena','Same here. Bye all.']
+];
+function renderMeeting(){
+  let prev = null, html = '';
+  for (const [ts, spk, txt] of MEETING){
+    const label = spk !== prev ? `<span class="spk">${spk}</span>` : '';
+    html += `<div class="seg"><span class="ts">${ts}</span>` +
+            `<div class="turn">${label}<p class="txt">${txt}</p></div></div>`;
+    prev = spk;
+  }
+  return html;
+}
+/* search reads `segs`, never the DOM — re-capture after every swap */
+function captureSegs(){
+  segs = Array.from(transcript.querySelectorAll('.seg')).map(el => ({
+    el,
+    txtEl: el.querySelector('.txt'),
+    ts: (el.querySelector('.ts') || {}).textContent || '',
+    txt: (el.querySelector('.txt') || {}).textContent || ''
+  }));
+}
+let spkMode = null;          /* null until first application (idempotent after) */
+let meetingDefaults = null;  /* approved title/meta/Title captured once */
+function setSpk(on){
+  if (spkMode === on) return;
+  spkMode = on;
+  if (meetingDefaults === null){
+    meetingDefaults = { title: hdrTitleEl.textContent, meta: hdrMetaEl.innerHTML,
+                        fdTitle: fdTitleVal.textContent };
+  }
+  const original = defaultTranscriptHTML();   /* cache BEFORE any swap, always */
+  transcript.innerHTML = on ? renderMeeting() : original;
+  hdrTitleEl.textContent = on ? MEETING_META.title : meetingDefaults.title;
+  hdrMetaEl.innerHTML    = on ? MEETING_META.metaHtml : meetingDefaults.meta;
+  fdTitleVal.textContent = on ? MEETING_META.title : meetingDefaults.fdTitle;
+  rowSpk.hidden = !on;
+  if (!on){ optSpk.checked = true; transcript.classList.remove('no-spk'); }
+  captureSegs();
+  if (searchOpen) paint(searchIn.value);   /* live query survives the swap */
+}
+/* cached on first use so setSpk(false) can restore byte-identical HTML */
+let defaultBodyCache = null;
+function defaultTranscriptHTML(){
+  if (defaultBodyCache === null) defaultBodyCache = transcript.innerHTML;
+  return defaultBodyCache;
+}
+
+/* ============================================================
+   3. OVERLAY CONTROLLER — open/close, focus trap, history
+   ============================================================ */
+let sheetOpen = false;
+let lastTrigger = null;
+let dlOpen = false;
+let dlTrigger = null;
+let moreOpen = false;
+let moreTrigger = null;
+let detailsOpen = false;
+let detailsTrigger = null;
+
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+/* The trap follows whichever panel is open: settings sheet, download
+   sheet, More menu or File details (#203: focus stays inside the
+   modal). The menu is a disclosure (app stays interactive) but the
+   keyboard still cycles through it while it is open. */
+const activePanel = () =>
+  dlOpen ? dlSheet
+         : sheetOpen ? sheet
+         : moreOpen ? moreMenu
+         : detailsOpen ? detailsSheet : null;
+const inPanel = () => {
+  const p = activePanel();
+  return p ? Array.from(p.querySelectorAll(FOCUSABLE))
+             .filter(el => el.getClientRects().length > 0) : [];
+};
+
+function showSheet({ focus = true } = {}){
+  if (sheetOpen) return;
+  sheetOpen = true;
+  clearSelectionUI();   /* state 8: no selection lives under a panel */
+  /* openSettings already recorded the real trigger (⋯ when the item was
+     picked from the More menu) — never overwrite it with the menu item
+     that is about to be hidden. */
+  if (!lastTrigger) lastTrigger = document.activeElement;
+  backdrop.hidden = false;
+  backdrop.classList.remove('is-full');   /* settings never covers the player (#201) */
+  backdrop.classList.remove('is-quiet');  /* settings dims as usual */
+  sheet.hidden = false;
+  /* Focus first, then make the background inert, so focus is never left
+     on an inert element. Land on the first control (matching what the real
+     reader does — it focuses the timestamps input), not on the grab handle. */
+  if (focus){
+    const nodes = inPanel();
+    const target = nodes.find(n => n.hasAttribute('data-autofocus')) || nodes[0];
+    if (target) target.focus();
+  }
+  app.setAttribute('inert','');          /* removes background from focus */
+  app.setAttribute('aria-hidden','true');/* fallback for no-`inert` engines */
+  updateHud();
+}
+
+function hideSheet(){
+  if (!sheetOpen) return;
+  sheetOpen = false;
+  sheet.hidden = true;
+  backdrop.hidden = true;
+  app.removeAttribute('inert');
+  app.removeAttribute('aria-hidden');
+  if (lastTrigger && document.contains(lastTrigger)) lastTrigger.focus();
+  lastTrigger = null;
+  updateHud();
+}
+
+/* ---- download sheet (state 5) ----
+   Same controller shape as the settings sheet, but the backdrop is
+   `.is-full` (bottom:0) and the panel sits at top:15dvh covering the
+   player, which is what the source sheet does. */
+function showDl({ focus = true } = {}){
+  if (dlOpen) return;
+  dlOpen = true;
+  clearSelectionUI();   /* state 8: no selection lives under a panel */
+  if (!dlTrigger || !document.contains(dlTrigger)) dlTrigger = btnDownload;
+  backdrop.hidden = false;
+  backdrop.classList.add('is-full');
+  backdrop.classList.remove('is-quiet');
+  dlSheet.hidden = false;
+  if (focus){
+    const nodes = inPanel();
+    const target = nodes.find(n => n.hasAttribute('data-autofocus')) || nodes[0];
+    if (target) target.focus();
+  }
+  app.setAttribute('inert','');
+  app.setAttribute('aria-hidden','true');
+  updateHud();
+}
+
+function hideDl(){
+  if (!dlOpen) return;
+  dlOpen = false;
+  dlSheet.hidden = true;
+  backdrop.classList.remove('is-full');
+  backdrop.hidden = true;
+  app.removeAttribute('inert');
+  app.removeAttribute('aria-hidden');
+  if (dlTrigger && document.contains(dlTrigger)) dlTrigger.focus();
+  dlTrigger = null;
+  updateHud();
+}
+
+/* ---- More menu (state 6) ----
+   A disclosure, not a modal: the app stays interactive (the player
+   keeps working under it — Decision 2) and the backdrop is a
+   transparent click-catcher. The ⋯ button carries aria-expanded and
+   focus lands on the first item (Home) and returns to ⋯ on close. */
+function showMore({ focus = true } = {}){
+  if (moreOpen) return;
+  moreOpen = true;
+  clearSelectionUI();   /* state 8: no selection lives under the menu */
+  backdrop.hidden = false;
+  backdrop.classList.add('is-quiet');
+  backdrop.classList.remove('is-full');
+  moreMenu.hidden = false;
+  btnMore.setAttribute('aria-expanded','true');
+  if (focus){
+    const nodes = inPanel();
+    const target = nodes.find(n => n.hasAttribute('data-autofocus')) || nodes[0];
+    if (target) target.focus();
+  }
+  updateHud();
+}
+
+function hideMore({ restoreFocus = true } = {}){
+  if (!moreOpen) return;
+  moreOpen = false;
+  moreMenu.hidden = true;
+  btnMore.setAttribute('aria-expanded','false');
+  backdrop.classList.remove('is-quiet');
+  backdrop.hidden = true;
+  if (restoreFocus){
+    const t = (moreTrigger && document.contains(moreTrigger)) ? moreTrigger : btnMore;
+    t.focus();
+  }
+  moreTrigger = null;
+  updateHud();
+}
+
+/* ---- File details (state 7) ----
+   Full dialog, like the download sheet: dimmed backdrop over the
+   player, inert background, focus lands on Close and returns to the
+   element that opened it (⋯ or the menu item — #203). */
+function showDetails({ focus = true } = {}){
+  if (detailsOpen) return;
+  detailsOpen = true;
+  clearSelectionUI();   /* state 8: no selection lives under a dialog */
+  backdrop.hidden = false;
+  backdrop.classList.remove('is-quiet');
+  backdrop.classList.add('is-full');
+  detailsSheet.hidden = false;
+  if (focus){
+    const nodes = inPanel();
+    const target = nodes.find(n => n.hasAttribute('data-autofocus')) || nodes[0];
+    if (target) target.focus();
+  }
+  app.setAttribute('inert','');
+  app.setAttribute('aria-hidden','true');
+  updateHud();
+}
+
+function hideDetails({ restoreFocus = true } = {}){
+  if (!detailsOpen) return;
+  detailsOpen = false;
+  detailsSheet.hidden = true;
+  backdrop.classList.remove('is-full');
+  backdrop.hidden = true;
+  app.removeAttribute('inert');
+  app.removeAttribute('aria-hidden');
+  if (restoreFocus){
+    const t = (detailsTrigger && document.contains(detailsTrigger)) ? detailsTrigger : btnMore;
+    t.focus();
+  }
+  detailsTrigger = null;
+  updateHud();
+}
+
+/* Close through history when the state was opened by a tap, so the
+   phone's Back gesture closes it too; otherwise just rewrite the URL.
+   Works for whichever state is active (settings, search, download,
+   more, details). */
+function requestClose(){
+  if (history.state && history.state.v) history.back();
+  else { history.replaceState(null, '', urlFor('reader'));
+         hideSheet(); hideSearch(); hideDl(); hideMore(); hideDetails(); }
+}
+
+function openSettings(trigger){
+  if (sheetOpen) return;
+  lastTrigger = trigger || document.activeElement;
+  /* a menu item hides when the menu closes — restore to ⋯ instead */
+  if (moreMenu.contains(lastTrigger)) lastTrigger = btnMore;
+  const v = readView();
+  if (v !== 'reader' && v !== 'settings'){
+    /* single-active-state: settings REPLACES the open entry, so closing
+       the sheet does not reopen it (works from search, download, more,
+       details) */
+    history.replaceState({ v:'settings' }, '', urlFor('settings'));
+  } else if (v !== 'settings'){
+    history.pushState({ v:'settings' }, '', urlFor('settings'));
+  }
+  hideSearch({ restoreFocus:false });   /* only one state active at a time */
+  hideDl();
+  hideMore({ restoreFocus:false });
+  hideDetails();
+  showSheet();
+}
+
+function openSearch(trigger){
+  if (searchOpen) return;
+  searchTrigger = (trigger && trigger !== document.body) ? trigger : btnSearch;
+  const v = readView();
+  if (v !== 'reader' && v !== 'search'){
+    history.replaceState({ v:'search' }, '', urlFor('search', searchIn.value));
+  } else if (v !== 'search'){
+    history.pushState({ v:'search' }, '', urlFor('search', searchIn.value));
+  }
+  hideSheet();
+  hideDl();
+  hideMore({ restoreFocus:false });
+  hideDetails();
+  showSearch();
+}
+
+function openDownload(trigger){
+  if (dlOpen) return;
+  dlTrigger = (trigger && trigger !== document.body) ? trigger : btnDownload;
+  const v = readView();
+  if (v !== 'reader' && v !== 'download'){
+    /* single-active-state: download REPLACES the open entry */
+    history.replaceState({ v:'download' }, '', urlFor('download'));
+  } else if (v !== 'download'){
+    history.pushState({ v:'download' }, '', urlFor('download'));
+  }
+  hideSheet();
+  hideSearch({ restoreFocus:false });
+  hideMore({ restoreFocus:false });
+  hideDetails();
+  showDl();
+}
+
+function openMore(trigger){
+  if (moreOpen) return;
+  moreTrigger = (trigger && trigger !== document.body) ? trigger : btnMore;
+  const v = readView();
+  if (v !== 'reader' && v !== 'more'){
+    history.replaceState({ v:'more' }, '', urlFor('more'));
+  } else if (v !== 'more'){
+    history.pushState({ v:'more' }, '', urlFor('more'));
+  }
+  hideSheet();
+  hideSearch({ restoreFocus:false });
+  hideDl();
+  hideDetails();
+  showMore();
+}
+
+function openDetails(trigger){
+  if (detailsOpen) return;
+  detailsTrigger = (trigger && trigger !== document.body) ? trigger : btnMore;
+  if (moreMenu.contains(detailsTrigger)) detailsTrigger = btnMore;
+  const v = readView();
+  if (v !== 'reader' && v !== 'details'){
+    history.replaceState({ v:'details' }, '', urlFor('details'));
+  } else if (v !== 'details'){
+    history.pushState({ v:'details' }, '', urlFor('details'));
+  }
+  hideSheet();
+  hideSearch({ restoreFocus:false });
+  hideDl();
+  hideMore({ restoreFocus:false });
+  showDetails();
+}
+
+/* Render whatever the URL says. `focus` is only used by the settings
+   sheet, the download panel and the More menu when they are opened by
+   tap (search always focuses its input — see showSearch; File details
+   focuses Close on tap too, #203). On a plain page load nothing is
+   focused. hideSearch restores focus only when a live bar is actually
+   closing; at init it early-returns. hideDl / hideDetails / hideMore
+   restore focus to their trigger (source: Esc returns to #wt-m-export;
+   #203: returns to ⋯). */
+function syncFromURL(isInit){
+  const v = readView();
+  const proc = readProc();
+  setProc(proc);                          /* state 9: body mode first, overlays next */
+  setSpk(readSpk());                      /* state 10: meeting body (idempotent) */
+  if (v !== 'settings') hideSheet();
+  /* state 11: ?kb=1 is an ENTRY state — only the first sync opens
+     search over the reader. Later popstate visits treat it as a
+     plain reader, so closing a sheet can never re-open the
+     keyboard behind it (blur/keyboard-down approval). */
+  const kbEntry = isInit === true && readKb() && v === 'reader' && !proc;
+  if (proc || (v !== 'search' && !kbEntry)) hideSearch();   /* search/download cannot render over processing */
+  if (proc || v !== 'download') hideDl();
+  if (v !== 'more')     hideMore();
+  if (v !== 'details')  hideDetails();
+  if (v === 'settings') showSheet({ focus:false });
+  else if ((v === 'search' && !proc) || kbEntry) showSearch();
+  else if (v === 'download' && !proc) showDl({ focus:false });
+  else if (v === 'more') showMore({ focus:false });
+  else if (v === 'details') showDetails({ focus:false });
+  updateHud();
+}
+
+window.addEventListener('popstate', () => syncFromURL(false));
+
+/* Escape closes whichever state is open (search first — when the bar has
+   focus, Esc must not just clear the input). Tab cycling stays inside the
+   open panel (settings, download, More menu OR File details — #203).
+   State 8: with no state open, Esc collapses a live selection — Chromium
+   does NOT do that by itself (probed), so the bar needs it explicitly. */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape'){
+    if (searchOpen || sheetOpen || dlOpen || moreOpen || detailsOpen){ e.preventDefault(); requestClose(); }
+    else clearSelectionUI();
+    return;
+  }
+  if (!activePanel() || e.key !== 'Tab') return;
+  const nodes = inPanel();
+  if (!nodes.length) return;
+  const first = nodes[0], last = nodes[nodes.length - 1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+backdrop.addEventListener('click', requestClose);
+document.getElementById('sheet-grab').addEventListener('click', requestClose);
+document.getElementById('dl-grab').addEventListener('click', requestClose);
+document.getElementById('dl-close').addEventListener('click', requestClose);
+document.getElementById('menu-grab').addEventListener('click', requestClose);
+document.getElementById('fd-grab').addEventListener('click', requestClose);
+document.getElementById('fd-close').addEventListener('click', requestClose);
+
+/* ⋯ toggles the More menu (STEP 6). Reading settings moved inside it. */
+btnMore.addEventListener('click', () => {
+  if (moreOpen) requestClose(); else openMore(btnMore);
+});
+
+/* Menu items. Only Reading settings, Timestamps and File details are
+   wired (real behaviour below). The other six keep their press state
+   only — no fake navigation, clipboard copy or delete (Decision A of
+   the step-6 report). */
+document.getElementById('mi-settings').addEventListener('click', () => openSettings(btnMore));
+document.getElementById('mi-details').addEventListener('click', () => openDetails(btnMore));
+/* Timestamps: shown/hidden — a real toggle of the reader's timestamp
+   gutter (the same checkbox Reading settings uses), with the label
+   kept in sync from either entry point. The menu stays open so the
+   label flip is visible; reported as a prototype decision. */
+miTs.addEventListener('click', () => {
+  optTs.checked = !optTs.checked;
+  optTs.dispatchEvent(new Event('change'));
+});
+
+/* Download trigger (state 5). Format / Translate / Drive buttons are
+   deliberately NOT wired: no backend exists in this prototype and no
+   fake export success is invented (Decision A of the step-5 report). */
+btnDownload.addEventListener('click', () => {
+  if (dlOpen) requestClose(); else openDownload(btnDownload);
+});
+
+/* ============================================================
+   4. SETTINGS BEHAVIOUR
+   ============================================================ */
+optTs.addEventListener('change', () => {
+  transcript.classList.toggle('no-ts', !optTs.checked);
+  miTs.textContent = optTs.checked ? 'Timestamps: shown' : 'Timestamps: hidden';
+  updateHud();
+});
+/* state 10: label toggle — same shape as the timestamps toggle */
+optSpk.addEventListener('change', () => {
+  transcript.classList.toggle('no-spk', !optSpk.checked);
+  updateHud();
+});
+optSize.addEventListener('change', () => {
+  transcript.style.setProperty('--seg-fs', TEXT_SIZE[optSize.value]);
+  updateHud();
+});
+
+/* Play/pause is visual only — no audio exists in this prototype. */
+document.getElementById('btn-play').addEventListener('click', (e) => {
+  const b = e.currentTarget;
+  const playing = b.getAttribute('aria-pressed') === 'true';
+  b.setAttribute('aria-pressed', String(!playing));
+  b.setAttribute('aria-label', playing ? 'Play' : 'Pause');
+  document.getElementById('play-icon').textContent = playing ? '▶' : '❚❚';
+});
+
+/* ============================================================
+   5. SEARCH BEHAVIOUR (state 4)
+   Client-side, case-insensitive substring search over the 12 mock
+   segments. No backend behaviour is invented: matches, counts and
+   navigation are computed from the transcript that is already here.
+   ============================================================ */
+let searchOpen   = false;
+let searchTrigger = null;
+let segs   = [];   /* [{el, txtEl, ts, txt}]  captured once at init */
+let matches = [];  /* [{si, off}] */
+let cur    = -1;
+
+const escHtml = s => s.replace(/[&<>"]/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+
+function markify(text, q){
+  if (!q) return escHtml(text);
+  const lo = text.toLowerCase(), ql = q.toLowerCase();
+  let out = '', i = 0;
+  for (;;){
+    const j = lo.indexOf(ql, i);
+    if (j < 0){ out += escHtml(text.slice(i)); break; }
+    out += escHtml(text.slice(i, j)) + '<mark>' + escHtml(text.slice(j, j + q.length)) + '</mark>';
+    i = j + q.length;
+  }
+  return out;
+}
+
+function findMatches(q){
+  const out = [];
+  if (!q) return out;
+  const ql = q.toLowerCase();
+  segs.forEach((s, si) => {
+    const lo = s.txt.toLowerCase();
+    let i = 0;
+    for (;;){
+      const j = lo.indexOf(ql, i);
+      if (j < 0) break;
+      out.push({ si, off: j });
+      i = j + ql.length;
+    }
+  });
+  return out;
+}
+
+/* Short segments pass through whole; long ones become an ~96-char window
+   around the first hit, ellipsed at the cut. Excerpts are chosen by
+   prototype choice — the source shows excerpt cards but does not document
+   the window length. */
+function excerptOf(txt, off){
+  if (txt.length <= 96) return txt;
+  const base = Math.max(0, Math.min(off - 34, txt.length - 96));
+  const end = Math.min(txt.length, base + 96);
+  return (base ? '…' : '') + txt.slice(base, end) + (end < txt.length ? '…' : '');
+}
+
+function paint(q){
+  /* 1. transcript: marks + current-segment highlight */
+  segs.forEach(s => { s.txtEl.innerHTML = markify(s.txt, q); });
+  matches = findMatches(q);
+  cur = matches.length ? 0 : -1;
+
+  const hasQ = q.length > 0;
+  searchCnt.hidden = !hasQ;
+  btnPrev.hidden = btnNext.hidden = btnClear.hidden = !hasQ;
+
+  if (!hasQ){
+    searchRes.hidden = true; searchRes.innerHTML = '';
+    searchEmp.hidden = true; searchEmp.innerHTML = '';
+    segs.forEach(s => s.el.classList.remove('is-current'));
+    return;
+  }
+  if (!matches.length){
+    /* count copy is "0 matches" — deliberate deviation from the
+       source's literal "none" (clearer, and matches the live-count
+       phrasing used everywhere else) */
+    searchCnt.textContent = '0 matches';
+    searchRes.hidden = true; searchRes.innerHTML = '';
+    searchEmp.hidden = false;
+    searchEmp.textContent =
+      `No line in this transcript contains “${q}”. Try a shorter phrase or a single word.`;
+    segs.forEach(s => s.el.classList.remove('is-current'));
+    return;
+  }
+
+  /* count: 1-based position of the current hit over total hits */
+  searchCnt.textContent = `${cur + 1}/${matches.length}`;
+  searchEmp.hidden = true; searchEmp.innerHTML = '';
+
+  /* 2. one card per matching segment (a segment can hold several hits) */
+  const order = [];
+  matches.forEach(m => { if (!order.includes(m.si)) order.push(m.si); });
+  searchRes.hidden = false;
+  searchRes.innerHTML = order.map(si => {
+    const s = segs[si];
+    const m = matches.find(x => x.si === si);
+    const active = si === matches[cur].si;
+    return `<button type="button" class="tsr" data-si="${si}"` +
+           `${active ? ' aria-current="true"' : ''}>` +
+           `<span class="tsr-t">${escHtml(s.ts)}</span>` +
+           `${markify(excerptOf(s.txt, m.off), q)}</button>`;
+  }).join('');
+
+  segs.forEach((s, k) => s.el.classList.toggle('is-current', k === matches[cur].si));
+}
+
+function goto(i){
+  if (!matches.length) return;
+  cur = (i + matches.length) % matches.length;         /* wraps both ways */
+  searchCnt.textContent = `${cur + 1}/${matches.length}`;
+  const si = matches[cur].si;
+  segs.forEach((s, k) => s.el.classList.toggle('is-current', k === si));
+  searchRes.querySelectorAll('.tsr').forEach(b => {
+    if (+b.dataset.si === si) b.setAttribute('aria-current', 'true');
+    else b.removeAttribute('aria-current');
+  });
+  /* keep the active card inside the results panel */
+  const card = searchRes.querySelector('[aria-current="true"]');
+  if (card){
+    const pr = searchRes.getBoundingClientRect(), cr = card.getBoundingClientRect();
+    if (cr.top < pr.top) searchRes.scrollTop += cr.top - pr.top;
+    else if (cr.bottom > pr.bottom) searchRes.scrollTop += cr.bottom - pr.bottom;
+  }
+  /* bring the segment to the top of the transcript block — i.e. exactly
+     where segment 1 sits when the page is at scrollTop 0 */
+  const target = segs[si].el;
+  const segTop = scroll.scrollTop + target.getBoundingClientRect().top - scroll.getBoundingClientRect().top;
+  const anchor = scroll.scrollTop + transcript.getBoundingClientRect().top - scroll.getBoundingClientRect().top;
+  scroll.scrollTo({ top: Math.max(0, segTop - anchor), behavior: 'smooth' });
+}
+
+function showSearch(){
+  if (searchOpen) return;
+  searchOpen = true;
+  clearSelectionUI();   /* state 8: no selection lives under the search bar */
+  if (!searchTrigger || !document.contains(searchTrigger)) searchTrigger = btnSearch;
+  searchBar.hidden = false;
+  btnSearch.setAttribute('aria-expanded','true');
+  paint(searchIn.value);
+  searchIn.focus();
+  syncKb();           /* state 11: this focus may mean keyboard-open */
+  updateHud();
+}
+
+/* Closing the bar removes its marks from the transcript but keeps the
+   typed query in the input (reopen → same query, fresh paint). */
+function hideSearch({ restoreFocus = true } = {}){
+  if (!searchOpen) return;
+  searchOpen = false;
+  searchBar.hidden = true;
+  searchRes.hidden = true; searchRes.innerHTML = '';
+  searchEmp.hidden = true; searchEmp.innerHTML = '';
+  btnSearch.setAttribute('aria-expanded','false');
+  paint('');
+  if (restoreFocus && searchTrigger && document.contains(searchTrigger)) searchTrigger.focus();
+  searchTrigger = null;
+  syncKb();           /* state 11: a closed search never holds the keyboard */
+  updateHud();
+}
+
+function syncQ(){
+  if (readView() === 'search')
+    history.replaceState(history.state, '', urlFor('search', searchIn.value));
+}
+
+btnSearch.addEventListener('click', () => {
+  if (searchOpen) requestClose(); else openSearch(btnSearch);
+});
+searchIn.addEventListener('input', () => { paint(searchIn.value); syncQ(); updateHud(); });
+searchIn.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter'){ e.preventDefault(); goto(e.shiftKey ? cur - 1 : cur + 1); }
+});
+btnPrev.addEventListener('click', () => goto(cur - 1));
+btnNext.addEventListener('click', () => goto(cur + 1));
+btnClear.addEventListener('click', () => {
+  searchIn.value = '';
+  paint('');
+  syncQ();
+  searchIn.focus();     /* × clears the query, keeps the bar open */
+  updateHud();
+});
+searchRes.addEventListener('click', (e) => {
+  const b = e.target.closest('.tsr');
+  if (!b) return;
+  const i = matches.findIndex(m => m.si === +b.dataset.si);
+  if (i >= 0) goto(i);
+});
+
+/* ---- Keyboard-open (state 11) ----
+   ?kb=1 is the deterministic demo ENTRY point (applied on the first
+   syncFromURL only): it opens Search; while the input holds focus it
+   forces the keyboard-open class. The class rule is
+     searchOpen && focused && (occluded || ?kb=1)
+   so blur always dismisses (keyboard-down semantics) and sheets —
+   which open after that blur — never see the class. Occlusion uses
+   documented APIs only: layout/visual viewport height vs a baseline
+   cached while not typing (>40px deadband). PROTOTYPE-ONLY
+   SIMULATION: desktop Chromium has no OS keyboard — the harness
+   reproduces occlusion by resizing the viewport (216px keyboard ->
+   320x352); no fake keyboard is drawn, and no real iOS/Android
+   keyboard or screen reader was tested. CSS media-gates the chrome
+   hiding to <768px (desktop shell untouched). */
+const readKb = () => new URLSearchParams(location.search).get('kb') === '1';
+let kbBaseline = window.innerHeight;
+function syncKb(){
+  const typing = searchOpen && document.activeElement === searchIn;
+  const vv = window.visualViewport;
+  const visible = vv ? Math.min(window.innerHeight, vv.height) : window.innerHeight;
+  const on = typing && ((kbBaseline - visible > 40) || readKb());
+  app.classList.toggle('kb-open', on);
+  app.style.setProperty('--kb-h', Math.max(0, window.innerHeight - visible) + 'px');
+  updateHud();
+}
+document.addEventListener('focusin', () => syncKb());
+document.addEventListener('focusout', () => syncKb());
+window.addEventListener('resize', () => {
+  if (!(searchOpen && document.activeElement === searchIn))
+    kbBaseline = window.innerHeight;    /* re-cache only while not typing */
+  syncKb();
+});
+if (window.visualViewport)
+  window.visualViewport.addEventListener('resize', () => syncKb());
+
+/* ============================================================
+   6. TEXT SELECTION (state 8)
+   Source of truth: after/10-text-selection.png — bar 254x44,
+   centred on the selection, 8px below it, clamped 24px inside
+   the app shell, flipped above when the keep-reading bar leaves
+   no room. Selection must live inside #transcript; any open
+   state clears it (show* call clearSelectionUI). Scroll or
+   resize hides the bar like a native selection menu; the next
+   selection change brings it back.
+   Actions (both approved decisions: no toast, clear after):
+     Copy selection   — real clipboard write, silent on failure
+     Play from here   — visual seek only (knob + time), no audio
+   ============================================================ */
+let selText = '';     /* captured while the bar shows — click-time fallback */
+let selSeg  = null;   /* .seg holding the selection start (for Play from here) */
+let selRaf  = 0;
+
+/* Hide the bar and drop the native selection (used by actions and by
+   every show* function — a panel never sits over a live selection). */
+function clearSelectionUI(){
+  selText = ''; selSeg = null;
+  selBar.hidden = true;
+  const s = window.getSelection();
+  if (s && !s.isCollapsed) s.removeAllRanges();
+}
+
+const selectionInTranscript = (sel) => {
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return false;
+  const r = sel.getRangeAt(0);
+  if (!r.toString().trim()) return false;
+  return transcript.contains(r.startContainer) && transcript.contains(r.endContainer);
+};
+
+function updateSelectionUI(){
+  if (activePanel() || searchOpen){ selBar.hidden = true; return; }
+  const sel = window.getSelection();
+  if (!selectionInTranscript(sel)){ selBar.hidden = true; return; }
+  const r = sel.getRangeAt(0);
+  const rect = r.getBoundingClientRect();
+  if (!rect.width && !rect.height){ selBar.hidden = true; return; }
+
+  /* remember what is selected so the actions still work if the native
+     selection collapses under the tap before the click lands */
+  selText = r.toString();
+  const sc = r.startContainer;
+  const host = (sc.nodeType === 3 ? sc.parentElement : sc);
+  selSeg = host && host.closest ? host.closest('.seg') : null;
+
+  selBar.hidden = false;
+  const barW = selBar.offsetWidth, barH = selBar.offsetHeight;
+  const ar = app.getBoundingClientRect();
+  const kb = keepbar.getBoundingClientRect();
+  /* centred on the selection, clamped 24px inside the shell */
+  let left = rect.left + rect.width / 2 - barW / 2;
+  left = Math.min(Math.max(left, ar.left + 24), ar.right - 24 - barW);
+  /* 8px below the selection; flip above when the keep-reading bar
+     leaves less than 44+8 of room, then clamp inside the viewport */
+  let top = rect.bottom + 8;
+  if (top + barH > kb.top) top = rect.top - 8 - barH;
+  top = Math.max(0, Math.min(top, kb.top - barH));
+  selBar.style.left = Math.round(left) + 'px';
+  selBar.style.top  = Math.round(top) + 'px';
+}
+
+document.addEventListener('selectionchange', () => {
+  if (selRaf) return;
+  selRaf = requestAnimationFrame(() => { selRaf = 0; updateSelectionUI(); });
+});
+/* native-like: scrolling or resizing drops the bar (the selection may
+   survive; the bar returns on the next selection change) */
+scroll.addEventListener('scroll', () => { selBar.hidden = true; }, { passive: true });
+window.addEventListener('resize', () => { selBar.hidden = true; });
+
+/* keep the native selection alive while the bar itself is pressed */
+selBar.addEventListener('mousedown', (e) => e.preventDefault());
+
+/* Copy selection — real clipboard write, no "Copied" toast (approved
+   decision A), then clear the selection and hide the bar (decision B). */
+document.getElementById('sel-copy').addEventListener('click', () => {
+  const sel = window.getSelection();
+  const text = (sel && !sel.isCollapsed && sel.toString()) || selText;
+  try{
+    navigator.clipboard && navigator.clipboard.writeText(text).catch(() => {});
+  }catch (e){ /* clipboard unavailable — stay silent, nothing invented */ }
+  clearSelectionUI();
+});
+
+/* Play from here — visual seek only: move the knob and the time label
+   to the segment's timestamp. No audio, no ticking, play state and
+   .is-current untouched (the source shows none of that). */
+function headerDuration(){
+  const m = /(\d+)m\s*(\d+)s/.exec((document.querySelector('.hdr-meta') || {}).textContent || '');
+  return m ? { sec: (+m[1]) * 60 + (+m[2]), txt: String(m[1]).padStart(2,'0') + ':' + String(m[2]).padStart(2,'0') }
+          : null;
+}
+document.getElementById('sel-play').addEventListener('click', () => {
+  const dur = headerDuration();                       /* header: "1m 44s" */
+  const ts  = selSeg ? (selSeg.querySelector('.ts') || {}).textContent : '';
+  const m   = ts && /^(\d+):(\d+)$/.exec(ts.trim());
+  if (dur && m){
+    const t = (+m[1]) * 60 + (+m[2]);
+    const track = player.querySelector('.seek');
+    const knob  = track.querySelector('.knob');
+    const span  = Math.max(0, track.clientWidth - knob.offsetWidth);
+    knob.style.left = Math.round((t / dur.sec) * span) + 'px';
+    player.querySelector('.time').textContent =
+      String(m[1]).padStart(2,'0') + ':' + String(m[2]).padStart(2,'0') + ' / ' + dur.txt;
+  }
+  clearSelectionUI();                                  /* decision B */
+});
+
+/* ============================================================
+   7. DEBUG HUD (?debug=1)
+   ============================================================ */
+function updateHud(){
+  if (new URLSearchParams(location.search).get('debug') !== '1') return;
+  hud.hidden = false;
+  const vh = window.innerHeight;
+  const pr = player.getBoundingClientRect();
+  const sr = sheet.hidden ? null : sheet.getBoundingClientRect();
+  const cr = document.getElementById('opt-size').getBoundingClientRect();
+  const hit = document.elementFromPoint(cr.left + cr.width/2, cr.top + cr.height/2);
+  hud.textContent =
+    `viewport      ${window.innerWidth}x${vh}\n` +
+    `player.top    ${pr.top.toFixed(1)}  (expect ${(vh - 103).toFixed(1)})\n` +
+    (sr ? `sheet         top ${sr.top.toFixed(1)}  bottom ${sr.bottom.toFixed(1)}  h ${sr.height.toFixed(1)}\n`
+        : `sheet         closed\n`) +
+    (sr ? `sheet scroll  ${document.getElementById('sheet-scroll').scrollHeight}/${document.getElementById('sheet-scroll').clientHeight}\n` : '') +
+    (searchOpen
+      ? `search        open  q="${searchIn.value}"  ${matches.length} hit(s)  cur ${cur + 1}  barH ${searchBar.getBoundingClientRect().height.toFixed(1)}\n`
+      : `search        closed\n`) +
+    (dlOpen
+      ? `download      open  scroll ${dlScroll.scrollHeight}/${dlScroll.clientHeight}\n`
+      : `download      closed\n`) +
+    (moreOpen
+      ? `more          open  items ${moreMenu.querySelectorAll('.menu-item').length}\n`
+      : `more          closed\n`) +
+    (detailsOpen
+      ? `details       open  app inert=${app.hasAttribute('inert')}\n`
+      : `details       closed\n`) +
+    (selBar.hidden
+      ? `selection     none\n`
+      : `selection     bar ${selBar.style.left || '0'} ${selBar.style.top || '0'} ` +
+        `"${(window.getSelection() || '').toString().slice(0, 18)}"\n`) +
+    `proc          ${readProc() ? 'on (body mode ?proc=1)' : 'off'}\n` +
+    `spk           ${spkMode ? '4 (meeting ?spk=4)' : 'off'}\n` +
+    `kb            ${app.classList.contains('kb-open') ? 'open (typing ?kb=1)' : 'closed'}\n` +
+    `opt-size rect ${cr.top.toFixed(1)}–${cr.bottom.toFixed(1)}\n` +
+    `hit(opt-size) ${hit ? (hit.id || hit.tagName.toLowerCase()) : 'null'}\n` +
+    `doc scrollW   ${document.documentElement.scrollWidth} / ${window.innerWidth}`;
+}
+window.addEventListener('resize', updateHud);
+
+/* ============================================================
+   8. INIT
+   ============================================================ */
+transcript.style.setProperty('--seg-fs', TEXT_SIZE[optSize.value]);
+/* capture the transcript once — search reads this, never the DOM
+   (setSpk re-captures after a meeting swap; see state 10) */
+captureSegs();
+searchIn.value = readQ();   /* ?view=search&q=… restores the query */
+syncFromURL(true);          /* isInit=true: ?kb=1 entry may open search (state 11) */
+updateHud();
+</script>
+</body>
+</html>

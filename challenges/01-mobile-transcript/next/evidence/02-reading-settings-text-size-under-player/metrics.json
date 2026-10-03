@@ -1,0 +1,50 @@
+{
+  "finding": "Reading settings sheet: the Text size control is completely covered by the fixed audio player and cannot be tapped",
+  "slug": "02-reading-settings-text-size-under-player",
+  "page": "https://whipscribe.com/view?id=e0394eda-e7cd-43ce-a253-48c3f207d3b2",
+  "captured": "2026-09-30",
+  "environment": {
+    "engine": "Chromium via Playwright, mobile emulation (iPhone Safari 17 UA), deviceScaleFactor 2, touch enabled",
+    "signedIn": false
+  },
+  "repro": [
+    "Open the public demo view URL at a phone viewport.",
+    "Open the overflow menu (… button, #wt-more).",
+    "Tap Reading settings.",
+    "The sheet shows READING VIEW / Show timestamps; the Text size row sits behind the audio player."
+  ],
+  "geometryAt320x568": {
+    "viewportHeight": 568,
+    "sheet": { "id": "wt-view-pop", "top": 371, "height": 197, "bottom": 568, "scrollable": false, "scrollHeight": 195, "clientHeight": 195 },
+    "audioBar": { "id": "audio-bar", "top": 465, "height": 103, "bottom": 568, "zIndex": 40 },
+    "textSizeLabel": { "text": "Text size", "rect": [9, 477, 58, 24], "bottom": 501, "fullyBehindPlayer": true },
+    "textSizeControl": { "id": "wt-opt-size", "rect": [228, 475, 83, 28], "bottom": 503, "value": ["Small", "Medium", "Large"], "fullyBehindPlayer": true },
+    "hitTestAtControlCenter": { "elementFromPoint": ["audio-bar", "seek-fwd-15", "playback-rate"], "note": "no point sampled on the control returns the control itself" },
+    "realTouchTap": { "at": [270, 489], "result": "dismisses the sheet; #wt-opt-size value unchanged and not focused" }
+  },
+  "viewportMatrix": [
+    { "viewport": "320x568", "sheetBottom": 568, "barTop": 465, "controlTop": 475, "controlBottom": 503, "covered": true, "sheetScrollable": false, "hitAtControl": "audio-bar" },
+    { "viewport": "320x720", "sheetBottom": 720, "barTop": 617, "controlTop": 627, "controlBottom": 655, "covered": true, "sheetScrollable": false, "hitAtControl": "audio-bar" },
+    { "viewport": "360x640", "sheetBottom": 640, "barTop": 537, "controlTop": 547, "controlBottom": 575, "covered": true, "sheetScrollable": false, "hitAtControl": "audio-bar" },
+    { "viewport": "375x667", "sheetBottom": 667, "barTop": 564, "controlTop": 574, "controlBottom": 602, "covered": true, "sheetScrollable": false, "hitAtControl": "audio-bar" },
+    { "viewport": "390x844", "sheetBottom": 844, "barTop": 741, "controlTop": 751, "controlBottom": 779, "covered": true, "sheetScrollable": false, "hitAtControl": "audio-bar" },
+    { "viewport": "414x896", "sheetBottom": 896, "barTop": 793, "controlTop": 820, "controlBottom": 848, "covered": true, "sheetScrollable": false, "hitAtControl": "playback-rate" }
+  ],
+  "scopeNote": "The sheet is anchored to the viewport bottom and the player is fixed over the last 103px, so the second row of the sheet is behind the player at every phone size tested (320 through 414 wide). The first row (Show timestamps) stays visible.",
+  "evidenceScreenshots": [
+    "../../screenshots/02-reading-settings-under-player-320x568.png"
+  ],
+  "dedupe": {
+    "searched": "all open issue bodies",
+    "terms": ["reading settings", "audio-bar covers", "player covers", "text size"],
+    "result": "no match for this sheet",
+    "closestIssues": [
+      { "id": 149, "whyDifferent": "More-menu items hidden behind the player; this is the Reading settings sheet" },
+      { "id": 92, "whyDifferent": "landscape orientation menu clipping" }
+    ]
+  },
+  "notTested": [
+    "desktop 1280 width (sheet behaves as a popover there, not measured)",
+    "physical device with a real on-screen keyboard"
+  ]
+}

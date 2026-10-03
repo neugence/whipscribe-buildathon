@@ -1,0 +1,56 @@
+{
+  "finding": "Download sheet content is wider than a 320px screen: format grid is a fixed 314px column, buttons and section rules run off the right edge and the sheet scrolls sideways by 14px",
+  "slug": "04-download-sheet-overflow-320",
+  "page": "https://whipscribe.com/view?id=e0394eda-e7cd-43ce-a253-48c3f207d3b2",
+  "captured": "2026-09-30",
+  "environment": {
+    "engine": "Chromium via Playwright, mobile emulation (iPhone Safari 17 UA), deviceScaleFactor 2, touch enabled",
+    "signedIn": false
+  },
+  "repro": [
+    "Open the public demo view URL at a 320px-wide viewport (320x568 or 320x720).",
+    "Tap the download icon (#wt-m-export).",
+    "Look at the right edge of the sheet: format buttons, the Translate button, Save to Drive and the section rules are cut off.",
+    "Swipe the sheet horizontally: it moves 14px."
+  ],
+  "measuredAt320": {
+    "viewportWidth": 320,
+    "grid": { "class": "dl-grid", "clientWidth": 280, "scrollWidth": 314, "computedGridTemplateColumns": "314px" },
+    "sheet": { "class": "wt-dialog", "clientWidth": 320, "scrollWidth": 334, "computedOverflowX": "auto", "forcedHorizontalScroll": 14 },
+    "elementsPastRightEdge": 19,
+    "rightEdgeValues": [332, 334],
+    "examples": [
+      { "control": "#wt-go (Translate -> .srt)", "right": 334 },
+      { "control": "#wd-save (Save to Drive)", "right": 334 },
+      { "control": ".txt / .docx / .srt / .vtt buttons", "right": 334 },
+      { "control": "section rule (.dl-section-title)", "right": 332 }
+    ],
+    "documentDoesNotScroll": { "documentElementScrollWidth": 320, "innerWidth": 320, "note": "the clipping happens inside the sheet, which itself scrolls sideways" }
+  },
+  "viewportMatrix": [
+    { "viewport": "320x568", "innerWidth": 320, "gridClientWidth": 280, "gridScrollWidth": 314, "gridColumns": "314px", "elementsPastRight": 19, "goRight": 334, "sideScrollMax": 14, "broken": true },
+    { "viewport": "320x720", "innerWidth": 320, "gridClientWidth": 280, "gridScrollWidth": 314, "gridColumns": "314px", "elementsPastRight": 19, "goRight": 334, "sideScrollMax": 14, "broken": true },
+    { "viewport": "360x640", "innerWidth": 360, "gridClientWidth": 320, "gridScrollWidth": 320, "gridColumns": "320px", "elementsPastRight": 0, "goRight": 340, "sideScrollMax": 0, "broken": false },
+    { "viewport": "375x667", "innerWidth": 375, "gridClientWidth": 335, "gridScrollWidth": 335, "gridColumns": "335px", "elementsPastRight": 0, "goRight": 355, "sideScrollMax": 0, "broken": false },
+    { "viewport": "390x844", "innerWidth": 390, "gridClientWidth": 350, "gridScrollWidth": 350, "gridColumns": "350px", "elementsPastRight": 0, "goRight": 370, "sideScrollMax": 0, "broken": false },
+    { "viewport": "414x896", "innerWidth": 414, "gridClientWidth": 374, "gridScrollWidth": 374, "gridColumns": "374px", "elementsPastRight": 0, "goRight": 394, "sideScrollMax": 0, "broken": false }
+  ],
+  "scopeNote": "Broken only at 320px width (iPhone SE 1st gen and other 320px phones). The grid column is driven by a 314px min-content width, which no longer fits the 280px content box at that width.",
+  "evidenceScreenshots": [
+    "../../screenshots/03-download-sheet-320x568.png",
+    "../../screenshots/04-download-sheet-scrolled-320x568.png"
+  ],
+  "dedupe": {
+    "searched": "all open issue bodies",
+    "terms": ["download dialog", "format buttons", ".docx", ".vtt", "horizontal", "clipped", "320"],
+    "result": "no match for this dialog",
+    "closestIssues": [
+      { "id": 181, "whyDifferent": "'Keep reading' box plus player on a 320px screen, different component" },
+      { "whyDifferent": "an existing 280px overflow issue is about cards on another page, not this sheet" }
+    ]
+  },
+  "notTested": [
+    "physical 320px device (emulated only)",
+    "landscape orientation"
+  ]
+}

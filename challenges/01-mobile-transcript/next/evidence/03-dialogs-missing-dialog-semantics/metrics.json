@@ -1,0 +1,66 @@
+{
+  "finding": "Download and File details sheets have no dialog semantics (no role=dialog, no aria-modal, no accessible name)",
+  "slug": "03-dialogs-missing-dialog-semantics",
+  "page": "https://whipscribe.com/view?id=e0394eda-e7cd-43ce-a253-48c3f207d3b2",
+  "captured": "2026-09-30",
+  "environment": {
+    "engine": "Chromium via Playwright, mobile emulation (iPhone Safari 17 UA), deviceScaleFactor 2",
+    "signedIn": false
+  },
+  "repro": [
+    "Open the public demo view URL at 320x568.",
+    "Tap the download icon (#wt-m-export) to open the Download sheet, or the … menu -> File details.",
+    "Inspect the sheet container."
+  ],
+  "measured": {
+    "downloadSheet": {
+      "containerId": "wt-dl-dialog",
+      "containerClass": "wt-dialog-bd",
+      "tag": "DIV",
+      "heading": "Download",
+      "role": null,
+      "ariaModal": null,
+      "ariaLabel": null,
+      "ariaLabelledby": null
+    },
+    "fileDetailsSheet": {
+      "containerId": "wt-details-dialog",
+      "containerClass": "wt-dialog-bd",
+      "tag": "DIV",
+      "heading": { "tag": "H2", "id": "wt-details-h", "text": "File details" },
+      "role": null,
+      "ariaModal": null,
+      "ariaLabel": null,
+      "ariaLabelledby": null,
+      "headingLinked": false
+    },
+    "whatAlreadyWorks": {
+      "focusMovesIntoSheetOnOpen": true,
+      "focusOnOpenElement": "INPUT#wt-dl-ts",
+      "tabOrderStaysInsideSheet": "8 consecutive Tab presses all stayed inside the sheet (cycles back to the first format button)",
+      "escapeCloses": true,
+      "focusRestoredTo": "#wt-m-export"
+    },
+    "whyItMatters": "VoiceOver/TalkBack are not told a modal dialog opened, and the page behind stays in the accessibility tree, so a screen reader keeps reading background content while the sheet is open."
+  },
+  "viewportsTested": ["320x568", "1280x900"],
+  "viewportNote": "Same markup and same null attributes at both widths, so this is not phone-only, but it was found and verified on the phone layout.",
+  "evidenceScreenshots": [
+    "../../screenshots/03-download-sheet-320x568.png",
+    "../../screenshots/05-file-details-320x568.png"
+  ],
+  "dedupe": {
+    "searched": "all open issue bodies",
+    "terms": ["role=dialog", "aria-modal", "screen reader", "dialog semantics"],
+    "result": "no match",
+    "closestIssues": [
+      { "id": 18, "whyDifferent": "contrast and heading order, not dialogs" },
+      { "id": 62, "whyDifferent": "invisible tab stops in the tab bar" },
+      { "id": 102, "whyDifferent": "Resources menu tab order" }
+    ]
+  },
+  "notTested": [
+    "real VoiceOver/TalkBack session (claim is based on missing ARIA attributes, not a screen reader run)",
+    "signed-in flows where more sheets exist"
+  ]
+}
