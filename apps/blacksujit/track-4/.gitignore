@@ -1,0 +1,67 @@
+# Environment secrets — NEVER COMMIT
+.env
+*.local
+
+# Generated reports
+report.md
+report_real.md
+test_report.md
+
+# Test scripts and temp files
+test_api.py
+test_llm.py
+test_openai.py
+test_anthropic.py
+src/test_audio.wav
+src/test_speech.wav
+
+# Python venv
+.venv/
+__pycache__/
+*.pyc
+
+# Frontend build artifacts
+frontend/.next/
+frontend/node_modules/
+
+report_test.md
+
+# Web dashboard
+evaluations.db
+uploads/
+
+# Local server log
+backend.log
+
+# Frontend working files
+frontend/test-results/
+.vercel
+
+node_modules
+
+# Test / tooling caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Stray shell / editor artifacts
+$null
+*.log
+.commandcode/
+.cursor/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local SQLite databases (the shipped seed snapshot stays tracked)
+*.db
+*.db-wal
+*.db-shm
+!seed_evaluations.db
+
+# Ad-hoc screenshots in the frontend root (real ones live in docs/screenshots/)
+frontend/*.png
+
+# HyperFrames studio caches
+videos/**/.thumbnails/
