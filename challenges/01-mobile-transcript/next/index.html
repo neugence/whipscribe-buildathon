@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transcript reader — next pass</title>
+<style>
+:root{
+  --ink:#14201a; --ink2:#4a5a52; --ink3:#7d8b84; --line:#e6ece8; --bg:#ffffff; --page:#f4f6f3;
+  --green:#3f6d1f; --lime:#b6e82a; --lime-soft:#f2fadc; --hl:#fff1a8; --red:#b42318;
+  --s1:#2f6fd6; --s2:#b4479b; --s3:#c0711a; --s4:#2f8f6b;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 var(--sans)}
+header.doc{max-width:1100px;margin:0 auto;padding:32px 16px 8px}
+header.doc h1{font-size:26px;margin:0 0 6px}
+header.doc p{margin:4px 0;color:var(--ink2);max-width:760px}
+section.pair{max-width:1100px;margin:28px auto;padding:0 16px}
+section.pair h2{font-size:18px;margin:0 0 4px}
+section.pair .why{color:var(--ink2);margin:0 0 14px;max-width:820px}
+.row{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:8px}
+.label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+img.cur{width:300px;border-radius:18px;border:1px solid var(--line);background:#fff}
+
+/* phone */
+.phone{width:375px;height:675px;background:var(--bg);border-radius:28px;border:1px solid #d9e0db;
+  box-shadow:0 10px 30px rgba(20,32,26,.08);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.phone.w320{width:320px}
+.bar{display:flex;align-items:center;gap:6px;padding:10px 8px 6px 4px}
+.ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:none;border-radius:12px;color:var(--ink);flex:none}
+.ib svg{width:22px;height:22px}
+.title{flex:1;min-width:0}
+.title b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title span{font-size:12.5px;color:var(--ink3)}
+.tabs{display:flex;align-items:center;border-bottom:1px solid var(--line);padding:0 4px 0 12px}
+.tab{padding:10px 10px 9px;font-size:14.5px;color:var(--ink3);border-bottom:2.5px solid transparent;white-space:nowrap}
+.tab.on{color:var(--ink);font-weight:600;border-color:var(--green)}
+.tabs .sp{flex:1}
+.body{flex:1;overflow:hidden;padding:4px 18px 0;position:relative}
+.para{margin:14px 0 0}
+.who{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink3);margin-bottom:3px}
+.who .dot{width:20px;height:20px;border-radius:50%;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.who b{color:var(--ink2);font-weight:600}
+.ts{border:0;cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--green);padding:2px 6px;border-radius:6px;background:#eef4e8}
+.txt{font-size:16.5px;line-height:1.6;text-align:left;hyphens:manual;margin:0}
+.dock{border-top:1px solid var(--line);background:#fff;padding:8px 12px 14px}
+.prog{height:4px;border-radius:3px;background:#e8ede9;position:relative;margin:4px 2px 8px}
+.prog i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--green)}
+.ctl{display:flex;align-items:center;gap:6px}
+.play{width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;flex:none}
+.play svg{width:18px;height:18px}
+.time{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
+.ctl .sp{flex:1}
+.rate{font-size:13px;font-weight:600;padding:8px 10px;border-radius:10px;background:#f1f4f2}
+.pv{display:flex;align-items:center;gap:10px;background:var(--lime-soft);border:1px solid #e1f0b4;border-radius:14px;padding:8px 8px 8px 12px;margin-bottom:8px}
+.pv p{margin:0;font-size:13px;line-height:1.35;color:var(--ink);flex:1}
+.pv p b{color:var(--green)}
+.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:600;font-size:14px;min-height:44px;white-space:nowrap}
+.btn.lime{background:var(--lime);color:#15230a}
+.btn.ghost{background:#f1f4f2;color:var(--ink)}
+.btn.block{width:100%}
+.note-audio{font-size:12.5px;color:var(--ink3);display:flex;gap:6px;align-items:center}
+.fade{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(rgba(255,255,255,0),#fff 75%)}
+.card{border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0}
+.card h3{margin:0 0 4px;font-size:16px}
+.card p{margin:0 0 12px;color:var(--ink2);font-size:14px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.12);padding:8px 16px 18px}
+.scrim{position:absolute;inset:0;background:rgba(20,32,26,.35)}
+.grab{width:40px;height:4px;border-radius:2px;background:#d5dcd8;margin:4px auto 10px}
+.sheet h4{margin:14px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.item{display:flex;align-items:center;gap:12px;min-height:48px;font-size:15.5px;border-bottom:1px solid #f0f3f1}
+.item small{color:var(--ink3);font-size:12.5px;margin-left:auto}
+.item.danger{color:var(--red);border:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:14px;min-height:40px;display:flex;align-items:center;gap:6px}
+.chip.on{border-color:var(--green);background:#eef4e8;font-weight:600}
+.search{display:flex;align-items:center;gap:6px;margin:8px 12px;border:1.5px solid var(--green);border-radius:12px;padding:0 4px 0 12px;height:46px}
+.search input{border:0;flex:1;font-size:16px;outline:0;min-width:0;background:none}
+.count{font-size:12.5px;color:var(--ink2);font-family:var(--mono)}
+mark{background:var(--hl);border-radius:3px;padding:0 2px}
+.cur-line{background:#f3f8ec;border-radius:10px;margin:10px -8px 0;padding:6px 8px}
+.kbd{height:250px;background:#d1d5db;display:grid;place-items:center;color:#6b7280;font-size:13px}
+.pop{position:absolute;left:18px;right:18px;background:var(--ink);color:#fff;border-radius:14px;display:flex;justify-content:space-around;padding:4px}
+.pop span{padding:12px 6px;font-size:13.5px;display:flex;gap:6px;align-items:center}
+.sel{background:#cfe0ff;border-radius:3px}
+.skel{height:14px;border-radius:7px;background:linear-gradient(90deg,#eef1ef,#f7f9f8,#eef1ef);margin:9px 0}
+.state{padding:40px 22px;text-align:left}
+.state h3{font-size:19px;margin:12px 0 6px}
+.state p{color:var(--ink2);margin:0 0 18px}
+.notes{max-width:1100px;margin:40px auto 60px;padding:0 16px}
+.notes table{border-collapse:collapse;width:100%;background:#fff;border-radius:12px;overflow:hidden}
+.notes td,.notes th{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top;font-size:14px}
+@media (max-width:720px){ img.cur{width:100%;max-width:375px} .phone{width:100%;max-width:375px} }
+</style>
+</head>
+<body>
+
+<header class="doc">
+  <h1>Transcript reader on a phone — the next pass</h1>
+  <p>Left: the current design (from <code>../after/</code>). Right: mine, as live HTML you can open on a phone. Every "next" screen is built at real phone width, not drawn.</p>
+  <p><b>The one job:</b> someone opens a transcript on their phone to <i>read it</i> or <i>find a moment</i>. Everything that isn't that moved one level down.</p>
+</header>
+
+<!-- shared bits -->
+<template id="noop"></template>
+
+<!-- 1. READER -->
+<section class="pair">
+  <h2>1 · The reader</h2>
+  <p class="why">Text stopped being justified (no rivers, no "seg-ment"). Lines are grouped into whole sentences, so a paragraph never ends at "a hard / stop at the top of the hour". The timestamp moved above the paragraph and is a button that plays from there, which gives the text the full width (most visible at 320 px). One header row instead of two; search stays visible, download moved into ⋯ with the other "do something with this file" actions. The preview bar and the player became one dock instead of two stacked bars, and the player is honest when there is no audio.</p>
+  <div class="row">
+    <div class="col"><span class="label">Current · 375</span><img class="cur" src="../after/02-reader-375.png" alt="Current reader at 375 px"></div>
+    <div class="col"><span class="label">Next · 375</span>
+      <div class="phone">
+        <div class="bar">
+          <button class="ib" aria-label="Back to library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>Quarterly planning review</b><span>long.m4a · 1:44 · English</span></div>
+          <button class="ib" aria-label="More for this recording"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+        </div>
+        <div class="tabs">
+          <span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">Ask</span><span class="sp"></span>
+          <button class="ib" aria-label="Search this transcript"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+        </div>
+        <div class="body">
+          <div class="para"><div class="who"><button class="ts" aria-label="Play from 0:00">0:00</button></div>
+            <p class="txt">Thanks everyone for joining the quarterly planning review. I want to move quickly today because we have a lot to cover and several people have a hard stop at the top of the hour.</p></div>
+          <div class="para"><div class="who"><button class="ts">0:09</button></div>
+            <p class="txt">First, the numbers. Revenue came in 11% above forecast. Most of that came from the enterprise segment, where three of the five deals we expected in the next quarter closed early.</p></div>
+          <div class="para"><div class="who"><button class="ts">0:20</button></div>
+            <p class="txt">The self-serve business was flat. Trials were up, but conversion to paid slipped by about a point and a half.</p></div>
+        </div>
+        <div class="dock">
+          <div class="pv"><p><b>Free preview · 48% shown.</b> Sign up free to read it all.</p><button class="btn lime">Keep reading</button></div>
+          <div class="note-audio">ⓘ Audio isn't available for this file — the transcript is complete.</div>
+        </div>
+      </div>
+    </div>
+    <div class="col"><span class="label">Next · 320, with audio</span>
+      <div class="phone w320">
+        <div class="bar">
+          <button class="ib" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>Quarterly planning review</b><span>1:44 · English</span></div>
+          <button class="ib" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+        </div>
+        <div class="tabs"><span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">Ask</span><span class="sp"></span>
+          <button class="ib" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div>
+        <div class="body">
+          <div class="para"><div class="who"><button class="ts">0:00</button></div>
+            <p class="txt">Thanks everyone for joining the quarterly planning review. I want to move quickly today because we have a lot to cover and several people have a hard stop at the top of the hour.</p></div>
+          <div class="para cur-line"><div class="who"><button class="ts">0:09</button><span>playing</span></div>
+            <p class="txt">First, the numbers. Revenue came in 11% above forecast.</p></div>
+        </div>
+        <div class="dock">
+          <div class="prog" role="slider" aria-label="Seek" aria-valuetext="0:11 of 1:44"><i style="width:11%"></i></div>
+          <div class="ctl">
+            <span class="time">0:11 / 1:44</span><span class="sp"></span>
+            <button class="ib" aria-label="Back 5 seconds">−5</button>
+            <span class="play" aria-label="Pause"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></span>
+            <button class="ib" aria-label="Forward 5 seconds">+5</button>
+            <span class="rate">1×</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. FOUR SPEAKERS -->
+<section class="pair">
+  <h2>2 · A meeting with four speakers, at 320 px</h2>
+  <p class="why">The brief asked for it, and there's no current screen for it. Speakers are a coloured initial plus a name on the paragraph's first line, so the text keeps the full width. A new paragraph starts only when the speaker changes or after a long pause. Tapping a name filters to that speaker, which is the most common question about a meeting: "what did Priya say?"</p>
+  <div class="row">
+    <div class="col"><span class="label">Next · 320</span>
+      <div class="phone w320">
+        <div class="bar"><button class="ib" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>Weekly product sync</b><span>38:12 · 4 speakers</span></div>
+          <button class="ib" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></div>
+        <div class="tabs"><span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">Ask</span><span class="sp"></span>
+          <button class="ib" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button></div>
+        <div class="body">
+          <div class="para"><div class="who"><span class="dot" style="background:var(--s1)">A</span><b>Arjun</b><button class="ts">12:04</button></div>
+            <p class="txt">Can we lock the onboarding change for Monday?</p></div>
+          <div class="para"><div class="who"><span class="dot" style="background:var(--s2)">P</span><b>Priya</b><button class="ts">12:07</button></div>
+            <p class="txt">Not yet. Two of the four blocking accessibility issues are still open.</p></div>
+          <div class="para"><div class="who"><span class="dot" style="background:var(--s3)">M</span><b>Meera</b><button class="ts">12:15</button></div>
+            <p class="txt">I can take the contrast one today.</p></div>
+          <div class="para"><div class="who"><span class="dot" style="background:var(--s4)">S</span><b>Speaker 4</b><button class="ts">12:19</button></div>
+            <p class="txt">Then Wednesday is realistic, not Monday.</p></div>
+        </div>
+        <div class="dock"><div class="prog"><i style="width:32%"></i></div>
+          <div class="ctl"><span class="time">12:19 / 38:12</span><span class="sp"></span>
+            <span class="play" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span><span class="rate">1×</span></div></div>
+      </div>
+    </div>
+    <div class="col"><span class="label">Next · tap a speaker</span>
+      <div class="phone w320">
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <b style="font-size:17px">Speakers</b>
+          <div class="item"><span class="dot" style="background:var(--s1);width:26px;height:26px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:700">A</span>Arjun<small>14 min</small></div>
+          <div class="item"><span style="background:var(--s2);width:26px;height:26px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:700">P</span>Priya<small>11 min</small></div>
+          <div class="item"><span style="background:var(--s3);width:26px;height:26px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:700">M</span>Meera<small>9 min</small></div>
+          <div class="item"><span style="background:var(--s4);width:26px;height:26px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:700">S</span>Speaker 4<small>4 min</small></div>
+          <div style="display:flex;gap:8px;margin-top:14px"><button class="btn ghost block">Rename speakers</button><button class="btn lime block">Only Priya</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. SEARCH -->
+<section class="pair">
+  <h2>3 · Search, with the keyboard up</h2>
+  <p class="why">The current search pins the match above the list, so the same sentence shows twice and the list doesn't move. Here the list itself scrolls to the match and highlights it. The search box takes the tab row's place, and the dock hides while the keyboard is up, because a 260 px keyboard plus two fixed bars leaves room for about three lines of text.</p>
+  <div class="row">
+    <div class="col"><span class="label">Current</span><img class="cur" src="../after/06-search.png" alt="Current search"></div>
+    <div class="col"><span class="label">Next</span>
+      <div class="phone">
+        <div class="bar"><button class="ib" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>Quarterly planning review</b><span>1:44 · English</span></div></div>
+        <div class="search"><input value="onboarding" aria-label="Search this transcript"><span class="count">1 of 2</span>
+          <button class="ib" aria-label="Previous match">↑</button><button class="ib" aria-label="Next match">↓</button><button class="ib" aria-label="Close search">✕</button></div>
+        <div class="body" style="padding-top:0">
+          <div class="para"><div class="who"><button class="ts">0:20</button></div>
+            <p class="txt">The self-serve business was flat. Trials were up, but conversion to paid slipped by about a point and a half. And we think that is mostly the <mark>onboarding</mark> change we shipped in July.</p></div>
+        </div>
+        <div class="kbd">keyboard</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. SELECTION -->
+<section class="pair">
+  <h2>4 · After you select a line</h2>
+  <p class="why">Copying a quote from a recording is almost always for sending it to someone. The two most useful extras are a link that opens at that exact second, and asking the AI about that bit. "Copy" includes the timestamp, because a quote with no time is hard to check later.</p>
+  <div class="row">
+    <div class="col"><span class="label">Current</span><img class="cur" src="../after/10-text-selection.png" alt="Current selection"></div>
+    <div class="col"><span class="label">Next</span>
+      <div class="phone">
+        <div class="bar"><button class="ib" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>Quarterly planning review</b><span>1:44 · English</span></div></div>
+        <div class="tabs"><span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">Ask</span></div>
+        <div class="body">
+          <div class="para"><div class="who"><button class="ts">0:09</button></div>
+            <p class="txt">First, the numbers. <span class="sel">Revenue came in 11% above forecast.</span> Most of that came from the enterprise segment.</p></div>
+          <div class="pop" style="top:150px"><span>Copy</span><span>Share 0:10</span><span>Ask AI</span><span>▶ Play</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. ONE SHEET FOR ACTIONS -->
+<section class="pair">
+  <h2>5 · One "⋯" sheet instead of a 9-item menu, a download sheet and a settings sheet</h2>
+  <p class="why">Search, download and settings were three different kinds of panel. Search stays in place, since you're still reading while you use it. Everything else goes into one sheet with three short groups. <b>Removed:</b> "Home" (the back button already does this), "Sign in" (an account action, not a file action; the preview dock already offers it), and the separate "Timestamps: shown" row (it's a reading setting). Formats are words people use ("Word document", "Subtitles") rather than file extensions, and the less common ones sit behind "More formats". Delete sits apart and asks to confirm.</p>
+  <div class="row">
+    <div class="col"><span class="label">Current · more</span><img class="cur" src="../after/08-more-menu.png" alt="Current more menu"></div>
+    <div class="col"><span class="label">Current · download</span><img class="cur" src="../after/07-export-sheet.png" alt="Current download sheet"></div>
+    <div class="col"><span class="label">Next</span>
+      <div class="phone">
+        <div class="scrim"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <h4 style="margin-top:4px">Save or send</h4>
+          <div class="chips"><span class="chip on">Word document</span><span class="chip">Plain text</span><span class="chip">Subtitles (.srt)</span><span class="chip">More formats…</span></div>
+          <label class="item" style="border:0"><input type="checkbox" checked style="width:20px;height:20px"> Include timestamps</label>
+          <div style="display:flex;gap:8px"><button class="btn lime block">Download</button><button class="btn ghost block">Save to Drive</button></div>
+          <h4>Reading</h4>
+          <div class="chips"><span class="chip on">Timestamps</span><span class="chip on">Speakers</span><span class="chip">A−</span><span class="chip">A+</span></div>
+          <h4>This recording</h4>
+          <div class="item">Copy whole transcript</div>
+          <div class="item">Quiz me on this</div>
+          <div class="item">Rename</div>
+          <div class="item">Details<small>long.m4a · 2.1 MB</small></div>
+          <div class="item danger">Delete recording…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. PREVIEW BOUNDARY -->
+<section class="pair">
+  <h2>6 · Where the free preview ends</h2>
+  <p class="why">Today the preview ends in a line of grey text followed by about half a screen of empty space, and the same message is repeated in the bar below. Here the last line fades out and a card says exactly what you get by signing up, so the empty space is used. The dock drops its preview message once this card is on screen, so it isn't said twice.</p>
+  <div class="row">
+    <div class="col"><span class="label">Current</span><img class="cur" src="../after/05-preview-boundary.png" alt="Current preview boundary"></div>
+    <div class="col"><span class="label">Next</span>
+      <div class="phone">
+        <div class="bar"><button class="ib" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>Quarterly planning review</b><span>1:44 · English</span></div></div>
+        <div class="tabs"><span class="tab on">Transcript</span><span class="tab">Summary</span><span class="tab">Ask</span></div>
+        <div class="body">
+          <div class="para"><div class="who"><button class="ts">0:29</button></div>
+            <p class="txt">Second, the mobile launch. We are moving it from October to the first week of November. The accessibility audit found 11 issues, four of them</p>
+            <div style="position:relative;height:40px;margin-top:-40px" class="fade"></div></div>
+          <div class="card">
+            <h3>That's the free 48%. 52% left — about 54 seconds.</h3>
+            <p>Create a free account to read the rest, download it, and keep it in your library. No card needed.</p>
+            <button class="btn lime block">Continue with Google</button>
+            <button class="btn ghost block" style="margin-top:8px">Use email instead</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. PROCESSING -->
+<section class="pair">
+  <h2>7 · While it's still transcribing (new)</h2>
+  <p class="why">There's no current screen for this. People open the link right after uploading, so tell them how long it will take, show text as soon as it exists, and say they can leave the page.</p>
+  <div class="row">
+    <div class="col"><span class="label">Next</span>
+      <div class="phone">
+        <div class="bar"><button class="ib" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>Weekly product sync</b><span>38:12 · transcribing…</span></div></div>
+        <div class="tabs"><span class="tab on">Transcript</span><span class="tab" style="opacity:.45">Summary</span><span class="tab" style="opacity:.45">Ask</span></div>
+        <div class="body">
+          <div class="card" style="background:var(--lime-soft);border-color:#e1f0b4">
+            <h3>Transcribing · about 1 minute left</h3>
+            <div class="prog" style="margin:10px 0"><i style="width:62%"></i></div>
+            <p style="margin:0">You can close this — we'll email you and it'll be in your library. Summary and Ask open when the transcript is done.</p>
+          </div>
+          <div class="para"><div class="who"><span class="dot" style="background:var(--s1)">1</span><b>Speaker 1</b><button class="ts">0:00</button></div>
+            <p class="txt">Okay, let's start with the onboarding numbers from last week…</p></div>
+          <div class="skel" style="width:92%"></div><div class="skel" style="width:80%"></div><div class="skel" style="width:86%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. ERRORS -->
+<section class="pair">
+  <h2>8 · When it fails</h2>
+  <p class="why">"HTTP 503" is the system's wording, not the user's. Say what happened, whether it's their fault, and what will happen next. Retry happens on its own, the button is there as backup, and the tabs and download are switched off so they don't lead to a second error.</p>
+  <div class="row">
+    <div class="col"><span class="label">Current</span><img class="cur" src="../after/12-load-failure.png" alt="Current load failure"></div>
+    <div class="col"><span class="label">Next</span>
+      <div class="phone">
+        <div class="bar"><button class="ib" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <div class="title"><b>long.m4a</b><span>&nbsp;</span></div></div>
+        <div class="tabs"><span class="tab on">Transcript</span><span class="tab" style="opacity:.45">Summary</span><span class="tab" style="opacity:.45">Ask</span></div>
+        <div class="state">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7d8b84" stroke-width="1.8"><path d="M12 9v4m0 4h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+          <h3>We couldn't open this transcript just now</h3>
+          <p>Our server didn't answer. Your recording and transcript are safe. We'll try again in a few seconds.</p>
+          <button class="btn lime">Try again now</button>
+          <p style="margin-top:14px;font-size:12.5px;color:var(--ink3)">Still stuck? <u>Chat with us</u> · error 503</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="notes">
+  <h2>What I kept, and why</h2>
+  <table>
+    <tr><th>Kept</th><th>Why</th></tr>
+    <tr><td>Three tabs (Transcript / Summary / AI chat)</td><td>The right three. I renamed "AI Chat" to <b>Ask</b> because it's shorter, fits 320 px with room for search, and describes what you do.</td></tr>
+    <tr><td>Bottom-anchored player</td><td>Thumbs live at the bottom, so it belongs there. It's just merged with the preview bar into one dock.</td></tr>
+    <tr><td>Header scrolls away, controls stay (04-scrolled)</td><td>Already right.</td></tr>
+    <tr><td>"Not on this account" screen (13)</td><td>Clear and honest; I'd only add which account you're signed in as.</td></tr>
+    <tr><td>Desktop page (14)</td><td>Unchanged here. The paragraph grouping and timestamp-as-button would carry over directly; that's a separate pass.</td></tr>
+  </table>
+  <h2 style="margin-top:28px">Taps to the one job</h2>
+  <table>
+    <tr><th>Task</th><th>Now</th><th>Next</th></tr>
+    <tr><td>Find a word and hear it</td><td>search → type → read pinned copy → scroll list to find it → tap time</td><td>search → type → (list is already there) → tap time</td></tr>
+    <tr><td>Download as Word</td><td>download → scroll past 4 transcript formats → .docx</td><td>⋯ → Download (Word is the default)</td></tr>
+    <tr><td>Send a quote</td><td>select → copy → switch app → retype the time</td><td>select → Share at 0:10</td></tr>
+  </table>
+</section>
+
+</body>
+</html>
