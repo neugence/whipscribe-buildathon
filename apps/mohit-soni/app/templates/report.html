@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<header class="masthead">
+  <div>
+    <p class="eyebrow">{% if report.workflow_type == "generic_review" %}General audio fallback{% else %}Evidence-backed scorecard{% endif %}</p>
+    <h1>{% if report.workflow_type == "generic_review" %}Transcript Intelligence Review{% else %}QA Report{% endif %}</h1>
+  </div>
+  {% if report.workflow_type != "generic_review" %}
+  <div>
+    <p class="muted">Score</p>
+    <p class="metric">{{ report.score }}/{{ report.max_score }}</p>
+  </div>
+  {% endif %}
+</header>
+{% if is_demo %}
+<section class="panel">
+  <p class="warning">Demo transcript: this report uses seeded sample transcript data. Real uploads still use the WhipScribe API when `WHIPSCRIBE_API_KEY` is configured.</p>
+</section>
+{% endif %}
+
+<section class="panel">
+  <p class="row">
+    <a class="button" href="/jobs/{{ job_id }}/export.md">Export Markdown</a>
+    <a class="button" href="/jobs/{{ job_id }}/export.json">Export JSON</a>
+  </p>
+
+  {% if report.workflow_type == "generic_review" %}
+  <section class="item">
+    <h2>Summary</h2>
+    <p>{{ report.summary }}</p>
+  </section>
+
+  <section class="item">
+    <h2>Speaker Summary</h2>
+    {% for speaker in report.speaker_summary %}
+    <div class="evidence">
+      <strong>{{ speaker.speaker }}</strong>
+      <p>{{ speaker.segments }} segment(s)</p>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="item">
+    <h2>Key Moments</h2>
+    {% for moment in report.key_moments %}
+    <div class="evidence">
+      <strong>{{ moment.start }}s-{{ moment.end }}s {{ moment.speaker }}</strong>
+      <p>{{ moment.text }}</p>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="item">
+    <h2>Questions</h2>
+    {% if report.questions %}
+    {% for question in report.questions %}
+    <div class="evidence">
+      <strong>{{ question.start }}s-{{ question.end }}s {{ question.speaker }}</strong>
+      <p>{{ question.text }}</p>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="muted">No direct questions detected.</p>
+    {% endif %}
+  </section>
+
+  <section class="item">
+    <h2>Action Items</h2>
+    {% if report.action_items %}
+    {% for action in report.action_items %}
+    <div class="evidence">
+      <strong>{{ action.start }}s {{ action.owner }}</strong>
+      <p>{{ action.text }}</p>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="muted">No explicit action items detected.</p>
+    {% endif %}
+  </section>
+  {% else %}
+    {% for item in score_items %}
+    <article class="item">
+      <h2>{{ item.label }}: {{ item.status }}</h2>
+      <p>Points: {{ item.earned }}/{{ item.weight }}</p>
+      {% for evidence in item.evidence %}
+      <div class="evidence">
+        <strong>{{ evidence.start }}s-{{ evidence.end }}s {{ evidence.speaker }}</strong>
+        <p>{{ evidence.text }}</p>
+      </div>
+      {% endfor %}
+    </article>
+    {% endfor %}
+
+    <section class="item">
+      <h2>Customer Pain Points</h2>
+      {% if customer_pain_points %}
+      <ul class="pain-list">
+        {% for point in customer_pain_points %}
+        <li>{{ point }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No explicit customer pain points were detected for the selected customer speaker.</p>
+      {% endif %}
+    </section>
+
+    <h2>Coaching Notes</h2>
+    {% if report.coaching_notes %}
+    <ul>
+      {% for note in report.coaching_notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No coaching gaps detected by the current rubric. Review the evidence manually before sharing final feedback.</p>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

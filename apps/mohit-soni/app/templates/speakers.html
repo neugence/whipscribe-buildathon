@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <p class="eyebrow">Human checkpoint</p>
+  <h1>Confirm Speakers</h1>
+  {% if is_demo %}
+  <p class="warning">Demo transcript: WhipScribe API was not called for this sample.</p>
+  {% endif %}
+  <form action="/jobs/{{ job_id }}/speakers" method="post">
+    <label for="agent">Support agent</label>
+    <select id="agent" name="agent" required>
+      {% for speaker in speakers %}
+      <option value="{{ speaker }}">{{ speaker }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="customer">Customer</label>
+    <select id="customer" name="customer">
+      <option value="Unknown">Unknown</option>
+      {% for speaker in speakers %}
+      <option value="{{ speaker }}">{{ speaker }}</option>
+      {% endfor %}
+    </select>
+
+    <p><button type="submit">Generate QA Report</button></p>
+  </form>
+</section>
+{% endblock %}

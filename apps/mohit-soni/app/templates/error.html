@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <p class="eyebrow">Setup or API issue</p>
+  <h1>Something Needs Attention</h1>
+  <p>{{ message }}</p>
+  {% if action_url %}
+  <p><a class="button" href="{{ action_url }}">{{ action_label or "Open WhipScribe" }}</a></p>
+  {% endif %}
+  <p><a class="button" href="/">Back to Upload</a></p>
+</section>
+{% endblock %}

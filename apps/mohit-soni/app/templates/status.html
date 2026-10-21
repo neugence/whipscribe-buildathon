@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <p class="eyebrow">WhipScribe job</p>
+  <h1>Transcribing Call</h1>
+  <p>Job <code>{{ job_id }}</code> is <span class="status">{{ status.status }}</span>.</p>
+  <p class="metric">{{ progress_percent }}%</p>
+  {% if account and account.retention_days %}
+  <p class="muted">Workspace retention: {{ account.retention_days }} days. Export the QA report before source media expires.</p>
+  {% endif %}
+  <p class="muted">Refresh every few seconds until the transcript is ready.</p>
+  <p><a class="button" href="/jobs/{{ job_id }}">Refresh Status</a></p>
+</section>
+{% endblock %}
