@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Still processing — Challenge 01 next pass</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reader.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+<symbol id="i-export" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M3 15a4 4 0 0 0 4 4h10a5 5 0 1 0-1-9.9A7 7 0 0 0 3 12"/><path d="M12 12v4M10 14l2 2 2-2" /></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+</svg>
+<a class="sr-only skip" href="#transcript">Skip to transcript</a>
+<div class="app">
+<header class="top">
+  <a class="icon-btn" href="../index.html" aria-label="Back to library"><svg aria-hidden="true"><use href="#i-back"/></svg></a>
+  <div class="title"><h1>Sales call — Acme renewal</h1><p>Uploaded just now · 1h 12m</p></div>
+  <button class="icon-btn" type="button" aria-label="Copy or download" data-open="export"><svg aria-hidden="true"><use href="#i-export"/></svg></button><button class="icon-btn" type="button" aria-label="More actions" data-open="more"><svg aria-hidden="true"><use href="#i-more"/></svg></button>
+</header>
+<nav class="tabs" aria-label="Recording">
+  <div class="tablist" role="tablist">
+    <button class="tab" role="tab" id="tab-t" aria-controls="transcript" aria-selected="true">Transcript</button>
+    <button class="tab" role="tab" id="tab-s" aria-controls="p-summary" aria-selected="false" tabindex="-1" aria-disabled="true">Summary</button>
+    <button class="tab" role="tab" id="tab-c" aria-controls="p-chat" aria-selected="false" tabindex="-1" aria-disabled="true">AI Chat</button>
+  </div>
+  
+</nav>
+
+<main id="main">
+<div class="transcript" id="transcript" role="tabpanel" aria-labelledby="tab-t" tabindex="-1" style="padding:0">
+<section class="proc" aria-labelledby="h-proc">
+  <h2 id="h-proc">Still transcribing — about 2 minutes left</h2>
+  <div class="bar" role="progressbar" aria-label="Transcription progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62"><i></i></div>
+  <ol class="steps">
+    <li><span class="ok" aria-hidden="true">✓</span><span>Uploaded (84 MB)</span></li>
+    <li><span class="ok" aria-hidden="true">✓</span><span>Found 3 speakers</span></li>
+    <li><span class="wait" aria-hidden="true">◌</span><span>Writing the transcript — 62%</span></li>
+    <li><span class="wait" aria-hidden="true">○</span><span>Summary and AI Chat come right after</span></li>
+  </ol>
+  <p style="margin:12px 0 0;font-size:14px;color:var(--muted)">The upload is finished, so you can close this page or lock your phone. We'll email you when it's ready.</p>
+</section>
+<div class="skeleton" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+</div>
+<section id="p-summary" role="tabpanel" aria-labelledby="tab-s" hidden class="state"><h2>Summary</h2><p>(Not part of this pass: the Summary tab is unchanged.)</p></section>
+<section id="p-chat" role="tabpanel" aria-labelledby="tab-c" hidden class="state"><h2>AI Chat</h2><p>(Not part of this pass: AI Chat is unchanged.)</p></section>
+</main>
+<div class="scrim" hidden></div>
+<div class="sheet" id="export" role="dialog" aria-modal="true" aria-labelledby="h-export" hidden>
+  <div class="sheet-head"><h2 id="h-export">Copy or download</h2><button class="icon-btn" type="button" aria-label="Close" data-close><svg aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="sheet-body">
+    <p class="sheet-sub">Sales call — Acme renewal</p>
+    <button class="row-btn" type="button" data-toast="Transcript copied">Copy the transcript <small>text</small></button>
+    <label class="check"><input type="checkbox"> Include timestamps and speaker names</label>
+    <p class="group-label">Download</p>
+    <button class="row-btn" type="button" data-toast="Downloading .txt">Text <small>.txt</small></button>
+    <button class="row-btn" type="button" data-toast="Downloading .docx">Word <small>.docx</small></button>
+    <button class="row-btn" type="button" data-toast="Downloading .srt">Subtitles <small>.srt</small></button>
+    <button class="row-btn" type="button" data-toast="Downloading .vtt">Web subtitles <small>.vtt</small></button>
+    <details><summary>More formats</summary>
+      <button class="row-btn" type="button" data-toast="Choose a language first">Translated subtitles <small>.srt</small></button>
+      <button class="row-btn" type="button" data-toast="Saved to Google Drive">Save to Google Drive <small>.txt + .srt</small></button>
+      <button class="row-btn" type="button" data-toast="Downloading summary">Summary <small>.txt / .md</small></button>
+    </details>
+  </div>
+</div>
+<div class="sheet" id="more" role="dialog" aria-modal="true" aria-labelledby="h-more" hidden>
+  <div class="sheet-head"><h2 id="h-more">This recording</h2><button class="icon-btn" type="button" aria-label="Close" data-close><svg aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="sheet-body">
+    <p class="group-label">View</p>
+    <div class="view-row">
+      <button class="chip-toggle" type="button" aria-pressed="true">Timestamps</button>
+      <button class="chip-toggle" type="button" aria-pressed="false">Larger text</button>
+    </div>
+    <button class="row-btn" type="button" data-toast="Rename opens here">Rename</button>
+    <button class="row-btn" type="button" data-toast="File details open here">File details <small>1m 44s · English · 26 Sep</small></button>
+    <button class="row-btn" type="button" data-toast="Quiz opens here">Quiz me on this recording</button>
+    <div class="gap"></div>
+    <button class="row-btn danger" type="button" data-toast="Asks before deleting; recoverable for 30 days">Delete recording…</button>
+  </div>
+</div>
+<div class="sheet" id="signup" role="dialog" aria-modal="true" aria-labelledby="h-signup" hidden>
+  <div class="sheet-head"><h2 id="h-signup">Keep reading, free</h2><button class="icon-btn" type="button" aria-label="Close" data-close><svg aria-hidden="true"><use href="#i-close"/></svg></button></div>
+  <div class="sheet-body">
+    <p class="sheet-sub">You'll land back on this line. Your first transcript is free, no card.</p>
+    <button class="btn btn-quiet" type="button" style="width:100%" data-toast="Google sign-in opens here">Continue with Google</button>
+    <p class="group-label">or with email</p>
+    <label class="sr-only" for="em">Email</label>
+    <input id="em" name="email" type="email" autocomplete="email" spellcheck="false" placeholder="you@example.com" style="width:100%;min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:16px">
+    <div class="gap"></div>
+    <button class="btn btn-lime" type="button" style="width:100%" data-toast="We'd email a sign-in link">Email me a sign-in link</button>
+  </div>
+</div>
+</div>
+<script src="../reader.js"></script>
+</body>
+</html>
