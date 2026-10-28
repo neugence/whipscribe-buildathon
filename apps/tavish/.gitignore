@@ -1,0 +1,6 @@
+backend/uploads/
+backend/*.db
+backend/.pytest_cache/
+frontend/dist/
+output/
+src/__pycache__/
