@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WhipScribe Home, option C</title>
+<style>
+  :root {
+    --ink: #14211a; --ink-2: #4b5a51; --ink-3: #66736b; --line: #e2e8e3;
+    --page: #f3f6f2; --card: #fff; --soft: #f7faf4;
+    --brand: #2f5d1e; --brand-deep: #1d3a13; --lime: #c6f24e; --lime-soft: #eef8d6;
+    --amber-soft: #fff3d6; --amber: #8a5a00; --blue: #1f5fa8; --blue-soft: #e7f0fb;
+    --surface: #fff; --topbar: rgba(255,255,255,.94); --seg: #e7ece4;
+    --drop-bg: #f8fcf1; --drop-line: #b9d39e; --hover-line: #c4d9b0; --dash: #c6d1c4;
+    --btn: var(--brand); --btn-hover: var(--brand-deep); --on-lime: #1d3a13; --amb-bar: #d39b1a;
+    --rail-bg: var(--brand-deep); --rail-ink: #b5cba8; --stage: #d9ded6;
+    --pad: clamp(16px, 2.6vw, 36px);
+    --rail: 84px;
+    color-scheme: light;
+  }
+  /* dark: follows the system unless the person picked light or dark */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e7eee8; --ink-2: #b4c1b7; --ink-3: #8f9c93; --line: #2a352e;
+      --page: #0e1410; --card: #161e19; --soft: #1b241e; --surface: #1b241e; --topbar: rgba(22,30,25,.92); --seg: #0e1410;
+      --brand: #a8d65a; --lime-soft: #22331a; --amber-soft: #3a2c0c; --amber: #f2c25a; --blue: #86b8f2; --blue-soft: #14243a;
+      --drop-bg: #152014; --drop-line: #3e5a2d; --hover-line: #46613a; --dash: #3a463e;
+      --btn: #3f7a25; --btn-hover: #4b8c2e; --amb-bar: #e0a92a; --rail-bg: #0a100c; --rail-ink: #9fb196; --stage: #050806;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e7eee8; --ink-2: #b4c1b7; --ink-3: #8f9c93; --line: #2a352e;
+    --page: #0e1410; --card: #161e19; --soft: #1b241e; --surface: #1b241e; --topbar: rgba(22,30,25,.92); --seg: #0e1410;
+    --brand: #a8d65a; --lime-soft: #22331a; --amber-soft: #3a2c0c; --amber: #f2c25a; --blue: #86b8f2; --blue-soft: #14243a;
+    --drop-bg: #152014; --drop-line: #3e5a2d; --hover-line: #46613a; --dash: #3a463e;
+    --btn: #3f7a25; --btn-hover: #4b8c2e; --amb-bar: #e0a92a; --rail-bg: #0a100c; --rail-ink: #9fb196; --stage: #050806;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { min-height: 100%; }
+  body { font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif; color: var(--ink); background: var(--page); }
+  svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 3px solid #7fb53a; outline-offset: 2px; border-radius: 8px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* ---------- app shell ---------- */
+  .app { display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); min-height: 100vh; }
+  .rail { position: sticky; top: 0; height: 100vh; background: var(--rail-bg); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 0 14px; z-index: 4; }
+  .logo { width: 34px; height: 34px; border-radius: 9px; background: var(--lime); display: grid; place-items: center; font-weight: 800; color: var(--on-lime); margin-bottom: 14px; flex: none; }
+  .rail a { width: 68px; padding: 8px 0 6px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--rail-ink); font-size: 11.5px; font-weight: 600; }
+  .rail a:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .rail a[aria-current] { background: rgba(198,242,78,.16); color: var(--lime); }
+  .rail svg { width: 22px; height: 22px; }
+  .rail .sp { flex: 1; }
+
+  main { min-width: 0; display: flex; flex-direction: column; }
+  .topbar { position: sticky; top: 0; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px var(--pad); background: var(--topbar); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  .topbar h1 { font-size: 22px; }
+  .find { flex: 1 1 280px; min-width: 0; max-width: 640px; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 6px 0 14px; border-radius: 12px; background: var(--page); border: 1px solid transparent; color: var(--ink-3); }
+  .find:focus-within { border-color: var(--brand); background: var(--surface); }
+  .find input { flex: 1; min-width: 0; width: 0; border: 0; background: none; font: inherit; color: var(--ink); outline: none; }
+  .find input::placeholder { color: var(--ink-3); }
+  .find kbd { font: 12px ui-monospace, Menlo, monospace; border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 1px 6px; }
+  .modes { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 2px; }
+  .modes button { border: 0; background: none; font-size: 13px; padding: 4px 10px; border-radius: 7px; color: var(--ink-2); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+  .modes button[aria-pressed="true"] { background: var(--btn); color: #fff; }
+  .modes svg { width: 14px; height: 14px; }
+  .tr { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .trial { font-size: 13.5px; color: var(--ink-3); white-space: nowrap; }
+  .trial b { color: var(--ink); }
+  .trial a { color: var(--brand); font-weight: 700; margin-left: 8px; }
+  .trial a:hover { text-decoration: underline; }
+  .meter { height: 6px; border-radius: 3px; background: var(--page); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--brand); border-radius: 3px; }
+  .iconbtn { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; color: var(--ink-2); border: 0; background: none; }
+  .iconbtn:hover { background: var(--page); }
+  .iconbtn svg { width: 22px; height: 22px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--lime-soft); display: grid; place-items: center; color: var(--brand); font-weight: 700; flex: none; border: 0; }
+
+  .btn { border: 0; border-radius: 10px; min-height: 36px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .btn.lime { background: var(--lime); color: var(--on-lime); }
+  .btn.lime:hover { background: #b8e63a; }
+  .btn.dark { background: var(--btn); color: #fff; }
+  .btn.dark:hover { background: var(--btn-hover); }
+  .btn.ghost { background: var(--surface); border: 1px solid var(--line); font-weight: 600; }
+  .btn.ghost:hover { border-color: var(--hover-line); background: var(--soft); }
+  .btn.big { min-height: 46px; padding: 0 20px; font-size: 15px; border-radius: 12px; }
+  .btn.sm { min-height: 30px; font-size: 13px; padding: 0 12px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #d93025; box-shadow: 0 0 0 4px rgba(217,48,37,.18); }
+
+  .body { padding: 24px var(--pad) 48px; width: 100%; }
+
+  /* add strip */
+  .drop { border: 2px dashed var(--drop-line); background: var(--drop-bg); border-radius: 18px; padding: 16px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 16px; }
+  .drop .ic { width: 46px; height: 46px; border-radius: 13px; background: var(--lime); display: grid; place-items: center; color: var(--on-lime); flex: none; }
+  .drop .ic svg { width: 22px; height: 22px; }
+  .drop .txt { flex: 1 1 240px; }
+  .drop h2 { font-size: 16px; } .drop p { color: var(--ink-2); font-size: 13.5px; }
+  .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  body.dragging .drop { border-color: var(--brand); background: var(--lime-soft); }
+
+  /* add row: one strong button, the rest quiet */
+  .add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px; margin: -6px; border-radius: 16px; transition: background .15s; }
+  .add .or { color: var(--ink-3); font-size: 13.5px; margin-left: 8px; }
+  body.dragging .add { background: var(--lime-soft); outline: 2px dashed var(--brand); }
+  .btn.quiet { background: none; font-weight: 600; color: var(--ink-2); }
+  .btn.quiet:hover { background: var(--soft); color: var(--ink); }
+  .btn.quiet svg { color: var(--ink-3); }
+
+  /* section head */
+  .head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 26px 0 12px; }
+  .head h2 { font-size: 17px; }
+  .muted { color: var(--ink-3); font-size: 14px; }
+  .seg { display: flex; gap: 3px; padding: 3px; background: var(--seg); border-radius: 10px; }
+  .seg button { border: 0; background: none; padding: 4px 12px; border-radius: 8px; font-weight: 600; font-size: 13.5px; color: var(--ink-2); }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .head .r { margin-left: auto; }
+
+  /* cards: as many columns as fit, never narrower than 340px */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 14px; min-height: 132px; position: relative; transition: border-color .15s, box-shadow .15s; }
+  .card:hover, .card:focus-within { border-color: var(--hover-line); box-shadow: 0 8px 24px -14px rgba(29,58,19,.4); }
+  .card .top { display: flex; align-items: flex-start; gap: 8px; }
+  .st { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+  .st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .st.ok { color: var(--brand); } .st.pv { color: var(--amber); } .st.up { color: var(--blue); }
+  .links { display: flex; gap: 4px; margin: auto 0 -6px -8px; position: relative; z-index: 1; }
+  .links button { border: 0; background: none; font-size: 13.5px; font-weight: 600; color: var(--ink-2); padding: 5px 8px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; }
+  .links button:hover { background: var(--soft); color: var(--ink); }
+  .links button.go { color: var(--brand); }
+  .links svg { width: 14px; height: 14px; }
+  .card .meter { height: 4px; }
+  .thumb { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: var(--lime-soft); color: var(--brand); flex: none; }
+  .card .t { flex: 1; min-width: 0; }
+  .card .t a { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 700; overflow-wrap: anywhere; }
+  .card .t a::after { content: ""; position: absolute; inset: 0; border-radius: 16px; }   /* whole card opens it */
+  .card .t small { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; color: var(--ink-3); font-size: 13px; }
+  .card .menu { position: relative; z-index: 1; margin: -4px -6px 0 0; }
+  .card .menu { color: var(--ink-3); width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; border: 0; background: none; }
+  .card .menu:hover { background: var(--page); }
+  .has { display: flex; gap: 6px; flex-wrap: wrap; }
+  .has span { font-size: 12.5px; color: var(--ink-2); background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 5px; }
+  .has svg { width: 13px; height: 13px; color: var(--brand); }
+  .note { font-size: 13px; color: var(--amber); font-weight: 600; display: flex; justify-content: space-between; }
+  .meter i.amb { background: var(--amb-bar); }
+  .foot { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; }
+  .pill { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .ready { background: var(--lime-soft); color: var(--brand); }
+  .preview { background: var(--amber-soft); color: var(--amber); }
+  .working { background: var(--blue-soft); color: var(--blue); }
+  .card.up .thumb { background: var(--blue-soft); color: var(--blue); }
+  .card.up .meter i { background: var(--blue); }
+  .steps { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-3); }
+  .steps b { color: var(--blue); }
+
+  .folders { display: flex; flex-wrap: wrap; gap: 12px; }
+  .folder { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px dashed var(--dash); border-radius: 14px; color: var(--ink-2); font-size: 14px; font-weight: 600; background: none; }
+  .folder:hover { border-color: var(--brand); color: var(--brand); }
+
+  /* new account */
+  .welcome { max-width: 780px; margin: clamp(16px, 5vh, 56px) auto 0; text-align: center; }
+  .welcome h2 { font-size: clamp(22px, 2.4vw, 30px); letter-spacing: -.01em; }
+  .welcome > p { color: var(--ink-2); margin: 8px 0 24px; font-size: 16px; }
+  .welcome .after { margin-top: 18px; color: var(--ink-3); font-size: 14px; }
+  .bigdrop { border: 2px dashed var(--drop-line); background: var(--drop-bg); border-radius: 22px; padding: clamp(24px, 4vw, 40px) clamp(16px, 3vw, 30px) 30px; }
+  .bigdrop .ic { width: 64px; height: 64px; border-radius: 18px; background: var(--lime); display: grid; place-items: center; color: var(--on-lime); margin: 0 auto 14px; }
+  .bigdrop .ic svg { width: 30px; height: 30px; }
+  .bigdrop h3 { font-size: 18px; }
+  .bigdrop p { color: var(--ink-2); font-size: 14px; margin-top: 4px; }
+  .bigdrop .acts { justify-content: center; margin-top: 22px; }
+  .what { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 22px; text-align: left; }
+  .what div { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; font-size: 13.5px; color: var(--ink-2); }
+  .what b { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 14px; margin-bottom: 4px; }
+  .what svg { color: var(--brand); }
+
+  /* ---------- sizes ---------- */
+  /* smaller laptops: shorter trial chip */
+  @media (max-width: 1180px) {
+    .wide-only { display: none; }
+  }
+  /* tablets: search gets its own row, add buttons go under the text */
+  @media (max-width: 900px) {
+    .find { order: 3; flex-basis: 100%; max-width: none; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); }
+  }
+  /* phones: the rail becomes a bottom bar */
+  @media (max-width: 640px) {
+    :root { --rail: 0px; }
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .rail { position: fixed; top: auto; bottom: 0; left: 0; right: 0; height: auto; flex-direction: row; justify-content: space-around; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
+    .rail .logo, .rail .sp, .rail .wide { display: none; }
+    .rail a { width: auto; flex: 1; }
+    .body { padding-bottom: 96px; }
+    .topbar h1 { font-size: 20px; }
+    .tr { gap: 4px; }
+    .trial a { margin-left: 4px; }
+    .add { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .add .btn.lime { grid-column: 1 / -1; }
+    .add .btn.quiet { flex-direction: column; gap: 4px; min-height: 58px; padding: 0 4px; font-size: 13px; }
+    .add .or { display: none; }
+    .head .r { margin-left: 0; }
+    .bigdrop .acts { display: grid; grid-template-columns: 1fr 1fr; }
+    .bigdrop .acts .btn { padding: 0 10px; }
+  }
+
+  /* ---------- review controls (not part of the design) ---------- */
+  .review { position: fixed; right: 16px; bottom: 16px; z-index: 10; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px -10px rgba(0,0,0,.3); font-size: 13px; max-width: calc(100vw - 32px); }
+  .review summary { cursor: pointer; padding: 10px 14px; font-weight: 700; list-style: none; }
+  .review summary::after { content: " ▾"; color: var(--ink-3); }
+  .review[open] summary::after { content: " ▴"; }
+  .review .in { padding: 0 14px 12px; display: grid; gap: 8px; }
+  .review .lbl { font-size: 11px; font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; }
+  .pick { display: inline-flex; flex-wrap: wrap; gap: 3px; background: var(--page); border-radius: 10px; padding: 3px; }
+  .pick button { border: 0; background: none; padding: 4px 10px; border-radius: 7px; font-weight: 600; color: var(--ink-2); }
+  .pick button[aria-pressed="true"] { background: var(--btn); color: #fff; }
+  @media (max-width: 640px) { .review { bottom: 84px; } }
+  .current { display: none; background: #fff; min-height: 100vh; }
+  .current img { width: 100%; display: block; }
+  body[data-show="cur"] .current { display: block; }
+  body[data-show="cur"] .app { display: none; }
+  .embed .review { display: none; }
+  .frame { display: none; position: fixed; inset: 0; background: var(--stage); place-items: center; overflow: hidden; }
+  .frame .device { transform-origin: center; border-radius: 28px; overflow: hidden; box-shadow: 0 20px 60px -20px rgba(0,0,0,.5); border: 8px solid #111; background: #111; flex: none; }
+  .frame iframe { display: block; border: 0; }
+  body:not([data-size="win"]) .frame { display: grid; }
+  body:not([data-size="win"]) .app, body:not([data-size="win"]) .current { display: none; }
+  .theme-ic .moon, :root.is-dark .theme-ic .sun { display: block; }
+  .theme-ic .sun, :root.is-dark .theme-ic .moon { display: none; }
+</style>
+</head>
+<body data-show="new" data-state="has" data-size="win">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="home" viewBox="0 0 24 24"><path d="m3 11 9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="activity" viewBox="0 0 24 24"><path d="M3 12h4l3 7 4-14 3 7h4"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21h4"/></symbol>
+  <symbol id="trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="wave" viewBox="0 0 24 24"><path d="M12 3v18M8 7v10M16 7v10M4 10v4M20 10v4"/></symbol>
+  <symbol id="help" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></symbol>
+  <symbol id="up" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+  <symbol id="link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="sort" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="spark" viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9.5l-4.2 1.9L12 16l-1.8-4.6L6 9.5l4.2-1.9z"/></symbol>
+  <symbol id="more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></symbol>
+  <symbol id="text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="drive" viewBox="0 0 24 24"><path d="M8 3h8l6 10-4 7H6l-4-7z"/><path d="M8 3l6 10h8M2 13h12l-4 7"/></symbol>
+</svg>
+
+<div class="current"><img src="current/home-laptop.png" alt="Current laptop Home"></div>
+
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <div class="logo" aria-hidden="true">W</div>
+    <a href="#" aria-current="page"><svg><use href="#home"/></svg>Home</a>
+    <a href="#"><svg><use href="#folder"/></svg>Folders</a>
+    <a href="#"><svg><use href="#activity"/></svg>Activity</a>
+    <a href="#"><svg><use href="#trash"/></svg>Trash</a>
+    <i class="sp"></i>
+    <a href="#" class="wide"><svg><use href="#wave"/></svg>Tools</a>
+    <a href="#"><svg><use href="#help"/></svg>Help</a>
+  </nav>
+
+  <main>
+    <header class="topbar">
+      <h1>Home</h1>
+      <label class="find">
+        <svg aria-hidden="true"><use href="#search"/></svg>
+        <span class="sr">Search or ask across your recordings</span>
+        <input id="q" type="search" placeholder="Search or ask a question">
+      </label>
+      <div class="tr">
+        <div class="trial"><span class="wide-only">Free trial ·</span> <b data-trial></b> left <a href="#">Get more</a></div>
+        <button class="iconbtn theme-ic" id="themeBtn" aria-label="Switch to dark mode"><svg class="moon"><use href="#moon"/></svg><svg class="sun"><use href="#sun"/></svg></button>
+        <button class="iconbtn" aria-label="Notifications"><svg><use href="#bell"/></svg></button>
+        <button class="avatar" aria-label="Account">R</button>
+      </div>
+    </header>
+
+    <div class="body" id="body"></div>
+  </main>
+</div>
+
+<div class="frame"><div class="device"><iframe title="Design preview at a set screen size"></iframe></div></div>
+
+<details class="review" open>
+  <summary>Review controls</summary>
+  <div class="in">
+    <span class="lbl">Design</span>
+    <div class="pick" data-group="show"><button type="button" data-v="cur" aria-pressed="false">Current</button><button type="button" data-v="new" aria-pressed="true">New</button></div>
+    <span class="lbl">State</span>
+    <div class="pick" data-group="state"><button type="button" data-v="has" aria-pressed="true">3 recordings</button><button type="button" data-v="new" aria-pressed="false">New account</button><button type="button" data-v="up" aria-pressed="false">Uploading</button></div>
+    <span class="lbl">Theme</span>
+    <div class="pick" data-group="theme"><button type="button" data-v="system" aria-pressed="true">System</button><button type="button" data-v="light" aria-pressed="false">Light</button><button type="button" data-v="dark" aria-pressed="false">Dark</button></div>
+    <span class="lbl">Screen</span>
+    <div class="pick" data-group="size"><button type="button" data-v="win" aria-pressed="true">This window</button><button type="button" data-v="laptop" aria-pressed="false">Laptop</button><button type="button" data-v="tablet" aria-pressed="false">Tablet</button><button type="button" data-v="phone" aria-pressed="false">Phone</button></div>
+  </div>
+</details>
+
+<script>
+  const I = id => `<svg aria-hidden="true"><use href="#${id}"/></svg>`;
+  const addButtons = (record = 'Record', other = 'quiet') => `
+    <button class="btn lime big"><span class="dot"></span>${record}</button>
+    <button class="btn ${other} big">${I('up')}Upload</button>
+    <button class="btn ${other} big">${I('link')}Paste link</button>
+    <button class="btn ${other} big">${I('drive')}Google Drive</button>`;
+
+  // The user's own three recordings, as named in their account.
+  const recordings = [
+    { name: 'Recording 28 Oct, 17:24', len: '1:03', when: 'Today, 5:24 PM', preview: { done: '6 s', pct: 10 } },
+    { name: 'Sheila Gets Her Pony', len: '0:24', when: 'Today, 5:19 PM' },
+    { name: 'Happiness and Understanding', len: '0:25', when: 'Today, 5:12 PM' },
+  ];
+
+  const cardTop = (name, meta, menu = true) => `
+      <div class="top"><div class="t"><a href="#">${name}</a><small>${meta}</small></div>
+        ${menu ? `<button class="menu" aria-label="More for ${name}">${I('more')}</button>` : ''}</div>`;
+  const bar = (pct, label, cls = '') => `<div class="meter" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="${label}"><i class="${cls}" style="width:${pct}%"></i></div>`;
+
+  const card = r => r.preview ? `
+    <article class="card">
+      ${cardTop(r.name, `<span class="st pv">Preview</span>${r.preview.done} of ${r.len} transcribed`)}
+      ${bar(r.preview.pct, 'Transcribed', 'amb')}
+      <div class="links"><button class="go">Finish transcript →</button></div>
+    </article>` : `
+    <article class="card">
+      ${cardTop(r.name, `<span class="st ok">Ready</span>${r.len} · ${r.when}`)}
+      <div class="links"><button>Summary</button><button>${I('spark')}Ask</button></div>
+    </article>`;
+
+  const uploading = `
+    <article class="card up">
+      ${cardTop('Team call.m4a', '<span class="st up">Uploading 64%</span>9.1 of 14.2 MB', false)}
+      ${bar(64, 'Upload')}
+      <div class="links"><button>Cancel</button></div>
+    </article>`;
+
+  const library = (cards, count) => `
+    <section class="add" aria-label="Add a recording">${addButtons()}<span class="or">or drop files anywhere</span></section>
+    <div class="head">
+      <h2>Your recordings</h2><span class="muted">${count}</span>
+      <div class="seg" role="group" aria-label="Show"><button aria-pressed="true">All</button><button aria-pressed="false">Ready</button><button aria-pressed="false">Previews</button></div>
+      <div class="r"><button class="btn quiet">Newest first ▾</button></div>
+    </div>
+    <div class="grid">${cards}</div>`;
+
+  const states = {
+    has: { trial: '0:34', html: library(recordings.map(card).join(''), 3) },
+    up:  { trial: '0:34', html: library(uploading + recordings.map(card).join(''), 4) },
+    new: { trial: '1:00', html: `
+      <div class="welcome">
+        <h2>Turn your first recording into text</h2>
+        <p>Your free trial has <b>1:00</b> of transcription. Nothing to set up.</p>
+        <section class="bigdrop" aria-label="Add your first recording">
+          <div class="ic">${I('up')}</div>
+          <h3>Drop audio or video here</h3>
+          <p>MP3, M4A, WAV, MP4 and more</p>
+          <div class="acts">${addButtons('Record now', 'ghost')}</div>
+        </section>
+        <p class="after">You get who said what and when, a summary, and answers to your questions.</p>
+      </div>` },
+  };
+
+  function render() {
+    const s = states[document.body.dataset.state];
+    document.getElementById('body').innerHTML = s.html;
+    document.querySelector('[data-trial]').textContent = s.trial;
+  }
+
+  // toggle groups inside the page
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.seg button, .pick button'); if (!b) return;
+    b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    const g = b.parentElement.dataset.group;
+    if (!g) return;
+    if (g === 'size' && b.dataset.v !== 'win' && innerWidth < 900) document.querySelector('.review').open = false;
+    if (g === 'theme') setTheme(b.dataset.v);
+    else { document.body.dataset[g] = b.dataset.v; if (g === 'state') render(); }
+    frame();
+  });
+
+  // theme: system, light or dark
+  function setTheme(t) {
+    if (t === 'system') delete root.dataset.theme; else root.dataset.theme = t;
+    const dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+    root.classList.toggle('is-dark', dark);
+    document.getElementById('themeBtn').setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    document.querySelectorAll('[data-group=theme] button').forEach(x => x.setAttribute('aria-pressed', x.dataset.v === t));
+  }
+  const root = document.documentElement;
+  document.getElementById('themeBtn').addEventListener('click', () => { setTheme(root.classList.contains('is-dark') ? 'light' : 'dark'); frame(); });
+  setTheme('system');
+
+  // fixed screen sizes: the same page in a frame, scaled to fit
+  const sizes = { laptop: [1440, 900], tablet: [768, 1024], phone: [390, 844] };
+  function frame() {
+    const sz = sizes[document.body.dataset.size]; if (!sz) return;
+    const f = document.querySelector('.frame iframe'), d = document.querySelector('.frame .device');
+    const q = new URLSearchParams({ embed: 1, state: document.body.dataset.state, show: document.body.dataset.show, theme: root.dataset.theme || 'system' });
+    const src = location.pathname + '?' + q;
+    if (f.getAttribute('src') !== src) f.setAttribute('src', src);
+    f.width = sz[0]; f.height = sz[1];
+    const s = Math.min(1, (innerWidth - 48) / (sz[0] + 16), (innerHeight - 48) / (sz[1] + 16));
+    d.style.transform = `scale(${s})`;
+  }
+  addEventListener('resize', frame);
+
+  // inside the frame: take the settings from the address
+  const params = new URLSearchParams(location.search);
+  if (params.has('embed')) {
+    document.body.classList.add('embed');
+    for (const k of ['state', 'show']) if (params.get(k)) document.body.dataset[k] = params.get(k);
+    setTheme(params.get('theme') || 'system');
+  }
+  // "/" jumps to search
+  addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); document.getElementById('q').focus(); }
+  });
+  // dragging a file over the page highlights the add strip
+  let drag = 0;
+  addEventListener('dragenter', () => { drag++; document.body.classList.add('dragging'); });
+  addEventListener('dragleave', () => { if (--drag <= 0) document.body.classList.remove('dragging'); });
+  addEventListener('drop', e => { e.preventDefault(); drag = 0; document.body.classList.remove('dragging'); });
+  addEventListener('dragover', e => e.preventDefault());
+
+  // shorter search hint on small screens
+  const narrow = matchMedia('(max-width: 640px)');
+  const hint = () => document.getElementById('q').placeholder = narrow.matches ? 'Search or ask' : 'Search or ask a question';
+  narrow.addEventListener('change', hint); hint();
+  render();
+</script>
+</body>
+</html>
