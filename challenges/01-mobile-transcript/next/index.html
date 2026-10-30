@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transcript reader, next pass</title>
+<meta name="description" content="A proposed next pass at the WhipScribe transcript reader on a phone, shown beside the current design.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* WhipScribe's own reader tokens, read off whipscribe.com so this proposal
+   sits inside the product's design system rather than beside it. */
+:root{
+  --wt-bg:#ffffff; --wt-side:#f5f7f1; --wt-text:#202a25; --wt-muted:#737c73;
+  --wt-line:#e4e8dd; --wt-green:#54801e; --wt-tint:#eef5df; --wt-button:#456b22;
+  --rose:#e11d48; --amber:#b45309;
+  --spk-a:#2f5d3a; --spk-b:#8a4b1f; --spk-c:#2b4f7a; --spk-d:#6b3b6e;
+  --page:#eceee8; --card:#ffffff;
+  --r:12px;
+  --font:'Inter',-apple-system,system-ui,'SF Pro',sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; font-family:var(--font); background:var(--page); color:var(--wt-text);
+  line-height:1.5; padding:0 0 64px;
+}
+
+/* ---------- the page around the prototype ---------- */
+.wrap{max-width:1040px; margin:0 auto; padding:0 16px}
+.page-head{padding:40px 0 24px; max-width:60ch}
+.page-head h1{font-size:28px; line-height:1.2; font-weight:700; margin:0 0 12px; letter-spacing:-.02em}
+.page-head p{margin:0 0 10px; color:#48514b; font-size:15px}
+.page-head a{color:var(--wt-button)}
+
+.states{
+  display:flex; gap:6px; flex-wrap:wrap; padding:4px; background:var(--card);
+  border:1px solid var(--wt-line); border-radius:var(--r); position:sticky; top:0; z-index:20;
+  margin-bottom:20px;
+}
+.states button{
+  font:inherit; font-size:13px; font-weight:500; border:0; background:transparent;
+  color:#48514b; padding:8px 11px; border-radius:8px; cursor:pointer; min-height:36px;
+}
+.states button:hover{background:var(--wt-side)}
+.states button[aria-selected="true"]{background:var(--wt-green); color:#fff}
+.states button:focus-visible{outline:2px solid var(--wt-button); outline-offset:2px}
+
+.compare{display:grid; grid-template-columns:1fr; gap:24px; align-items:start}
+@media (min-width:820px){ .compare{grid-template-columns:1fr 1fr; gap:32px} }
+.side{margin:0}
+.side figcaption{
+  font-size:13px; font-weight:600; color:#48514b; margin-bottom:8px;
+  display:flex; align-items:baseline; gap:8px;
+}
+.side figcaption span{font-weight:400; color:var(--wt-muted)}
+.shot{
+  width:320px; max-width:100%; border:1px solid var(--wt-line); border-radius:var(--r);
+  display:block; background:#fff;
+}
+.shot-none{
+  width:320px; max-width:100%; height:640px; border:1px dashed #c3c9bd; border-radius:var(--r);
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  padding:32px; color:var(--wt-muted); font-size:14px; background:#f3f5f0;
+}
+
+/* the phone frame holding the live prototype */
+.phone{
+  width:320px; height:640px; border:1px solid var(--wt-line); border-radius:var(--r);
+  overflow:hidden; background:var(--wt-bg); position:relative; box-shadow:0 1px 2px rgba(32,42,37,.06);
+}
+
+/* ---------- the reader ---------- */
+.ws{position:absolute; inset:0; display:flex; flex-direction:column; font-size:16px; background:var(--wt-bg)}
+
+.bar{
+  display:flex; align-items:center; gap:4px; height:48px; padding:0 4px; flex:0 0 auto;
+  border-bottom:1px solid var(--wt-line); background:var(--wt-bg);
+}
+.doc-title{
+  flex:1; min-width:0; font-size:15px; font-weight:600; margin:0; letter-spacing:-.01em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center;
+}
+.icon{
+  width:44px; height:44px; flex:0 0 44px; display:grid; place-items:center;
+  border:0; background:transparent; color:var(--wt-text); cursor:pointer; border-radius:8px;
+  font:inherit; padding:0;
+}
+.icon:hover{background:var(--wt-side)}
+.icon:focus-visible{outline:2px solid var(--wt-button); outline-offset:-2px}
+.icon svg{width:20px; height:20px; display:block}
+
+.tabs{
+  display:flex; align-items:center; gap:2px; height:40px; padding:0 4px 0 8px; flex:0 0 auto;
+  border-bottom:1px solid var(--wt-line); background:var(--wt-bg);
+}
+.tab{
+  font:inherit; font-size:14px; font-weight:500; border:0; background:transparent; cursor:pointer;
+  color:var(--wt-muted); padding:0 8px; height:40px; position:relative;
+}
+.tab.is-on{color:var(--wt-text); font-weight:600}
+.tab.is-on::after{content:""; position:absolute; left:8px; right:8px; bottom:0; height:2px; background:var(--wt-green); border-radius:2px}
+.tab:focus-visible{outline:2px solid var(--wt-button); outline-offset:-2px}
+.tabs .icon{margin-left:auto; width:40px; flex:0 0 40px; height:40px}
+
+.scroll{flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px 16px 16px}
+
+/* a turn: who and when on one line, then the words */
+.turn{padding:12px 0 0; margin:0}
+.turn-head{
+  display:flex; align-items:baseline; gap:8px; margin-bottom:2px;
+  font-size:13px; font-weight:600; letter-spacing:.005em;
+}
+.turn-who{color:var(--spk-a)}
+.turn[data-s="b"] .turn-who{color:var(--spk-b)}
+.turn[data-s="c"] .turn-who{color:var(--spk-c)}
+.turn[data-s="d"] .turn-who{color:var(--spk-d)}
+.turn-at{
+  margin-left:auto; font-weight:500; color:var(--wt-muted); font-variant-numeric:tabular-nums;
+  font-size:12px;
+}
+.turn-body{
+  margin:0; font-size:17px; line-height:1.62; color:var(--wt-text);
+  text-align:left; hyphens:none; overflow-wrap:break-word;
+}
+.turn-body s{text-decoration:none}
+.turn.is-playing .turn-body{background:var(--wt-tint); box-shadow:0 0 0 6px var(--wt-tint); border-radius:2px}
+.sent{cursor:pointer}
+.sent:hover{background:var(--wt-tint)}
+
+/* a run of turns from the same person drops the repeated name but keeps the time */
+.turn.is-cont .turn-who{visibility:hidden}
+.turn.is-cont{padding-top:10px}
+
+.solo .turn-who{display:none}
+.solo .turn-head{margin-bottom:0}
+.solo .turn-at{margin-left:0}
+
+/* the player: one row, and only when there is something to play */
+.player{
+  flex:0 0 auto; display:flex; align-items:center; gap:10px; height:52px; padding:0 12px;
+  border-top:1px solid var(--wt-line); background:var(--wt-bg);
+}
+.play{
+  width:36px; height:36px; flex:0 0 36px; border-radius:50%; border:0; cursor:pointer;
+  background:var(--wt-button); color:#fff; display:grid; place-items:center;
+}
+.play:focus-visible{outline:2px solid var(--wt-button); outline-offset:2px}
+.play svg{width:16px; height:16px}
+.scrub{
+  flex:1 1 auto; height:32px; display:flex; align-items:center; cursor:pointer; position:relative;
+}
+.scrub-track{width:100%; height:4px; border-radius:2px; background:var(--wt-line); position:relative}
+.scrub-fill{position:absolute; left:0; top:0; bottom:0; width:18%; background:var(--wt-green); border-radius:2px}
+.scrub-thumb{position:absolute; left:18%; top:50%; width:12px; height:12px; margin:-6px 0 0 -6px; border-radius:50%; background:var(--wt-green)}
+.clock{font-size:12px; color:var(--wt-muted); font-variant-numeric:tabular-nums; flex:0 0 auto}
+
+/* a quiet line where the player would be, when the audio will not load */
+.audio-note{
+  flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:10px 16px;
+  border-top:1px solid var(--wt-line); background:var(--wt-side);
+  font-size:13px; color:#48514b;
+}
+.audio-note svg{width:18px; height:18px; flex:0 0 18px; color:var(--wt-muted)}
+.audio-note button{
+  font:inherit; font-size:13px; font-weight:600; margin-left:auto; border:0; background:transparent;
+  color:var(--wt-button); cursor:pointer; padding:6px 4px; text-decoration:underline;
+}
+
+/* the preview boundary, in the flow, where the words actually stop */
+.boundary{
+  margin:20px 0 8px; padding:16px; border:1px solid var(--wt-line); border-radius:var(--r);
+  background:var(--wt-side);
+}
+.boundary p{margin:0 0 12px; font-size:14px; line-height:1.5; color:#3d463f}
+.boundary strong{font-weight:600}
+.boundary .btn{
+  display:block; width:100%; min-height:44px; border:0; border-radius:10px; cursor:pointer;
+  background:var(--wt-button); color:#fff; font:inherit; font-size:15px; font-weight:600;
+}
+.boundary .btn:focus-visible{outline:2px solid var(--wt-text); outline-offset:2px}
+.boundary .alt{
+  display:block; width:100%; margin-top:8px; min-height:40px; border:0; background:transparent;
+  color:var(--wt-button); font:inherit; font-size:14px; font-weight:500; cursor:pointer;
+}
+.faded{opacity:.28; pointer-events:none}
+
+/* processing: the screen that does not exist today */
+.proc{padding:16px 0}
+.proc-head{display:flex; align-items:baseline; gap:8px; margin-bottom:4px}
+.proc-head h3{margin:0; font-size:15px; font-weight:600}
+.proc-head span{margin-left:auto; font-size:13px; color:var(--wt-muted); font-variant-numeric:tabular-nums}
+.proc-sub{margin:0 0 14px; font-size:13px; color:var(--wt-muted)}
+.meter{height:4px; border-radius:2px; background:var(--wt-line); overflow:hidden; margin-bottom:20px}
+.meter i{display:block; height:100%; width:38%; background:var(--wt-green); border-radius:2px}
+.proc .turn-body{color:var(--wt-text)}
+.skel{height:13px; border-radius:3px; background:var(--wt-line); margin:9px 0}
+.proc-foot{
+  margin-top:18px; padding-top:14px; border-top:1px solid var(--wt-line);
+  font-size:13px; color:var(--wt-muted);
+}
+
+/* search as a mode, not a strip wedged under the tabs */
+.find-bar{display:flex; align-items:center; gap:4px; height:48px; padding:0 4px 0 8px; border-bottom:1px solid var(--wt-line)}
+.find-bar input{
+  flex:1; min-width:0; height:40px; border:0; background:transparent; font:inherit; font-size:16px;
+  color:var(--wt-text);
+}
+.find-bar input:focus{outline:none}
+.find-bar input::-webkit-search-cancel-button{-webkit-appearance:none; appearance:none}
+.find-count{font-size:13px; color:var(--wt-muted); flex:0 0 auto; font-variant-numeric:tabular-nums; padding:0 4px}
+.hit{padding:12px 0; border-bottom:1px solid var(--wt-line); cursor:pointer}
+.hit:last-child{border-bottom:0}
+.hit-head{display:flex; align-items:baseline; gap:8px; font-size:12px; font-weight:600; margin-bottom:3px; color:var(--spk-a)}
+.hit[data-s="b"] .hit-head{color:var(--spk-b)}
+.hit[data-s="c"] .hit-head{color:var(--spk-c)}
+.hit-at{margin-left:auto; color:var(--wt-muted); font-weight:500; font-variant-numeric:tabular-nums}
+.hit p{margin:0; font-size:15px; line-height:1.5; color:#3d463f}
+.hit mark{background:#fdf0a8; color:inherit; border-radius:2px; padding:0 1px}
+
+/* one sheet, three groups, in place of a flat list of nine */
+.scrim{position:absolute; inset:0; background:rgba(32,42,37,.32); z-index:8}
+.sheet{
+  position:absolute; left:0; right:0; bottom:0; z-index:9; background:var(--wt-bg);
+  border-radius:16px 16px 0 0; padding:8px 0 10px; max-height:88%; overflow-y:auto;
+  box-shadow:0 -8px 24px rgba(32,42,37,.14);
+}
+.grip{width:36px; height:4px; border-radius:2px; background:var(--wt-line); margin:6px auto 10px}
+.grp{padding:0 0 6px}
+.grp + .grp{border-top:1px solid var(--wt-line); padding-top:6px}
+.grp-name{font-size:12px; font-weight:600; color:var(--wt-muted); padding:6px 16px 4px; margin:0}
+.row{
+  display:flex; align-items:center; gap:12px; width:100%; min-height:48px; padding:0 16px;
+  border:0; background:transparent; font:inherit; font-size:15px; color:var(--wt-text);
+  cursor:pointer; text-align:left;
+}
+.row:hover{background:var(--wt-side)}
+.row:focus-visible{outline:2px solid var(--wt-button); outline-offset:-2px}
+.row svg{width:18px; height:18px; flex:0 0 18px; color:var(--wt-muted)}
+.row .val{margin-left:auto; font-size:13px; color:var(--wt-muted)}
+.row.danger{color:var(--rose)}
+.row.danger svg{color:var(--rose)}
+.seg{display:flex; gap:4px; margin-left:auto; background:var(--wt-side); padding:3px; border-radius:8px}
+.seg button{
+  font:inherit; font-size:13px; font-weight:500; border:0; background:transparent; color:#48514b;
+  padding:5px 9px; border-radius:6px; cursor:pointer; min-height:30px;
+}
+.seg button[aria-pressed="true"]{background:var(--wt-bg); color:var(--wt-text); font-weight:600; box-shadow:0 1px 2px rgba(32,42,37,.1)}
+
+/* whole-screen states */
+.blank{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding:32px 24px; gap:8px;
+}
+.blank h3{margin:0; font-size:17px; font-weight:600}
+.blank p{margin:0 0 6px; font-size:14px; color:var(--wt-muted); line-height:1.5; max-width:34ch}
+.blank .btn{
+  min-width:180px; min-height:44px; border:0; border-radius:10px; background:var(--wt-button);
+  color:#fff; font:inherit; font-size:15px; font-weight:600; cursor:pointer; margin-top:8px;
+}
+.blank .alt{border:0; background:transparent; color:var(--wt-button); font:inherit; font-size:14px; font-weight:500; cursor:pointer; min-height:40px}
+.blank svg{width:28px; height:28px; flex:0 0 28px; color:var(--wt-muted); margin-bottom:4px}
+.proc svg{width:18px; height:18px}
+
+/* ---------- the written notes ---------- */
+.notes{margin-top:48px; max-width:66ch}
+.notes h2{font-size:20px; font-weight:700; margin:32px 0 10px; letter-spacing:-.01em}
+.notes h3{font-size:15px; font-weight:600; margin:22px 0 6px}
+.notes p, .notes li{font-size:15px; line-height:1.62; color:#3d463f}
+.notes p{margin:0 0 12px}
+.notes ul{margin:0 0 12px; padding-left:20px}
+.notes li{margin-bottom:6px}
+.notes code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:13px;
+  background:#e6e9e2; padding:1px 5px; border-radius:4px;
+}
+.notes table{border-collapse:collapse; width:100%; margin:0 0 16px; font-size:14px}
+.notes th, .notes td{border-bottom:1px solid #d8dcd2; padding:8px 10px; text-align:left; vertical-align:top}
+.notes th{font-weight:600; font-size:13px; color:#48514b}
+.notes td:first-child{white-space:nowrap}
+
+@media (prefers-reduced-motion:no-preference){
+  .sheet{animation:rise .18s ease-out}
+  @keyframes rise{from{transform:translateY(12px)}to{transform:none}}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="page-head">
+  <h1>The transcript reader, next pass</h1>
+  <p>A proposal for challenge 01. The panel on the left is the current design, exactly as
+     captured in <code>../after/</code>. The panel on the right is a working prototype at 320&nbsp;px,
+     built on WhipScribe's own reader tokens. Tap the tabs to move between states; the right-hand
+     panel is real markup, so it can be opened on a phone.</p>
+  <p>The short version: at 320&#215;640 the current reader spends about 46% of the screen on
+     things that are not the transcript. This pass gets that to about 22%, mostly by deleting
+     rather than adding. The notes underneath say what changed and what I left alone.</p>
+</header>
+
+<nav class="states" id="states" aria-label="States">
+  <button role="tab" aria-selected="true" data-s="read">Reading</button>
+  <button role="tab" aria-selected="false" data-s="speakers">Four speakers</button>
+  <button role="tab" aria-selected="false" data-s="processing">Still processing</button>
+  <button role="tab" aria-selected="false" data-s="search">Search</button>
+  <button role="tab" aria-selected="false" data-s="actions">Actions</button>
+  <button role="tab" aria-selected="false" data-s="preview">Preview boundary</button>
+  <button role="tab" aria-selected="false" data-s="noaudio">No audio</button>
+  <button role="tab" aria-selected="false" data-s="failed">Will not load</button>
+</nav>
+
+<div class="compare">
+  <figure class="side">
+    <figcaption>Current <span id="cur-note"></span></figcaption>
+    <img class="shot" id="cur-img" src="../after/01-reader-320.png" alt="The current transcript reader at 320 pixels">
+    <div class="shot-none" id="cur-none" hidden></div>
+  </figure>
+
+  <figure class="side">
+    <figcaption>Next <span>live at 320&#215;640</span></figcaption>
+    <div class="phone">
+      <div class="ws" id="ws"></div>
+    </div>
+  </figure>
+</div>
+
+<section class="notes">
+
+<h2>What I changed, and why</h2>
+
+<p>I measured the current reader on the live site before drawing anything. At a 320&#215;640
+viewport the transcript page gives 292&nbsp;px of 640 to chrome: a 56&nbsp;px title row, a
+40&nbsp;px meta row, a 48&nbsp;px tab row, a 45&nbsp;px preview bar and a 103&nbsp;px player.
+The words get the remaining 330&nbsp;px, and a 45&nbsp;px timestamp gutter eats into those.
+Everything below follows from trying to give that space back.</p>
+
+<h3>1. Turns instead of segments, which also solves the speakers</h3>
+
+<p>The current reader lays out one row per speech-recognition segment, with the time in a fixed
+left gutter. Two things go wrong. The gutter costs about 14% of a 320&nbsp;px screen forever,
+and the segments are cut by the recogniser, not by meaning, so sentences break across rows:
+in the reference screenshots <em>"several people have a hard"</em> sits at 0:03 and
+<em>"stop at the top of the hour."</em> sits at 0:07.</p>
+
+<p>The next pass groups segments into speaker turns. Each turn has one header line carrying the
+name and the start time, then the words run as prose. That single line replaces the gutter and
+carries the speaker attribution the current reader does not show at all. Per-sentence times are
+still in the data and still drive click-to-play, they just are not painted as a permanent column.</p>
+
+<p>This matters more than it looks. On the site's own public demo
+(<code>/view?id=e0394eda…</code>, a three-host podcast linked from the home page) the transcript
+renders as one unbroken wall with no speaker labels, while the Summary tab knows about
+"Speaker 0" and "Speaker 1". A reader that cannot tell you who is talking is not finished.</p>
+
+<h3>2. The player earns its place, or it is not there</h3>
+
+<p>The player is 103&nbsp;px, a sixth of the screen, and it is frequently dead. It reads
+<em>"Audio unavailable"</em> in WhipScribe's own reference screenshots, and on the live demo
+every control is disabled with the note <em>"File not found"</em>.</p>
+
+<p>Here it is one 52&nbsp;px row: play, scrub, elapsed and total. When there is no audio the
+player is not rendered at all. A quiet line takes its place, says the recording could not be
+loaded, and offers the one useful action. A disabled transport that occupies a sixth of a phone
+screen is the worst of both.</p>
+
+<h3>3. The preview bar is already saying it twice</h3>
+
+<p>This one is not a relocation, it is a deletion. Look at <code>05-preview-boundary.png</code>:
+at the point where the words stop there is already an inline note, <em>"End of free preview, 48%
+read. Sign up free to read, download and keep the rest."</em> And pinned at the bottom of the same
+screen is a bar saying <em>"You're reading the free preview (first 48%)"</em> with a Keep reading
+button. The same message, twice, on a 320&nbsp;px screen, one of them covering the text
+permanently and stacking a second bar above the player.</p>
+
+<p>So the pinned bar goes. The inline note stays and grows into a proper card with the action on
+it, because the boundary is a place on the page and that is where the reader is actually asking
+the question. The text underneath stays visible but faded, so you can see there is more rather
+than being told. The bottom of the screen is then free, which is what makes the keyboard work in
+search.</p>
+
+<h3>4. Nine flat menu items become six in three groups</h3>
+
+<table>
+  <tr><th>Current item</th><th>Next</th></tr>
+  <tr><td>Home</td><td>Removed. The back arrow already does this.</td></tr>
+  <tr><td>Copy transcript</td><td>Kept, grouped under "Take it with you".</td></tr>
+  <tr><td>Reading settings</td><td>Folded into the sheet itself, no second panel.</td></tr>
+  <tr><td>Timestamps: shown</td><td>A control in the reading group, not a menu row.</td></tr>
+  <tr><td>Quiz me on this recording</td><td>Moved to Summary, where the generated things live.</td></tr>
+  <tr><td>Sign in</td><td>Moved to the preview card, where it is the answer to a question.</td></tr>
+  <tr><td>Rename</td><td>Kept, grouped under "This recording".</td></tr>
+  <tr><td>File details</td><td>Kept, and it now carries the duration, language and date that used to take a whole header row.</td></tr>
+  <tr><td>Delete recording</td><td>Kept, in its own group at the bottom, away from everything else.</td></tr>
+</table>
+
+<p>Download moves into this sheet too, so search, download and reading settings stop being three
+different panel idioms. There is one sheet for things you do to the recording, and search is its
+own mode.</p>
+
+<h3>5. Search becomes a mode</h3>
+
+<p>Today the field opens under the tabs and pushes the transcript down while the keyboard comes
+up from below, squeezing the results into whatever is left. Search now takes the screen: the
+field replaces the title bar, results are a list of turns with the match in context, and tapping
+one returns to the reader at that moment. The reader keeps its place, so leaving search puts you
+back where you were.</p>
+
+<h3>6. Left-aligned, 17&nbsp;px, no hyphens</h3>
+
+<p>The live reader sets <code>text-align: justify</code> with <code>hyphens: auto</code> at 15&nbsp;px
+in a 243&nbsp;px column. Justification needs slack to work, and a 243&nbsp;px column has none, so
+you get rivers of white space and words broken mid-syllable: the reference screenshots show
+<em>"be-cause"</em> and the live demo shows <em>"chal-lenging"</em>. Ragged right at 17&nbsp;px with
+1.62 leading reads better and costs nothing.</p>
+
+<h3>7. The screen that did not exist: still processing</h3>
+
+<p>The challenge notes there is no design for a transcript that is not ready. This one shows the
+same reader shell, with a progress line, an honest estimate, and the turns filling in from the
+top as they arrive, so the wait is the reading. Summary and Ask are reachable but say what they
+are waiting for rather than sitting greyed out with no reason given.</p>
+
+<h2>What I deliberately kept</h2>
+
+<ul>
+  <li><strong>The palette, the type and the green.</strong> Every colour here is read off
+      whipscribe.com: <code>--wt-green #54801e</code>, <code>--wt-text #202a25</code>,
+      <code>--wt-tint #eef5df</code>, Inter. This is a proposal inside the product's system, not a
+      rebrand.</li>
+  <li><strong>Three tabs.</strong> Transcript, Summary and Ask are three genuinely different
+      things to want. I renamed "AI Chat" to "Ask" because it is shorter and it is a verb, and
+      because what the user wants is the answer, not the chat.</li>
+  <li><strong>Click a line to play.</strong> The best thing about the current reader. It survives
+      the move to turns: each sentence keeps its own time.</li>
+  <li><strong>Timestamps on by default</strong>, and still switchable.</li>
+  <li><strong>The desktop layout.</strong> I did not change it, and I do not think it needs the
+      same treatment. See below.</li>
+</ul>
+
+<h2>The questions the challenge asked</h2>
+
+<h3>What did someone on a phone come here to do?</h3>
+<p>Read what was said, or find one thing that was said. Reading is now zero taps and roughly 50%
+more words per screen. Finding is one tap into a mode that owns the screen instead of a strip
+fighting the keyboard.</p>
+
+<h3>Is the bottom of the screen the right trade, and what about the keyboard?</h3>
+<p>Two pinned bars is not the right trade. One is. The preview card goes into the flow and the
+player collapses to 52&nbsp;px or disappears, so when the keyboard is up in search there is no
+stack of bars underneath it. That was the deciding argument.</p>
+
+<h3>Should search, download and settings feel like one thing?</h3>
+<p>Download and settings, yes: one sheet. Search, no. It is a different posture: you are hunting,
+not managing, and it needs the keyboard and the whole screen. Forcing all three into one pattern
+would be tidiness at the cost of the one that matters most.</p>
+
+<h3>Four speakers at 320&nbsp;px</h3>
+<p>See the "Four speakers" state. Name and time on one line, a colour per person carried only by
+the name, and consecutive turns from the same person drop the repeated header. No avatars, no
+chips, no chat bubbles: at 320&nbsp;px they would cost more than they explain.</p>
+
+<h3>What happens after you select a line?</h3>
+<p>I left the current selection bar alone. Copy and Play from here are the two right verbs, and the
+current implementation already strips timestamps from the copied text, which is the hard part
+and is correct. It did not need a second pass.</p>
+
+<h3>Should the desktop page change?</h3>
+<p>Mostly not. Desktop has room for the rail and the gutter, and the View / Copy / Download
+toolbar is clear. Two things should follow the phone: speaker turns, because that is a data
+problem rather than a width problem, and dropping justification. The rest of the desktop layout
+is doing its job.</p>
+
+<h2>What this prototype is not</h2>
+
+<ul>
+  <li>It is a design prototype with fixed sample content, not a build against the API. The
+      timings, names and words are sample data.</li>
+  <li>The player does not play audio. It shows the shape and the height, which is the argument.</li>
+  <li>Summary and Ask are not designed here. This pass is the transcript reader, which is what
+      the challenge asked for.</li>
+  <li>I could not test the signed-in states (rename, delete, folders) because that needs an
+      account and this is a public demo, so the actions sheet shows them in their owner-visible
+      form without a live flow behind them.</li>
+</ul>
+
+</section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var ICON = {
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>',
+    more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>',
+    find: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+    close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 12l5 5 5-5"/><path d="M5 20h14"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>',
+    clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    type: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M9 6v13M15 10v9"/></svg>',
+    who:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
+    mute: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M17 9l4 6M21 9l-4 6"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'
+  };
+
+  // Sample content. The single-speaker text is the same meeting as the reference
+  // screenshots, rejoined into turns so the sentence that is currently split
+  // across 0:03 and 0:07 reads as one.
+  var SOLO = [
+    { at:'0:00', sents:[
+      ['0:00','Thanks everyone for joining the quarterly planning review.'],
+      ['0:03','I want to move quickly today because we have a lot to cover and several people have a hard stop at the top of the hour.']
+    ]},
+    { at:'0:09', sents:[
+      ['0:09','First, the numbers.'],
+      ['0:10','Revenue came in 11% above forecast, which is the third quarter running that we have beaten the plan.'],
+      ['0:18','The part I want to talk about is why, because I do not think it is the reason most of us assume.']
+    ]},
+    { at:'0:27', sents:[
+      ['0:27','Renewals did most of the work. New business was flat.'],
+      ['0:32','So the growth is coming from customers we already had, and that changes what we should do next quarter.']
+    ]}
+  ];
+
+  var MEETING = [
+    { who:'Maya', s:'a', at:'0:00', sents:[
+      ['0:00','Thanks everyone for joining the quarterly planning review.'],
+      ['0:03','We have a lot to cover and several people have a hard stop at the top of the hour, so I will move quickly.']
+    ]},
+    { who:'Maya', s:'a', at:'0:11', cont:true, sents:[
+      ['0:11','First the numbers. Revenue came in 11% above forecast.']
+    ]},
+    { who:'Dan', s:'b', at:'0:16', sents:[
+      ['0:16','Worth saying that is the third quarter running, and renewals did most of it.'],
+      ['0:21','New business was basically flat.']
+    ]},
+    { who:'Priya', s:'c', at:'0:25', sents:[
+      ['0:25','Flat against plan, or flat against last quarter?'],
+      ['0:27','Those are different problems.']
+    ]},
+    { who:'Dan', s:'b', at:'0:30', sents:[
+      ['0:30','Against plan. Slightly up on last quarter, but not enough to call it a trend.']
+    ]},
+    { who:'Sam', s:'d', at:'0:36', sents:[
+      ['0:36','Then I would rather spend the quarter on retention than on a new channel.'],
+      ['0:41','We know the retention work pays back inside a quarter. The channel work has never paid back inside two.']
+    ]},
+    { who:'Maya', s:'a', at:'0:49', sents:[
+      ['0:49','Good. Let us take that as the decision and I will write it up.']
+    ]}
+  ];
+
+  var HITS = [
+    { who:'Dan', s:'b', at:'0:16', pre:'Worth saying that is the third quarter running, and ', mark:'renewals', post:' did most of it.' },
+    { who:'Maya', s:'a', at:'0:27', pre:'So the growth is coming from customers we already had, which is what the ', mark:'renewal', post:' number is telling us.' },
+    { who:'Sam', s:'d', at:'0:36', pre:'Then I would rather spend the quarter on retention and ', mark:'renewals', post:' than on a new channel.' }
+  ];
+
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+  function turnsHTML(list, solo){
+    return list.map(function(t, i){
+      var body = t.sents.map(function(p){
+        return '<s class="sent" data-at="'+p[0]+'" title="Play from '+p[0]+'">'+esc(p[1])+'</s>';
+      }).join(' ');
+      var cls = 'turn' + (t.cont ? ' is-cont' : '') + (i === 0 && !solo ? ' is-playing' : '');
+      return '<div class="'+cls+'" data-s="'+(t.s||'a')+'">'
+           +   '<div class="turn-head">'
+           +     (solo ? '' : '<span class="turn-who">'+esc(t.who)+'</span>')
+           +     '<span class="turn-at">'+t.at+'</span>'
+           +   '</div>'
+           +   '<p class="turn-body">'+body+'</p>'
+           + '</div>';
+    }).join('');
+  }
+
+  function bar(title){
+    return '<header class="bar">'
+      + '<button class="icon" aria-label="Back to your files">'+ICON.back+'</button>'
+      + '<h2 class="doc-title">'+esc(title)+'</h2>'
+      + '<button class="icon" aria-label="Actions for this recording" data-go="actions">'+ICON.more+'</button>'
+      + '</header>';
+  }
+
+  function tabs(){
+    return '<nav class="tabs">'
+      + '<button class="tab is-on">Transcript</button>'
+      + '<button class="tab">Summary</button>'
+      + '<button class="tab">Ask</button>'
+      + '<button class="icon" aria-label="Search this transcript" data-go="search">'+ICON.find+'</button>'
+      + '</nav>';
+  }
+
+  function player(){
+    return '<div class="player">'
+      + '<button class="play" aria-label="Play">'+ICON.play+'</button>'
+      + '<span class="clock">0:19</span>'
+      + '<div class="scrub" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="104" aria-valuenow="19" tabindex="0">'
+      +   '<div class="scrub-track"><div class="scrub-fill"></div><div class="scrub-thumb"></div></div>'
+      + '</div>'
+      + '<span class="clock">1:44</span>'
+      + '</div>';
+  }
+
+  var SHEET =
+      '<div class="scrim" data-go="read"></div>'
+    + '<div class="sheet" role="dialog" aria-label="Actions for this recording">'
+    +   '<div class="grip"></div>'
+    +   '<div class="grp">'
+    +     '<p class="grp-name">Take it with you</p>'
+    +     '<button class="row">'+ICON.copy+'Copy transcript</button>'
+    +     '<button class="row">'+ICON.down+'Download<span class="val">TXT, SRT, VTT, DOCX</span></button>'
+    +   '</div>'
+    +   '<div class="grp">'
+    +     '<p class="grp-name">Reading</p>'
+    +     '<div class="row" role="group" aria-label="Text size">'+ICON.type+'Text size'
+    +       '<span class="seg"><button aria-pressed="false">S</button><button aria-pressed="true">M</button><button aria-pressed="false">L</button></span></div>'
+    +     '<div class="row" role="group" aria-label="Timestamps">'+ICON.clock+'Timestamps'
+    +       '<span class="seg"><button aria-pressed="true">Shown</button><button aria-pressed="false">Hidden</button></span></div>'
+    +     '<div class="row" role="group" aria-label="Speaker names">'+ICON.who+'Speaker names'
+    +       '<span class="seg"><button aria-pressed="true">Shown</button><button aria-pressed="false">Hidden</button></span></div>'
+    +   '</div>'
+    +   '<div class="grp">'
+    +     '<p class="grp-name">This recording</p>'
+    +     '<button class="row">'+ICON.edit+'Rename</button>'
+    +     '<button class="row">'+ICON.info+'Details<span class="val">1m 44s, EN, 12 Sep</span></button>'
+    +   '</div>'
+    +   '<div class="grp">'
+    +     '<button class="row danger">'+ICON.trash+'Delete recording</button>'
+    +   '</div>'
+    + '</div>';
+
+  var VIEWS = {
+
+    read: function(){
+      return bar('Quarterly planning review') + tabs()
+        + '<div class="scroll solo">' + turnsHTML(SOLO, true) + '</div>'
+        + player();
+    },
+
+    speakers: function(){
+      return bar('Quarterly planning review') + tabs()
+        + '<div class="scroll">' + turnsHTML(MEETING, false) + '</div>'
+        + player();
+    },
+
+    processing: function(){
+      return bar('board-call-sept.m4a') + tabs()
+        + '<div class="scroll">'
+        +   '<div class="proc">'
+        +     '<div class="proc-head"><h3>Transcribing</h3><span>38%</span></div>'
+        +     '<p class="proc-sub">About 2 minutes left. You can read what is done, or leave and we will finish without you.</p>'
+        +     '<div class="meter"><i></i></div>'
+        +     '<div class="turn" data-s="a"><div class="turn-head"><span class="turn-who">Maya</span><span class="turn-at">0:00</span></div>'
+        +       '<p class="turn-body">Thanks everyone for joining the quarterly planning review. We have a lot to cover and several people have a hard stop at the top of the hour.</p></div>'
+        +     '<div class="turn" data-s="b"><div class="turn-head"><span class="turn-who">Dan</span><span class="turn-at">0:16</span></div>'
+        +       '<p class="turn-body">Worth saying that is the third quarter running, and renewals did most of it.</p></div>'
+        +     '<div class="skel" style="width:46%"></div>'
+        +     '<div class="skel" style="width:92%"></div>'
+        +     '<div class="skel" style="width:78%"></div>'
+        +     '<div class="skel" style="width:88%"></div>'
+        +     '<div class="skel" style="width:54%"></div>'
+        +     '<p class="proc-foot">Summary and Ask open when the transcript is finished.</p>'
+        +   '</div>'
+        + '</div>';
+    },
+
+    search: function(){
+      return '<div class="find-bar">'
+        +   '<button class="icon" aria-label="Close search" data-go="read">'+ICON.back+'</button>'
+        +   '<input id="q" type="search" value="renewals" aria-label="Search this transcript" autocomplete="off">'
+        +   '<span class="find-count">3 found</span>'
+        +   '<button class="icon" aria-label="Clear the search">'+ICON.close+'</button>'
+        + '</div>'
+        + '<div class="scroll">'
+        +   HITS.map(function(h){
+              return '<div class="hit" data-s="'+h.s+'" tabindex="0" role="button">'
+                +  '<div class="hit-head"><span>'+esc(h.who)+'</span><span class="hit-at">'+h.at+'</span></div>'
+                +  '<p>'+esc(h.pre)+'<mark>'+esc(h.mark)+'</mark>'+esc(h.post)+'</p>'
+                + '</div>';
+            }).join('')
+        + '</div>'
+        + player();
+    },
+
+    actions: function(){
+      return bar('Quarterly planning review') + tabs()
+        + '<div class="scroll solo">' + turnsHTML(SOLO, true) + '</div>'
+        + player() + SHEET;
+    },
+
+    preview: function(){
+      return bar('Quarterly planning review') + tabs()
+        + '<div class="scroll solo">'
+        +   turnsHTML(SOLO.slice(0,2), true)
+        +   '<div class="boundary">'
+        +     '<p><strong>That is the first 48%.</strong> The rest of this transcript, the summary and every '
+        +     'download format are yours with a free account. Your first transcript is free and it stays in your library.</p>'
+        +     '<button class="btn">Create a free account</button>'
+        +     '<button class="alt">I already have one</button>'
+        +   '</div>'
+        +   '<div class="faded">' + turnsHTML(SOLO.slice(2), true) + '</div>'
+        + '</div>'
+        + player();
+    },
+
+    noaudio: function(){
+      return bar('Quarterly planning review') + tabs()
+        + '<div class="scroll solo">' + turnsHTML(SOLO, true) + '</div>'
+        + '<div class="audio-note">' + ICON.mute
+        +   '<span>Audio is not available for this recording.</span>'
+        +   '<button>Why?</button>'
+        + '</div>';
+    },
+
+    failed: function(){
+      return bar('Transcript') + tabs()
+        + '<div class="blank">' + ICON.warn
+        +   '<h3>This transcript would not load</h3>'
+        +   '<p>The connection dropped before we could fetch it. Your recording is safe in your library.</p>'
+        +   '<button class="btn">Try again</button>'
+        +   '<button class="alt">Back to your files</button>'
+        + '</div>';
+    }
+  };
+
+  var SHOTS = {
+    read:      { src:'../after/01-reader-320.png', note:'01-reader-320.png' },
+    speakers:  { src:null, note:'no screen exists', msg:'The reference screens are all a single-speaker file. There is no current design for a meeting with four speakers at 320 px, which is what the challenge asked for.' },
+    processing:{ src:null, note:'no screen exists', msg:'The challenge says it plainly: there is no screen for a transcript that is still processing. This is the one state on the right with nothing to compare it against.' },
+    search:    { src:'../after/06-search.png', note:'06-search.png' },
+    actions:   { src:'../after/08-more-menu.png', note:'08-more-menu.png' },
+    preview:   { src:'../after/05-preview-boundary.png', note:'05-preview-boundary.png' },
+    noaudio:   { src:'../after/01-reader-320.png', note:'01-reader-320.png, which shows "Audio unavailable"' },
+    failed:    { src:'../after/12-load-failure.png', note:'12-load-failure.png' }
+  };
+
+  var ws = document.getElementById('ws');
+  var img = document.getElementById('cur-img');
+  var none = document.getElementById('cur-none');
+  var curNote = document.getElementById('cur-note');
+  var states = document.getElementById('states');
+
+  function show(name){
+    if(!VIEWS[name]) name = 'read';
+    ws.innerHTML = VIEWS[name]();
+
+    var s = SHOTS[name];
+    curNote.textContent = s.note;
+    if(s.src){
+      img.src = s.src; img.hidden = false; none.hidden = true;
+    } else {
+      img.hidden = true; none.hidden = false; none.textContent = s.msg;
+    }
+
+    [].forEach.call(states.querySelectorAll('button'), function(b){
+      b.setAttribute('aria-selected', String(b.dataset.s === name));
+    });
+
+    var q = ws.querySelector('#q');
+    if(q && document.activeElement !== q && name === 'search'){
+      // only steal focus when the person asked for search, never on first paint
+      if(show.userDriven) q.focus({ preventScroll:true });
+    }
+
+    // the boundary card sits in the flow, so scroll the demo to it
+    var edge = ws.querySelector('.boundary');
+    if(edge) edge.scrollIntoView({ block:'center' });
+  }
+
+  states.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-s]');
+    if(!b) return;
+    show.userDriven = true;
+    show(b.dataset.s);
+  });
+
+  ws.addEventListener('click', function(e){
+    var go = e.target.closest('[data-go]');
+    if(go){ show.userDriven = true; show(go.dataset.go); return; }
+
+    var seg = e.target.closest('.seg button');
+    if(seg){
+      [].forEach.call(seg.parentElement.children, function(x){ x.setAttribute('aria-pressed','false'); });
+      seg.setAttribute('aria-pressed','true');
+      return;
+    }
+
+    var sent = e.target.closest('.sent');
+    if(sent){
+      [].forEach.call(ws.querySelectorAll('.turn'), function(t){ t.classList.remove('is-playing'); });
+      sent.closest('.turn').classList.add('is-playing');
+      var clock = ws.querySelector('.clock');
+      if(clock) clock.textContent = sent.dataset.at;
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && ws.querySelector('.sheet')){ show.userDriven = true; show('read'); }
+  });
+
+  show('read');
+})();
+</script>
+</body>
+</html>
