@@ -1,7 +1,8 @@
 # Manoj Barmase — WhipScribe Buildathon
 
-Full Stack Engineer (MERN + AI Integration) based in Pune, India.  
-Portfolio: [manoj-barmase.vercel.app](https://manoj-barmase.vercel.app) | Email: [manojbarmase9@gmail.com](mailto:manojbarmase9@gmail.com) | Phone: +91-8319548377
+**Founding-Mindset Product Engineer (Full Stack + AI Workflows)**  
+Pune, India (Open to Remote) | +91-8319548377 | [manojbarmase9@gmail.com](mailto:manojbarmase9@gmail.com)  
+LinkedIn: [linkedin.com/in/manoj-barmase](https://linkedin.com/in/manoj-barmase) | GitHub: [github.com/manojbarmase](https://github.com/manojbarmase) | Portfolio: [manoj-barmase.vercel.app](https://manoj-barmase.vercel.app)
 
 ---
 
@@ -12,9 +13,9 @@ Track 0: Introduction & Track Record
 ---
 
 ## About Me
-I am a Full Stack Engineer with over 15 months of experience building scalable SaaS web applications and low-latency AI integrations. My experience spans full-stack engineering with React, Next.js, TypeScript, Node.js, Express, and Redis, as well as working in agile teams to optimize backend performance and reduce API latency.
+I am an ownership-driven Product Engineer with 1.5+ years of experience taking ideas from **problem → solution → implementation → deployment** in fast-paced startup environments. My work centers on building polished web products, real-time audio/transcript AI workflows, and scalable APIs using Next.js (App Router), TypeScript, Node.js, and Redis.
 
-I am participating in the WhipScribe Buildathon to compete for the Founding Software Engineer role, bringing honest engineering craft, solo end-to-end project ownership, and strong AI workflow integration skills.
+I treat AI coding agents (Claude, Cursor, Copilot) as high-velocity force multipliers while strictly auditing, testing, and refining AI-generated logic to eliminate edge cases, protect data integrity, and maintain high UI/UX polish. I am participating in the WhipScribe Buildathon to compete for the Founding Software Engineer role.
 
 ---
 
@@ -23,19 +24,19 @@ I am participating in the WhipScribe Buildathon to compete for the Founding Soft
 Keep the labels; the leaderboard reads these lines into your profile and checks them.
 
 - LinkedIn: https://linkedin.com/in/manoj-barmase
-- Shipped apps: None on mobile app stores; deployed live production web apps on Vercel: https://ai-interviewer-app-manoj.vercel.app, https://mankray-app.vercel.app
+- Shipped apps: None on mobile app stores; deployed live production web platforms on Vercel: https://ai-interviewer-app-manoj.vercel.app, https://mankray-app.vercel.app
 - Hackathon wins: None formal yet (actively participating in the WhipScribe Buildathon)
 - Team lead: None (worked as an individual contributor / Software Developer in a 4-developer engineering team at BrandsWorks Worldwide)
-- Team projects: BrandsWorks Worldwide B2B SaaS platform (worked alongside a 4-developer team to architect & ship 6+ core modules including inventory and invoicing; private enterprise repo)
-- Proudest work: https://github.com/manojbarmase/ai-interviewer-app (Solo full-stack project: AI Mock Interviewer with <400ms TTFT via Groq LPU, dynamic CV parsing, and Redis rate limiting; live at https://ai-interviewer-app-manoj.vercel.app)
+- Team projects: BrandsWorks Worldwide B2B SaaS platform (collaborated in a 4-engineer team to architect & ship 6+ core modules including inventory and invoicing; private enterprise repo)
+- Proudest work: https://github.com/manojbarmase/ai-interviewer-app (Solo full-stack project: AI Mock Interviewer with real-time audio/transcript intelligence, <400ms TTFT via Groq LPU, dynamic CV parsing, and Redis rate limiting; live at https://ai-interviewer-app-manoj.vercel.app)
 - Contributions elsewhere: Code reviews and issue discussions within internal team sprints
 
 ---
 
 ## What Running My Shipped Projects Taught Me
-1. **Latency & User Perception in AI Apps:** When building my solo AI Interviewer platform, standard LLM response times caused noticeable conversational lag. Migrating to Groq LPU brought Time-to-First-Token under 400ms, making real-time voice/text simulation practical.
-2. **End-to-End Ownership & Edge Cases:** Building Mankray Procurement & VMS solo taught me that 80% of edge cases happen in empty, loading, and error states—especially around multi-tier RBAC permissions where a user must never encounter a dead-end UI.
-3. **Team Collaboration:** Working in a 4-person engineering team at BrandsWorks Worldwide taught me the value of small atomic PRs, clear API contracts between frontend and backend, and maintaining clean codebases for peer reviews.
+1. **Perceived Latency & Audio/Text Feedback in AI Workflows:** While building my solo AI Interviewer platform, standard LLM inference caused noticeable conversation lag. Migrating inference to Groq LPU brought Time-to-First-Token under 400ms, making real-time voice and transcript simulation seamless.
+2. **End-to-End Ownership & Defensive UX:** Building the Mankray Procurement & VMS platform taught me that real polish lives in edge states (empty views, loading skeletons, error recovery, and strict 5-tier RBAC permission boundaries) so a user never lands on a silent or broken screen.
+3. **Enterprise Collaboration & AI Rigor:** Working in a 4-person engineering team at BrandsWorks Worldwide taught me to deliver cleanly scoped, reviewable PRs and to critically audit AI-assisted code against real database query constraints (reducing API latency by 40%).
 
 ---
 
