@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Transcript reader, next pass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#ffffff; --ink:#111827; --ink2:#374151; --muted:#6b7280; --faint:#9ca3af;
+    --line:#e5e7eb; --soft:#f6f8f3; --lime:#c4f04a; --limeInk:#1a2e05; --green:#3f6212; --greenSoft:#ecf5d6;
+    --danger:#b91c1c; --amber:#fef3c7; --amberInk:#92400e;
+    --s1:#2563eb; --s2:#c2410c; --s3:#7c3aed; --s4:#0f766e;
+    --text:17px;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; }
+  body { font-family:Inter, system-ui, -apple-system, sans-serif; color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; }
+  button { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
+  button:focus-visible, a:focus-visible, input:focus-visible { outline:2px solid var(--green); outline-offset:2px; border-radius:8px; }
+
+  .app { height:100dvh; display:flex; flex-direction:column; max-width:640px; margin:0 auto; position:relative; overflow:hidden; }
+
+  /* One header row: back, title + meta, more */
+  .top { display:flex; align-items:center; gap:4px; padding:6px 4px 6px 4px; min-height:56px; }
+  .icon-btn { width:44px; height:44px; display:grid; place-items:center; border-radius:12px; flex:none; }
+  .icon-btn svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .title { flex:1; min-width:0; }
+  .title h1 { font-size:17px; line-height:22px; font-weight:600; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .meta { font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Tabs + search share one row */
+  .tabs { display:flex; align-items:center; border-bottom:1px solid var(--line); padding:0 4px 0 12px; }
+  .tab { height:44px; padding:0 10px; font-size:15px; font-weight:500; color:var(--muted); position:relative; }
+  .tab[aria-selected="true"] { color:var(--ink); font-weight:600; }
+  .tab[aria-selected="true"]::after { content:""; position:absolute; left:10px; right:10px; bottom:-1px; height:2px; background:var(--green); border-radius:2px; }
+  .tab:disabled { color:var(--faint); cursor:default; }
+  .tabs .spacer { flex:1; }
+
+  .progress { height:3px; background:var(--line); }
+  .progress > i { display:block; height:100%; width:62%; background:var(--green); }
+
+  /* Reading area */
+  .scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:8px 16px 24px; }
+  .turn { padding:10px 0; }
+  .who { display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600; margin-bottom:2px; color:var(--ink2); }
+  .who .dot { width:8px; height:8px; border-radius:50%; flex:none; }
+  .who time { font-weight:400; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .turn p { margin:0; font-size:var(--text); line-height:1.6; text-align:left; hyphens:manual; }
+  .turn p span { border-radius:4px; }
+  .turn p span.now { background:var(--greenSoft); box-shadow:0 0 0 2px var(--greenSoft); }
+  .turn p span.hit { background:#fde68a; }
+  .turn p span.sel { background:#bfdbfe; }
+  .hide-times .who time, .hide-names .who .name, .hide-names .who .dot { display:none; }
+  .hide-names.hide-times .who { display:none; }
+
+  .end { font-size:13px; color:var(--faint); padding:16px 0 8px; }
+  .skel { height:14px; border-radius:7px; background:linear-gradient(90deg,#f1f3f5,#e5e7eb,#f1f3f5); margin:10px 0; }
+  .note { font-size:14px; color:var(--muted); background:var(--soft); border-radius:12px; padding:12px 14px; margin:8px 0 16px; line-height:1.45; }
+  .note b { color:var(--ink); }
+
+  /* Preview boundary lives in the text, not on top of it */
+  .fade { position:relative; }
+  .fade::after { content:""; position:absolute; left:0; right:0; bottom:0; height:60px; background:linear-gradient(transparent, #fff); }
+  .gate { border:1px solid var(--line); border-radius:16px; padding:18px 16px; margin:8px 0 24px; }
+  .gate h2 { font-size:17px; margin:0 0 6px; }
+  .gate p { margin:0 0 14px; color:var(--muted); font-size:15px; line-height:1.45; }
+
+  .btn { display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 18px; border-radius:999px; font-weight:600; font-size:15px; width:100%; }
+  .btn.primary { background:var(--lime); color:var(--limeInk); }
+  .btn.ghost { border:1px solid var(--line); background:#fff; }
+  .btn + .btn { margin-top:10px; }
+
+  /* Bottom: one dock. Preview line + player, nothing else */
+  .dock { border-top:1px solid var(--line); background:#fff; padding-bottom:env(safe-area-inset-bottom); }
+  .strip { display:flex; align-items:center; gap:8px; padding:0 8px 0 16px; height:36px; font-size:13px; color:var(--ink2); background:var(--soft); }
+  .strip b { font-weight:600; }
+  .strip .grow { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .strip button { font-weight:600; color:var(--green); height:36px; padding:0 8px; }
+  .player { position:relative; display:flex; align-items:center; gap:4px; height:52px; padding:0 8px 0 12px; }
+  .scrub { position:absolute; left:0; right:0; top:0; height:3px; background:var(--line); }
+  .scrub i { display:block; height:100%; width:9%; background:var(--green); }
+  .play { width:40px; height:40px; border-radius:50%; background:var(--green); color:#fff; display:grid; place-items:center; flex:none; }
+  .play svg { width:18px; height:18px; fill:#fff; }
+  .clock { font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; margin-left:6px; flex:1; }
+  .skip { width:44px; height:44px; display:grid; place-items:center; font-size:12px; font-weight:600; color:var(--ink2); }
+  .rate { width:44px; height:44px; font-size:13px; font-weight:600; }
+
+  /* One sheet pattern for every panel */
+  .scrim { position:absolute; inset:0; background:rgba(17,24,39,.35); }
+  .sheet { position:absolute; left:0; right:0; bottom:0; background:#fff; border-radius:20px 20px 0 0; max-height:82%; display:flex; flex-direction:column; box-shadow:0 -8px 30px rgba(0,0,0,.12); padding-bottom:env(safe-area-inset-bottom); }
+  .sheet-head { display:flex; align-items:center; gap:4px; padding:8px 8px 4px 16px; }
+  .sheet-head h2 { flex:1; margin:0; font-size:17px; }
+  .sheet-head .icon-btn { margin-left:-12px; }
+  .grab { width:36px; height:4px; border-radius:4px; background:var(--line); margin:8px auto 0; }
+  .sheet-body { overflow-y:auto; padding:4px 16px 16px; }
+  .group { border:1px solid var(--line); border-radius:14px; overflow:hidden; margin:8px 0; }
+  .item { display:flex; align-items:center; gap:12px; width:100%; min-height:52px; padding:0 14px; text-align:left; font-size:16px; border-top:1px solid var(--line); }
+  .group .item:first-child { border-top:0; }
+  .item small { display:block; font-size:13px; color:var(--muted); }
+  .item .grow { flex:1; }
+  .item .chev { color:var(--faint); }
+  .item.danger { color:var(--danger); }
+  .label { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:16px 2px 4px; }
+  .seg { display:flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .seg button { flex:1; height:44px; border-left:1px solid var(--line); }
+  .seg button:first-child { border-left:0; }
+  .seg button[aria-pressed="true"] { background:var(--greenSoft); font-weight:600; color:var(--green); }
+  .switch { width:46px; height:28px; border-radius:999px; background:#d1d5db; position:relative; flex:none; }
+  .switch::after { content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .switch[aria-checked="true"] { background:var(--green); }
+  .switch[aria-checked="true"]::after { left:21px; }
+  .fine { font-size:13px; color:var(--muted); margin:10px 2px 0; line-height:1.4; }
+
+  /* Search: inline, because it needs the keyboard */
+  .search { display:flex; align-items:center; gap:4px; padding:6px 4px 6px 12px; border-bottom:1px solid var(--line); }
+  .search input { flex:1; min-width:0; height:40px; border:1px solid var(--line); border-radius:10px; padding:0 12px; font:inherit; font-size:16px; }
+  .count { font-size:13px; color:var(--muted); padding:0 4px; white-space:nowrap; }
+  .kbd { height:216px; background:#d1d5db; display:grid; place-items:center; color:#6b7280; font-size:13px; flex:none; }
+
+  /* Selection bar */
+  .selbar { position:absolute; left:12px; right:12px; display:flex; background:var(--ink); color:#fff; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.25); }
+  .selbar button { flex:1; min-height:48px; font-size:14px; font-weight:500; border-left:1px solid #374151; padding:0 6px; }
+  .selbar button:first-child { border-left:0; }
+  .selbar .range { position:absolute; top:-26px; left:4px; font-size:12px; background:var(--ink); padding:3px 8px; border-radius:8px; }
+
+  /* Empty / error states */
+  .state { flex:1; display:flex; flex-direction:column; justify-content:center; padding:24px 24px 40px; text-align:center; }
+  .state .ico { width:56px; height:56px; border-radius:16px; background:var(--soft); display:grid; place-items:center; margin:0 auto 16px; }
+  .state .ico svg { width:26px; height:26px; stroke:var(--green); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .state h2 { font-size:19px; margin:0 0 8px; }
+  .state p { color:var(--muted); margin:0 0 20px; line-height:1.5; font-size:15px; }
+  .state .code { font-size:12px; color:var(--faint); margin-top:14px; }
+
+  .summary-card { border:1px solid var(--line); border-radius:14px; padding:14px; margin:8px 0; }
+  .summary-card h3 { margin:0 0 6px; font-size:15px; }
+  .summary-card p, .summary-card li { color:var(--ink2); font-size:15px; line-height:1.5; margin:0; }
+  .summary-card ul { margin:0; padding-left:18px; }
+
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+/* ---------- Content (the same meeting as the current screenshots, split into 4 speakers) ---------- */
+const PEOPLE = {
+  A: { name:'Maya', c:'var(--s1)' },
+  B: { name:'Dev', c:'var(--s2)' },
+  C: { name:'Priya', c:'var(--s3)' },
+  D: { name:'Tom', c:'var(--s4)' },
+};
+const TURNS = [
+  { s:'A', t:'0:00', lines:['Thanks everyone for joining the quarterly planning review.', 'I want to move quickly today because we have a lot to cover and several people have a hard stop at the top of the hour.'] },
+  { s:'B', t:'0:09', lines:['First, the numbers.', 'Revenue came in 11% above forecast.', 'Most of that came from the enterprise segment, where three of the five deals we expected in the next quarter closed early.'] },
+  { s:'C', t:'0:20', lines:['The self-serve business was flat.', 'Trials were up, but conversion to paid slipped by about a point and a half.'] },
+  { s:'B', t:'0:26', lines:['And we think that is mostly the onboarding change we shipped in July.'] },
+  { s:'D', t:'0:29', lines:['Second, the mobile launch.', 'We are moving it from October to the first week of November.'] },
+  { s:'A', t:'0:35', lines:['The accessibility audit found 11 issues, four of them blocking.'] },
+  { s:'D', t:'0:41', lines:['We fix the four blockers first, then ship.'] },
+  { s:'C', t:'0:45', lines:['I can own onboarding. I will have a proposal by Friday.'] },
+];
+
+/* ---------- Icons ---------- */
+const I = {
+  back:'<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>',
+  search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  close:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  up:'<svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+  play:'<svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg>',
+  cloud:'<svg viewBox="0 0 24 24"><path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19.5 10 4 4 0 0 1 18 18z"/><path d="M12 11v4M12 17.5v.01"/></svg>',
+  lock:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+};
+
+/* ---------- State ---------- */
+const S = {
+  screen:'reader', speakers:false, signedIn:false, preview:true, audio:true,
+  times:true, names:true, size:'M', sheet:null, search:'', select:false, processing:false,
+};
+const SCREENS = {
+  reader:      {},
+  preview_end: { scrollEnd:true },
+  speakers:    { speakers:true },
+  processing:  { processing:true, preview:false, signedIn:true },
+  search:      { search:'onboarding' },
+  download:    { sheet:'download' },
+  more:        { sheet:'more' },
+  settings:    { sheet:'settings' },
+  select:      { select:true },
+  signup:      { sheet:'signup', scrollEnd:true },
+  error:       { error:'load' },
+  not_yours:   { error:'account', signedIn:true },
+  no_audio:    { audio:false },
+};
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function header(title, meta, noMore){
+  return `<header class="top">
+    <button class="icon-btn" aria-label="Back to your files" data-act="back">${I.back}</button>
+    <div class="title"><h1>${esc(title)}</h1>${meta ? `<div class="meta">${meta}</div>` : ''}</div>
+    ${noMore ? '<span class="icon-btn" aria-hidden="true"></span>' : `<button class="icon-btn" aria-label="More actions" aria-haspopup="dialog" data-act="more">${I.more}</button>`}
+  </header>`;
+}
+
+function tabs(active, opts={}){
+  const t = (id, label, dis) => `<button class="tab" role="tab" aria-selected="${active===id}" ${dis?'disabled aria-disabled="true"':''} data-tab="${id}">${label}</button>`;
+  return `<nav class="tabs" role="tablist" aria-label="Views">
+    ${t('transcript','Transcript')}${t('summary','Summary', opts.noSummary)}${t('chat','Chat', opts.noSummary)}
+    <span class="spacer"></span>
+    <button class="icon-btn" aria-label="Search in this transcript" data-act="search">${I.search}</button>
+  </nav>`;
+}
+
+function turnsHTML(o={}){
+  const list = o.cut ? TURNS.slice(0, o.cut) : TURNS;
+  let n = 0;
+  return list.map((tr, i) => {
+    const p = PEOPLE[tr.s];
+    const spans = tr.lines.map(l => {
+      n++;
+      let cls = '';
+      if (o.now && n === o.now) cls = 'now';
+      if (S.select && n === 3) cls = 'sel';
+      let text = esc(l);
+      if (S.search) text = text.replace(new RegExp('('+S.search+')','i'), '<span class="hit">$1</span>');
+      return `<span class="${cls}" data-line="${n}">${text}</span>`;
+    }).join(' ');
+    const cls = (o.fadeLast && i === list.length-1) ? 'turn fade' : 'turn';
+    return `<div class="${cls}">
+      <div class="who">${S.speakers ? `<span class="dot" style="background:${p.c}"></span><span class="name">${p.name}</span>` : ''}<time>${tr.t}</time></div>
+      <p>${spans}</p>
+    </div>`;
+  }).join('');
+}
+
+function dock(){
+  if (S.search) return '';                     // keyboard is up: give the room to the text
+  const strip = (S.preview && !S.signedIn && !S.atEnd) ? `<div class="strip"><span class="grow"><b>Free preview</b> · 48% of 1m 44s</span><button data-act="signup">Keep reading</button></div>` : '';
+  const player = S.audio ? `<div class="player">
+      <div class="scrub" role="slider" aria-label="Position" aria-valuemin="0" aria-valuemax="104" aria-valuenow="9" aria-valuetext="0:09 of 1:44"><i></i></div>
+      <button class="play" aria-label="Play">${I.play}</button>
+      <span class="clock">0:09 / 1:44</span>
+      <button class="skip" aria-label="Back 5 seconds">−5</button>
+      <button class="skip" aria-label="Forward 5 seconds">+5</button>
+      <button class="rate" aria-label="Playback speed 1x">1×</button>
+    </div>` : '';
+  if (!strip && !player) return '';
+  return `<footer class="dock">${strip}${player}</footer>`;
+}
+
+/* ---------- Screens ---------- */
+function reader(){
+  const meta = S.speakers ? '1m 44s · EN · 4 speakers' : '1m 44s · EN';
+  const fadeEnd = S.preview && !S.signedIn;
+  let body = turnsHTML({ cut: fadeEnd ? 6 : 0, fadeLast: fadeEnd, now: (S.select || S.search) ? 0 : 2 });
+  if (fadeEnd) {
+    body += `<section class="gate" aria-labelledby="g1">
+      <h2 id="g1">That's the free 48%</h2>
+      <p>The other 54 seconds are already transcribed. Create a free account to read them and keep this transcript in your library. Your first transcript is free.</p>
+      <button class="btn primary" data-act="signup">Create free account</button>
+      <button class="btn ghost" data-act="signup">I have an account</button>
+    </section>`;
+  } else {
+    body += `<div class="end">End of transcript</div>`;
+  }
+  return header('long.m4a', meta) + tabs('transcript') +
+    (S.search ? searchRow() : '') +
+    `<main class="scroll ${S.times?'':'hide-times'} ${S.names?'':'hide-names'}" id="scroll" style="--text:${({S:'15px',M:'17px',L:'20px'})[S.size]}">${body}</main>` +
+    (S.search ? `<div class="kbd" aria-hidden="true">keyboard</div>` : '') +
+    dock();
+}
+
+function searchRow(){
+  return `<div class="search" role="search">
+    <input aria-label="Find in transcript" value="${esc(S.search)}">
+    <span class="count" aria-live="polite">1 of 1</span>
+    <button class="icon-btn" aria-label="Previous match">${I.up}</button>
+    <button class="icon-btn" aria-label="Next match">${I.down}</button>
+    <button class="icon-btn" aria-label="Close search" data-act="closesearch">${I.close}</button>
+  </div>`;
+}
+
+function processing(){
+  return header('long.m4a', 'Transcribing · about 20 s left') +
+    `<div class="progress" role="progressbar" aria-label="Transcribing" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100"><i></i></div>` +
+    tabs('transcript', { noSummary:true }) +
+    `<main class="scroll" id="scroll">
+      ${(() => { const saved = TURNS.splice(4); const h = turnsHTML(); TURNS.push(...saved); return h; })()}
+      <div class="note" role="status"><b>Still transcribing from 0:29.</b> New lines appear here as they're ready. You can leave this page; it'll be in your files when it's done.</div>
+      <div class="skel" style="width:92%"></div><div class="skel" style="width:78%"></div><div class="skel" style="width:85%"></div>
+    </main>` + dock();
+}
+
+function errorScreen(){
+  if (S.error === 'account') {
+    return header('Transcript unavailable', '', true) +
+      `<main class="state">
+        <div class="ico">${I.lock}</div>
+        <h2>This transcript is on another account</h2>
+        <p>You're signed in as <b>h•••@gmail.com</b>. Sign in with the account that made it, or ask its owner for a share link.</p>
+        <button class="btn primary">Switch account</button>
+        <button class="btn ghost" data-act="back">Go to my files</button>
+      </main>`;
+  }
+  return header('long.m4a', '1m 44s · EN') +
+    `<main class="state">
+      <div class="ico">${I.cloud}</div>
+      <h2>We couldn't load this transcript</h2>
+      <p>Our server didn't answer in time. Your recording and transcript are safe. Try again in a moment.</p>
+      <button class="btn primary">Try again</button>
+      <button class="btn ghost" data-act="back">Go to my files</button>
+      <div class="code">Error 503 · if this keeps happening, tell us in Chat support</div>
+    </main>`;
+}
+
+/* ---------- Sheets: same shell for every panel ---------- */
+function sheet(title, inner, backTo){
+  return `<div class="scrim" data-act="close"></div>
+  <section class="sheet" role="dialog" aria-modal="true" aria-label="${title}">
+    <div class="grab" aria-hidden="true"></div>
+    <div class="sheet-head">
+      ${backTo ? `<button class="icon-btn" aria-label="Back" data-sheet="${backTo}">${I.back}</button>` : ''}
+      <h2>${title}</h2>
+      <button class="icon-btn" aria-label="Close" data-act="close">${I.close}</button>
+    </div>
+    <div class="sheet-body">${inner}</div>
+  </section>`;
+}
+
+function sheetMore(){
+  return sheet('long.m4a', `
+    <div class="group">
+      <button class="item"><span class="grow">Copy all text</span></button>
+      <button class="item" data-sheet="download"><span class="grow">Download or send<small>Word, text, subtitles, Google Drive</small></span><span class="chev">›</span></button>
+      <button class="item" data-sheet="settings"><span class="grow">Reading view<small>Text size, names, times</small></span><span class="chev">›</span></button>
+    </div>
+    <div class="group">
+      <button class="item"><span class="grow">Rename</span></button>
+      <button class="item"><span class="grow">File details</span></button>
+    </div>
+    <div class="group">
+      <button class="item danger"><span class="grow">Delete recording…</span></button>
+    </div>`);
+}
+
+function sheetDownload(){
+  return sheet('Download or send', `
+    <button class="btn primary">Word document (.docx)</button>
+    <button class="btn ghost">Plain text (.txt)</button>
+    <div class="label">Subtitles</div>
+    <div class="group">
+      <button class="item"><span class="grow">SRT<small>Most video editors</small></span></button>
+      <button class="item"><span class="grow">VTT<small>Web players</small></span></button>
+      <button class="item"><span class="grow">In another language…<small>Translate, then download SRT</small></span><span class="chev">›</span></button>
+    </div>
+    <div class="label">Send</div>
+    <div class="group">
+      <button class="item"><span class="grow">Save to Google Drive</span></button>
+    </div>
+    <div class="label">Options</div>
+    <div class="group">
+      <div class="item"><span class="grow">Include times in .docx and .txt</span><button class="switch" role="switch" aria-checked="true" aria-label="Include times"></button></div>
+    </div>`, 'more');
+}
+
+function sheetSettings(){
+  const seg = ['S','M','L'].map(k => `<button aria-pressed="${S.size===k}" data-size="${k}" aria-label="${({S:'Small',M:'Medium',L:'Large'})[k]} text" style="font-size:${({S:'14px',M:'17px',L:'21px'})[k]}">A</button>`).join('');
+  return sheet('Reading view', `
+    <div class="label">Text size</div>
+    <div class="seg" role="group" aria-label="Text size">${seg}</div>
+    <div class="group" style="margin-top:16px">
+      <div class="item"><span class="grow">Speaker names</span><button class="switch" role="switch" aria-checked="${S.names}" aria-label="Speaker names" data-toggle="names"></button></div>
+      <div class="item"><span class="grow">Times</span><button class="switch" role="switch" aria-checked="${S.times}" aria-label="Times" data-toggle="times"></button></div>
+    </div>
+    <p class="fine">Only changes what you see here. Copies and downloads aren't affected.</p>`, 'more');
+}
+
+function sheetSignup(){
+  return sheet('Keep reading', `
+    <p style="margin:0 0 16px;color:var(--muted);line-height:1.45">Read the full transcript and keep it in your library. Your first transcript is free, no card needed.</p>
+    <button class="btn primary">Continue with Google</button>
+    <button class="btn ghost">Continue with email</button>
+    <p class="fine">Already have an account? <a href="#" style="color:var(--green);font-weight:600">Sign in</a></p>`);
+}
+
+function selectBar(){
+  return `<div class="selbar" id="selbar" role="toolbar" aria-label="Selected text">
+    <span class="range">0:09 – 0:10</span>
+    <button>Copy with time</button>
+    <button>Play from here</button>
+    <button data-tab="chat">Ask in Chat</button>
+  </div>`;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const app = document.getElementById('app');
+  let html;
+  if (S.error) html = errorScreen();
+  else if (S.processing) html = processing();
+  else html = reader();
+  if (S.sheet === 'more') html += sheetMore();
+  if (S.sheet === 'download') html += sheetDownload();
+  if (S.sheet === 'settings') html += sheetSettings();
+  if (S.sheet === 'signup') html += sheetSignup();
+  if (S.select && !S.sheet) html += selectBar();
+  app.innerHTML = html;
+  const sc = document.getElementById('scroll');
+  if (sc && S.scrollEnd) sc.scrollTop = sc.scrollHeight;
+  const hit = document.querySelector('.hit');
+  if (sc && hit) sc.scrollTop = hit.offsetTop - sc.offsetTop - 120;
+  const bar = document.getElementById('selbar'), sel = document.querySelector('span.sel');
+  if (bar && sel) {
+    const r = sel.getBoundingClientRect(), ar = document.getElementById('app').getBoundingClientRect();
+    bar.style.top = (r.bottom - ar.top + 34) + 'px';
+  }
+}
+
+function load(){
+  const key = (location.hash || '#reader').slice(1);
+  Object.assign(S, { screen:'reader', speakers:false, signedIn:false, preview:true, audio:true, times:true, names:true, size:'M', sheet:null, search:'', select:false, processing:false, error:null, scrollEnd:false, atEnd:false }, SCREENS[key] || {});
+  if (S.scrollEnd) S.atEnd = true;
+  render();
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act],[data-sheet],[data-size],[data-toggle],[data-tab]');
+  if (!b) return;
+  if (b.dataset.sheet) { S.sheet = b.dataset.sheet; render(); return; }
+  if (b.dataset.size) { S.size = b.dataset.size; render(); return; }
+  if (b.dataset.toggle) { S[b.dataset.toggle] = !S[b.dataset.toggle]; render(); return; }
+  const a = b.dataset.act;
+  if (a === 'more') S.sheet = 'more';
+  if (a === 'close') S.sheet = null;
+  if (a === 'signup') S.sheet = 'signup';
+  if (a === 'search') { S.search = 'onboarding'; S.sheet = null; }
+  if (a === 'closesearch') S.search = '';
+  render();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.sheet) { S.sheet = null; render(); } });
+window.addEventListener('hashchange', load);
+load();
+</script>
+</body>
+</html>
